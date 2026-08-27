@@ -1,0 +1,476 @@
+/* ============================================================
+   ESTILOS GLOBALES / BASE
+   ============================================================ */
+
+/* Fondo gris claro y tipografía base de todo el sistema */
+body { 
+    background-color: #f4f7f6; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+}
+
+/* ============================================================
+   TARJETAS Y BOTONES (Recepción / Orden)
+   ============================================================ */
+
+/* Tarjetas: sin borde y esquinas redondeadas */
+.card { border: none; border-radius: 12px; }
+
+/* Cabecera de las tarjetas: azul con texto blanco */
+.card-header { 
+    background-color: #0d6efd; 
+    color: white; 
+    border-radius: 12px 12px 0 0 !important; 
+    font-weight: 600; 
+}
+
+/* Botón primario azul (sin borde) */
+.btn-primary { 
+    background-color: #0d6efd; 
+    border: none; 
+    padding: 10px 20px; 
+    font-weight: 500; 
+}
+/* Hover del botón primario: azul más oscuro */
+.btn-primary:hover { background-color: #0b5ed7; }
+
+/* ============================================================
+   TABLAS (cola de pacientes, exámenes)
+   ============================================================ */
+
+/* Filas de tabla con cursor y transición suave */
+.table-hover tbody tr { cursor: pointer; transition: 0.2s; }
+/* Resaltado azul claro al pasar el mouse */
+.table-hover tbody tr:hover { background-color: #e7f1ff; }
+
+/* Estilo del número de orden en la cola */
+.badge-orden { font-size: 0.9rem; padding: 5px 10px; }
+
+/* Oculta las flechas de incremento en inputs numéricos (más limpio) */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] { -moz-appearance: textfield; }
+
+/* ============================================================
+   FICHA DEL PACIENTE (vista Orden)
+   ============================================================ */
+
+/* Recuadro con degradado morado que muestra los datos del paciente activo */
+.paciente-info { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    color: white; 
+    border-radius: 12px; 
+    padding: 20px; 
+}
+.paciente-info h4 { margin: 0; font-weight: 600; }
+.paciente-info .badge { font-size: 1.1rem; padding: 8px 15px; }
+
+
+
+/* ============================================================
+   TABLA DE EXÁMENES (vista Orden)
+   ============================================================ */
+
+/* Fila de examen con transición suave */
+.examen-row { transition: 0.3s;}
+
+/* Resaltado al pasar el mouse sobre la fila */
+.examen-row:hover { background-color: #f8f9fa; }
+
+/* Ancho del input de resultado */
+.resultado-input { max-width: 120px; }
+
+/* Ancho de los inputs de valores de referencia (mín/máx) */
+.ref-min-input,
+.ref-max-input { width: 80px; display: inline-block; }
+
+
+
+/* Color del input según el valor ingresado: alto (amarillo), bajo (rojo), normal (verde) */
+.resultado-alto { background-color: #fff3cd !important; border-color: #ffc107 !important; }
+.resultado-bajo { background-color: #f8d7da !important; border-color: #dc3545 !important; }
+/*.resultado-normal { background-color: #d1e7dd !important; border-color: #198754 !important; }
+
+
+/* Item del historial con barra lateral azul */
+.historial-item { border-left: 3px solid #0d6efd; padding-left: 10px; margin-bottom: 10px; }
+
+/* Fuerza el selector de exámenes (Select2) al 100% de ancho */
+.select2-container { width: 100% !important; }
+
+/* ============================================================
+   NAVEGACIÓN Y ESTADOS
+   ============================================================ */
+
+/* Botón "Volver" gris */
+.btn-volver { background-color: #6c757d; border: none; color: white; }
+.btn-volver:hover { background-color: #5a6268; color: white; }
+
+/* Mensaje centrado cuando no hay exámenes en la orden */
+.sin-examenes { text-align: center; padding: 40px; color: #6c757d; }
+
+/* ============================================================
+   REPORTE — CONTENEDOR Y ENCABEZADO
+   ============================================================ */
+
+/* Caja blanca del reporte: centrada, 10.5pt, texto negro */
+.reporte-container {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 10.5pt;
+    color: #000;
+}
+
+
+/* Encabezado del laboratorio: nombre y dirección centrados */
+ .reporte-header { border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; text-align: center; }
+.reporte-logo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #000;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+/* Imagen del logo */
+.reporte-logo-img {
+    max-height: 100px;
+    max-width: 100px;
+    margin-right: 50px;
+    vertical-align: middle;
+}
+.reporte-info-lab {
+    font-size: 0.72rem;
+    color: #000;
+    line-height: 1.4;
+}
+
+
+/* Fecha de emisión centrada debajo de los datos del laboratorio */
+.reporte-emision {
+    font-size: 0.72rem;
+    color: #000;
+    margin-top: 8px;
+}
+
+
+/* Datos del paciente en líneas "Etiqueta: valor" */
+.reporte-paciente {
+    margin-bottom: 16px;
+    font-size: 0.8rem;
+}
+
+
+.reporte-linea { margin-bottom: 2px; }
+.reporte-paciente .info-label,
+.reporte-linea .info-label { font-weight: 700; color: #000; margin-right: 4px; }
+.reporte-seccion-titulo { color: #000; font-weight: 700; font-size: 0.9rem; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 18px 0 10px; }
+.reporte-tabla { margin-bottom: 10px; }
+
+
+/* Título de cada área (Hematología, Química...) centrado */
+.reporte-area-titulo { color: #000; font-weight: 700; font-size: 0.85rem; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 8px 0 4px; }
+.reporte-area-grupo { margin-bottom: 1rem; }
+.reporte-subarea-titulo { color: #000; font-weight: 600; font-size: 0.8rem; font-style: italic; margin-top: 4px; text-align: center; }
+.reporte-tabla table { font-size: 0.75rem; width: 100%; border-collapse: collapse; }
+.reporte-tabla thead { background-color: #e9e9e9 !important; color: #000; }
+.reporte-tabla th { font-weight: 700; padding: 3px 6px; border: 1px solid #000; color: #000; }
+.reporte-tabla td { padding: 3px 6px; border: 1px solid #ccc; color: #000; }
+.resultado-alto-texto { color: #000; font-weight: bold; }
+.resultado-bajo-texto { color: #000; font-weight: bold; }
+.resultado-normal-texto { color: #000; }
+
+
+    /* Bloque de heces: tabla de 2 columnas (parámetro / valor) */
+    #bloqueHeces { margin-bottom: 4px; }
+    #bloqueHeces table { font-size: 0.75rem; width: 100%; border-collapse: collapse; }
+    #bloqueHeces th { font-weight: 700; padding: 3px 6px; border: 1px solid #000; color: #000; background-color: #e9e9e9 !important; }
+    #bloqueHeces td { padding: 3px 6px; border: 1px solid #ccc; color: #000; }
+
+
+    /* Firma del bioanalista dentro del cuerpo del documento (al pie) */
+.reporte-firma { margin-top: 30px; text-align: center; color: #000; }
+.firma-linea {
+    border-top: 1px solid #000;
+    width: 280px;
+    margin: 40px auto 6px;
+    padding-top: 6px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #000;
+}
+.firma-profesional { text-align: center; color: #000; font-size: 0.75rem; line-height: 1.3; }
+.firma-print { display: none; }
+.solo-imprimir { display: none; }
+.reporte-footer {
+    margin-top: 25px;
+    padding-top: 12px;
+    border-top: 1px solid #000;
+    text-align: center;
+    font-size: 0.7rem;
+    color: #000;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+}
+.sin-resultados { text-align: center; padding: 60px 20px; color: #000; }
+.sin-resultados i { font-size: 4rem; margin-bottom: 20px; }
+
+.orden-print-header { display: none; }
+
+/* ============================================================
+   FORMULARIO DE HECES (vista Orden)
+   ============================================================ */
+
+/* Redondea y estiliza el formulario de heces */
+#formularioHeces { border-radius: 12px; overflow: hidden; }
+#formularioHeces .card-header { font-size: 1.1rem; }
+#formularioHeces .form-label { margin-bottom: 4px; }
+#formularioHeces .form-control,
+#formularioHeces .form-select { border-radius: 6px; }
+
+/* En móvil separa las columnas del formulario de heces */
+@media (max-width: 768px) {
+    #formularioHeces .row.g-3 > [class*="col-"] {
+        margin-bottom: 10px;
+    }
+}
+
+/* ============================================================
+   FORMULARIO DE URÓLISIS (vista Orden)
+   ============================================================ */
+
+#formularioUroanalisis { border-radius: 12px; overflow: hidden; }
+#formularioUroanalisis .card-header { font-size: 1.1rem; }
+#formularioUroanalisis .form-label { margin-bottom: 4px; }
+#formularioUroanalisis .form-control,
+#formularioUroanalisis .form-select { border-radius: 6px; }
+
+@media (max-width: 768px) {
+    #formularioUroanalisis .row.g-3 > [class*="col-"] {
+        margin-bottom: 10px;
+    }
+}
+
+/* ============================================================
+   VISTAS / CAMBIO DE PANTALLA (patrón SPA)
+   ============================================================ */
+
+/* ============================================================
+   FOOTER DEL DESARROLLADOR (solo pantalla)
+   ============================================================ */
+
+/* Pie de página con degradado morado que muestra datos del desarrollador */
+.footer-developer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 0;
+    margin-top: 40px;
+    border-top: 3px solid #0d6efd;
+}
+
+/* Tarjeta semitransparente dentro del footer */
+.footer-developer .developer-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px 20px;
+    backdrop-filter: blur(10px);
+}
+
+.footer-developer h5 {
+    font-weight: 600;
+    color: #fff;
+}
+
+.footer-developer .developer-info {
+    font-size: 0.9rem;
+}
+
+/* ============================================================
+   IMPRESIÓN (@media print)
+   ============================================================ */
+@media print {
+    body { background: white; }
+    .no-imprimir { display: none !important; }
+    .footer-developer { display: none !important; }
+    
+    /* Mostrar encabezado y firma de impresión */
+    .solo-imprimir { display: block !important; }
+    
+    /* Encabezado fijo en cada página */
+    .reporte-encabezado-impresion {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: white;
+        padding: 6px 15px;
+        border-bottom: 2px solid #000;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-superior {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-logo img {
+        max-height: 100px;
+        max-width: 100px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-lab {
+        flex: 1;
+        text-align: center;
+        min-width: 0;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-nombre {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #000;
+        text-transform: uppercase;
+        line-height: 1.2;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-direccion {
+        font-size: 0.62rem;
+        color: #000;
+        line-height: 1.3;
+        margin-top: 5px;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-fecha {
+        font-size: 0.62rem;
+        color: #000;
+        text-align: right;
+        white-space: nowrap;
+        flex-shrink: 0;
+        align-self: flex-start;
+        margin-top: 0;
+    }
+    
+    .reporte-encabezado-impresion .encabezado-paciente {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px 15px;
+        margin-top: 5px;
+        padding-top: 4px;
+        border-top: 1px solid #ccc;
+        font-size: 0.62rem;
+        color: #000;
+    }
+    
+    .reporte-encabezado-impresion .info-label {
+        font-weight: 700;
+        color: #000;
+    }
+    
+    #reportePerfil {
+        font-weight: 700;
+        color: #000;
+        margin-top: 2px;
+    }
+    
+    /* Firma fija al final de cada página */
+    .reporte-firma-impresion {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: white;
+        padding: 4px 15px 8px;
+        border-top: 1px solid #000;
+        text-align: center;
+    }
+    
+    .reporte-firma-impresion .firma-linea {
+        border-top: 1px solid #000;
+        width: 220px;
+        margin: 28px auto 3px;
+        padding-top: 4px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.72rem;
+        color: #000;
+    }
+    
+    .reporte-firma-impresion .firma-profesional {
+        text-align: center;
+        color: #000;
+        font-size: 0.62rem;
+        line-height: 1.3;
+    }
+    
+    /* Ocultar encabezado y firma originales en impresión */
+    .reporte-header { display: none !important; }
+    .reporte-firma { display: none !important; }
+    
+    /* Ajustar contenedor para dar espacio al encabezado y firma fijos */
+    .reporte-container {
+        box-shadow: none;
+        padding: 148px 12px 50px;
+        max-width: 100%;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .reporte-logo-img { max-width: 100px; max-height: 100px; object-fit: contain; object-position: center; }
+    .orden-print-header { display: block !important; text-align: center; margin-bottom: 16px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+    .orden-print-logo img { max-height: 60px; max-width: 200px; }
+    .orden-print-lab { font-size: 0.72rem; color: #000; line-height: 1.4; }
+    
+    .reporte-seccion-titulo { color: #000; font-weight: 700; font-size: 0.85rem; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 1px; margin: 14px 0 8px; }
+    .reporte-tabla { margin-bottom: 6px; }
+    .reporte-area-titulo { color: #000; font-weight: 700; font-size: 0.82rem; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 1px; margin: 6px 0 2px; }
+    .reporte-subarea-titulo { color: #000; font-weight: 600; font-size: 0.78rem; font-style: italic; margin-top: 2px; text-align: center; }
+    .ref-adaptadas-badge {
+        grid-column: 1 / -1;
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: #000;
+        background-color: #e9e9e9;
+        border: 1px solid #000;
+        padding: 2px 8px;
+        border-radius: 3px;
+        margin-top: 4px;
+        text-align: left;
+    }
+    .reporte-tabla table { font-size: 0.74rem; width: 100%; border-collapse: collapse; }
+    .reporte-tabla th { font-weight: 700; padding: 2px 5px; border: 1px solid #000; color: #000; }
+    .reporte-tabla td { padding: 2px 5px; border: 1px solid #ccc; color: #000; }
+    .reporte-area-grupo { margin-bottom: 4px; page-break-inside: avoid; }
+    
+    #bloqueHeces { margin-bottom: 4px; }
+    #bloqueHeces table { font-size: 0.74rem; width: 100%; border-collapse: collapse; }
+    #bloqueHeces th { font-weight: 700; padding: 2px 5px; border: 1px solid #000; color: #000; background-color: #e9e9e9 !important; }
+    #bloqueHeces td { padding: 2px 5px; border: 1px solid #ccc; color: #000; }
+    
+    .reporte-firma-impresion { padding: 2px 12px 6px; }
+    .reporte-firma-impresion .firma-linea { width: 200px; margin: 22px auto 2px; padding-top: 3px; font-size: 0.7rem; }
+    .reporte-firma-impresion .firma-profesional { font-size: 0.6rem; line-height: 1.2; }
+}
+
+/* ============================================================
+   MODAL DE PERFILES Y EXPANSION DE EXAMENES
+   ============================================================ */
+.perfil-examen-card { border-left: 3px solid #0d6efd; transition: all 0.2s; }
+.perfil-examen-card:hover { border-left-color: #0b5ed7; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.perfil-items-contenedor { animation: slideDown 0.3s ease-in-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.examen-items-row { background-color: #f8f9fa; }
+.examen-items-row td { padding: 0 !important; }
+.perfil-item-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+.tabla-item-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+

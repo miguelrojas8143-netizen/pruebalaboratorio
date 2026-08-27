@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Resultados</title>
+     <!-- Bootstrap CSS local -->
+<link href="../public/lib/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons local -->
+<link href="../public/lib/bootstrap-icons.css" rel="stylesheet">
+<!-- Select2 CSS local -->
+<link href="../public/lib/select2.min.css" rel="stylesheet">
+<!-- Select2 Theme Bootstrap 5 local -->
+<link href="../public/lib/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+<link href="../public/css/styles.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
+    <div class="container">
+        <span class="navbar-brand mb-0 h2"><i class="bi bi-heart-pulse-fill me-2"></i> UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</span>
+    </div>
+</nav>
+    <div class="container mb-5">
+        <div class="mb-3 no-imprimir d-flex gap-2">
+            <button class="btn btn-volver" onclick="window.location.href='orden.html?orden=' + getOrden()">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </button>
+            <button class="btn btn-outline-primary" onclick="vistaPrevia()">
+                <i class="bi bi-printer me-1"></i> Imprimir
+            </button>
+        </div>
+
+        <div id="sinResultados" class="sin-resultados no-imprimir" style="display: none;">
+            <i class="bi bi-exclamation-circle"></i>
+            <h4>No hay resultados para imprimir</h4>
+            <p class="mb-3">El paciente no tiene exámenes con resultados ingresados.</p>
+            <button class="btn btn-primary" onclick="window.location.href='orden.html?orden=' + getOrden()">
+                <i class="bi bi-arrow-left me-1"></i> Volver a Cargar Exámenes
+            </button>
+        </div>
+
+             <div id="area-imprimir" class="reporte-container">
+            <div class="reporte-encabezado-impresion solo-imprimir">
+                <div class="encabezado-superior">
+                    <div class="encabezado-logo">
+                        <img src="../public/imagen/logo1.png" alt="logo"> 
+                    </div>
+                    <div class="encabezado-lab">
+                        <div class="encabezado-nombre">UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</div>
+                        <div class="encabezado-direccion">
+                            Calle Principal Casa N° S/N Barrio Paéz. El Nula, Estado Apure, Venezuela<br>
+                            RIF: J-412745735 &nbsp;|&nbsp; Teléfono: 0416 4740671
+                        </div>
+                    </div>
+                    <div class="encabezado-fecha">
+                         <strong>Fecha de Emisión:</strong> <span id="fechaEmision"></span>
+                    </div>
+                </div>
+                <div class="encabezado-paciente ">
+                    <div><span class="info-label">Nombre y Apellido:</span> <span id="reporteNombre"></span></div>
+                    <div><span class="info-label">Cédula de Identidad:</span> <span id="reporteCedula"></span></div>
+                    <div><span class="info-label">Edad:</span> <span id="reporteEdad"></span></div>
+                    <div><span class="info-label">Sexo:</span> <span id="reporteSexo"></span></div>
+                    <div><span class="info-label">Teléfono de Contacto:</span> <span id="reporteTelefono"></span></div>
+                    <div><span class="info-label">Orden N°:</span> <span id="ordenNumero"></span></div>
+                    <div id="reportePerfil" class="info-label"></div>
+                    <div id="reporteRefAdaptadas" class="ref-adaptadas-badge" style="display:none;"></div>
+               </div>
+            </div>
+             <div>
+                <h6 class="reporte-seccion-titulo"> Resultados de Exámenes de Laboratorio</h6>
+            <div class="reporte-tabla">
+               
+                <div id="contenedorResultados"></div>
+            </div>
+
+             </div>
+         
+            <div class="reporte-firma-impresion solo-imprimir">
+                <div class="firma-linea">Lcda. Andréina Rondón</div>
+                <div class="firma-profesional">
+                    Bioanalista Responsable<br>
+                    C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
+                </div>
+      
+            </div>
+            
+            <div id="bloqueHeces"></div>
+            <div id="bloqueUroanalisis"></div>
+
+
+            <div class="reporte-firma no-imprimir">
+                <div class="firma-linea">Lcda. Andréina Rondón</div>
+                <div class="firma-profesional">
+                    Bioanalista Responsable<br>
+                    C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
+                </div>
+            </div>
+        </div> 
+<footer class="footer-developer">
+    <div class="container">
+        <div class="developer-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1"><i class="bi bi-code-slash me-2"></i> Desarrollador del Sistema</h5>
+                    <p class="mb-0">ING: Miguel Antonio Rojas - Sistema de Gestión de Exámenes Médicos</p>
+                     <small><i class="bi bi-envelope me-1"></i> miguelrojas8143@gmail.com</small>
+                      </div>
+
+               <!--<div class="col-md-4 text-md-end">
+                    <div class="developer-info">
+                        <strong>ING: Miguel Antonio Rojas</strong><br>
+                      <small class="text-muted">Desarrollador</small><br>
+                    </div>
+                    </div>
+                   -->
+
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="../public/lib/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap JS local -->
+<script src="../public/lib/bootstrap.bundle.min.js"></script>
+
+    <script src="../public/lib/html2pdf.bundle.min.js"></script>
+    <script src="../public/js/catalogo-base.js"></script>
+    <script src="../public/js/perfiles.js"></script>
+    <script src="../public/js/examenes-detallados.js"></script>
+    <script src="../public/js/referencias.js"></script>
+    <script src="../public/js/utils.js"></script>
+    <script src="../public/js/calculos.js"></script>
+    <script src="../public/js/storage.js"></script>
+    <script src="../public/js/hematologia.js"></script>
+    <script src="../public/js/quimica-sanguinea.js"></script>
+    <script src="../public/js/coagulacion.js"></script>
+    <script src="../public/js/inmunologia.js"></script>
+    <script src="../public/js/hormonas.js"></script>
+    <script src="../public/js/uroanalisis.js"></script>
+    <script src="../public/js/uroanalisis-form.js"></script>
+    <script src="../public/js/coproanalisis.js"></script>
+    <script src="../public/js/bacteriologia.js"></script>
+    <script src="../public/js/secrecion-vaginal.js"></script>
+    <script src="../public/js/micologia.js"></script>
+    <script src="../public/js/recepcion.js"></script>
+    <script src="../public/js/orden.js"></script>
+    <script src="../public/js/reporte.js"></script>
+    <script src="../public/js/catalogo-admin.js"></script>
+    <script src="../public/js/perfiles-modal.js"></script>
+    <script src="../public/js/items-detallados.js"></script>
+    <script src="../public/js/heces.js"></script>
+    <script src="../public/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "name": "laboratorio-prueba-pro",
+  "version": "1.0.0",
+  "description": "Sistema de Laboratorio Clínico - Demo",
+  "main": "main.js",
+  "scripts": {
+    "prestart": "npm run build:includes",
+    "build:includes": "node scripts/build-includes.js",
+    "start": "electron .",
+    "build": "electron-builder --win --x64 --publish never"
+  },
+  "author": "Ing. Miguel Rojas",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^21.4.4",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.labsystem.pro",
+    "productName": "Lababoratorio Prueba 1 Pro",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icono.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*"
+    ]
+  }
+}

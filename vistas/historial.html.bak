@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Médico</title>
+    <!-- Bootstrap CSS local -->
+    <link href="../public/lib/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons local -->
+    <link href="../public/lib/bootstrap-icons.css" rel="stylesheet">
+    <!-- Select2 CSS local -->
+    <link href="../public/lib/select2.min.css" rel="stylesheet">
+    <!-- Select2 Theme Bootstrap 5 local -->
+    <link href="../public/lib/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    <link href="../public/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
+        <div class="container">
+            <span class="navbar-brand mb-0 h2"><i class="bi bi-heart-pulse-fill me-2"></i> Historial Médico</span>
+            <span class="text-white small no-imprimir"><i class="bi bi-calendar3 me-1"></i> <span id="fechaHoy"></span></span>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        <div class="mb-3 no-imprimir d-flex gap-2">
+            <button class="btn btn-volver" onclick="window.location.href='orden.html?orden=' + getOrden()">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </button>
+            <button class="btn btn-success" onclick="imprimirHistorial()">
+                <i class="bi bi-printer me-1"></i> Imprimir Historial
+            </button>
+        </div>
+
+        <div class="paciente-info mb-4 shadow no-imprimir">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4><i class="bi bi-person-circle me-2"></i> <span id="pacienteNombre">-</span></h4>
+                    <div class="mt-2">
+                        <span class="me-3"><i class="bi bi-card-text me-1"></i> Cédula: <strong id="pacienteCedula">-</strong></span>
+                        <span class="me-3"><i class="bi bi-calendar3 me-1"></i> Fecha Nac: <strong id="pacienteFechaNac">-</strong></span>
+                        <span class="me-3"><i class="bi bi-arrow-repeat me-1"></i> Edad: <strong id="pacienteEdad">-</strong></span>
+                        <span><i class="bi bi-telephone me-1"></i> Tel: <strong id="pacienteTelefono">-</strong></span>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-light text-primary">Historial Clínico</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4 historial-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <ul class="nav nav-pills mb-0" id="historialPestanas" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pestana-dia" data-bs-toggle="pill" data-bs-target="#panel-dia" type="button" role="tab">
+                            <i class="bi bi-calendar-check me-1"></i> Por Día
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pestana-examen" data-bs-toggle="pill" data-bs-target="#panel-examen" type="button" role="tab">
+                            <i class="bi bi-graph-up me-1"></i> Por Examen
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pestana-imprimir" data-bs-toggle="pill" data-bs-target="#panel-imprimir" type="button" role="tab">
+                            <i class="bi bi-printer me-1"></i> ver Historial
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3 historial-controles">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Desde:</label>
+                        <input type="date" class="form-control" id="filtroDesde">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Hasta:</label>
+                        <input type="date" class="form-control" id="filtroHasta">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="aplicarFiltroHistorial()">
+                            <i class="bi bi-funnel me-1"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="historialContenido">
+                    <div class="tab-pane fade show active" id="panel-dia" role="tabpanel">
+                        <div id="historialPorDia"></div>
+                    </div>
+                    <div class="tab-pane fade" id="panel-examen" role="tabpanel">
+                        <div id="historialPorExamen"></div>
+                    </div>
+                    <div class="tab-pane fade" id="panel-imprimir" role="tabpanel">
+                        <div id="historialImprimir"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-developer">
+        <div class="container">
+            <div class="developer-card">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-1"><i class="bi bi-code-slash me-2"></i> Desarrollador del Sistema</h5>
+                        <p class="mb-0">Miguel Antonio Rojas - Sistema de Gestión de Exámenes Médicos</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <div class="developer-info">
+                            <strong>ING: Miguel Antonio Rojas</strong><br>
+                            <small class="text-muted">Desarrollador Full Stack</small><br>
+                            <small><i class="bi bi-envelope me-1"></i> miguelrojas8143@gmail.com.com</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../public/lib/jquery-3.6.0.min.js"></script>
+    <script src="../public/lib/bootstrap.bundle.min.js"></script>
+    <script src="../public/lib/select2.min.js"></script>
+    <script src="../public/js/app.js"></script>
+</body>
+</html>
