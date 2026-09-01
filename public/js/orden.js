@@ -476,6 +476,7 @@
             alert('No hay exámenes en la orden para guardar.');
             return;
         }
+        // Filtrar exámenes con resultados válidos
         var examenesConResultado = window.examenesOrden.filter(function(e) {
             if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipo === 'multiselect_cantidad') {
                 try {
@@ -487,6 +488,7 @@
             }
             return String(e.resultado || '').trim() !== '';
         });
+        
         var pacientes = window.obtenerPacientes();
         var index = pacientes.findIndex(function(p) { return p.id === window.pacienteActivo.id; });
         if (index === -1) {
@@ -566,138 +568,6 @@
         window.location.href = 'reporte.html?orden=' + window.pacienteActivo.orden;
     };
 
-    window.vistaPrevia = function() {
-        window.print();
-    };
-
-    window.descargarPDF = function() {
-        var orden = new URLSearchParams(window.location.search).get('orden') || '';
-        var paciente = window.obtenerPacientes().find(function(p) { return p.orden === orden; });
-        if (!paciente) {
-            alert('Paciente no encontrado.');
-            return;
-        }
-
-        var nombreSanitizado = (paciente.orden || paciente.nombre || 'reporte')
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9_-]/g, '_')
-            .replace(/_+/g, '_')
-            .substring(0, 100);
-
-        var noImprimir = document.querySelectorAll('.no-imprimir');
-        var soloImprimir = document.querySelectorAll('.solo-imprimir');
-
-        noImprimir.forEach(function(el) { el.dataset.originalDisplay = el.style.display; el.style.display = 'none'; });
-        soloImprimir.forEach(function(el) { el.dataset.originalDisplay = el.style.display; el.style.display = 'block'; });
-
-        requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-                var contenedor = document.getElementById('area-imprimir');
-                if (!contenedor) {
-                    var examenes = (paciente.examenes || []).filter(function(e) {
-                        return String(e.resultado ?? '').trim() !== '' || true;
-                    });
-
-                    var porArea = {};
-                    examenes.forEach(function(examen) {
-                        var area = (examen.area || 'General').trim();
-                        if (!porArea[area]) porArea[area] = [];
-                        porArea[area].push(examen);
-                    });
-
-                    var html = '<div style="font-family: Arial, Helvetica, sans-serif; color: #000; background: #fff; padding: 30px 40px; font-size: 10pt; line-height: 1.3;">';
-                    html += '<div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px;">';
-                    html += '<div style="font-size: 1.1rem; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</div>';
-                    html += '<div style="font-size: 0.7rem; line-height: 1.35;">Calle Principal Casa N° S/N Barrio Paéz. El Nula, Estado Apure, Venezuela<br>RIF: J-412745735 &nbsp;|&nbsp; Teléfono: 0416 4740671</div>';
-                    html += '</div>';
-                    html += '<div style="margin-bottom: 14px; font-size: 0.78rem;">';
-                    html += '<div><strong>Nombre y Apellido:</strong> ' + (paciente.nombre || 'N/A') + '</div>';
-                    html += '<div><strong>Cédula:</strong> ' + (paciente.cedula || 'N/A') + '</div>';
-                    html += '<div><strong>Edad:</strong> ' + (paciente.edad || 'N/A') + ' años</div>';
-                    html += '<div><strong>Sexo:</strong> ' + (paciente.sexo === 'M' ? 'Masculino' : paciente.sexo === 'F' ? 'Femenino' : 'N/A') + '</div>';
-                    html += '<div><strong>Teléfono:</strong> ' + (paciente.telefono || 'N/A') + '</div>';
-                    html += '<div><strong>Orden N°:</strong> ' + (paciente.orden || 'N/A') + '</div>';
-                    html += '</div>';
-                    html += '<h2 style="font-size: 0.95rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 4px; margin: 20px 0 12px;">Resultados de Exámenes de Laboratorio</h2>';
-
-                    Object.keys(porArea).sort().forEach(function(area) {
-                        html += '<h3 style="font-size: 0.85rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 12px 0 8px;">' + area + '</h3>';
-                        html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 10px; page-break-inside: avoid;">';
-                        html += '<thead><tr><th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 35%; text-align: left;">Examen</th><th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 20%; text-align: center;">Resultado</th><th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 15%; text-align: center;">Unidad</th><th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 30%; text-align: center;">Valores de Referencia</th></tr></thead>';
-                        html += '<tbody>';
-                        porArea[area].forEach(function(examen) {
-                            var tieneResultado = String(examen.resultado ?? '').trim() !== '';
-                            var numResultado = parseFloat(examen.resultado);
-                            var clase = '';
-                            var texto = tieneResultado ? examen.resultado : '-';
-                            if (examen.tipo === 'multiselect_cantidad' && tieneResultado) {
-                                try {
-                                    var datosFrotisPdf = JSON.parse(examen.resultado || '{}');
-                                    var itemsFrotis = Object.keys(datosFrotisPdf).filter(function(k) { return datosFrotisPdf[k] !== ''; });
-                                    if (itemsFrotis.length > 0) {
-                                        texto = itemsFrotis.map(function(k) {
-                                            return k + (datosFrotisPdf[k] ? ' — ' + datosFrotisPdf[k] : '');
-                                        }).join('; ');
-                                    } else {
-                                        texto = '-';
-                                    }
-                                } catch(e) {
-                                    texto = '-';
-                                }
-                            }
-                            if (examen.tipo !== 'texto' && examen.tipo !== 'seleccion_unica' && examen.tipo !== 'multiselect_cantidad' && tieneResultado && !isNaN(numResultado)) {
-                                if (numResultado < examen.refMin) {
-                                    clase = 'resultado-bajo-texto';
-                                    texto = examen.resultado + ' ↓';
-                                } else if (numResultado > examen.refMax) {
-                                    clase = 'resultado-alto-texto';
-                                    texto = examen.resultado + ' ↑';
-                                } else {
-                                    clase = 'resultado-normal-texto';
-                                }
-                            }
-                            var refTexto = (examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax)) ? examen.refMin + ' - ' + examen.refMax : '-';
-                            html += '<tr><td style="font-weight: 600; padding: 4px 6px; border: 1px solid #ccc;">' + examen.nombre + '</td><td class="' + clase + '" style="padding: 4px 6px; border: 1px solid #ccc; text-align: center;">' + texto + '</td><td style="padding: 4px 6px; border: 1px solid #ccc; text-align: center; color: #555;">' + (examen.unidad || '-') + '</td><td style="padding: 4px 6px; border: 1px solid #ccc; text-align: center;">' + refTexto + '</td></tr>';
-                        });
-                        html += '</tbody></table>';
-                    });
-
-                    html += '</div>';
-                    var div = document.createElement('div');
-                    div.innerHTML = html;
-                    document.body.appendChild(div);
-                    html2pdf().from(div).set({
-                        filename: nombreSanitizado + '.pdf',
-                        margin: 0,
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2, useCORS: true },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    }).save().then(function() {
-                        document.body.removeChild(div);
-                        restaurar();
-                    }).catch(function() {
-                        if (div.parentNode) document.body.removeChild(div);
-                        restaurar();
-                    });
-                } else {
-                    html2pdf().from(contenedor).set({
-                        filename: nombreSanitizado + '.pdf',
-                        margin: 0,
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2, useCORS: true },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    }).save().then(restaurar).catch(restaurar);
-                }
-
-                function restaurar() {
-                    noImprimir.forEach(function(el) { el.style.display = el.dataset.originalDisplay || ''; delete el.dataset.originalDisplay; });
-                    soloImprimir.forEach(function(el) { el.style.display = el.dataset.originalDisplay || ''; delete el.dataset.originalDisplay; });
-                }
-            });
-        });
-    };
-
-
     window.getOrden = function() {
         return String(new URLSearchParams(window.location.search).get('orden') || '').padStart(3, '0');
     };
@@ -730,6 +600,7 @@
         Object.keys(window.App.perfiles).forEach(function(key) {
             groupPerfiles.append(new Option("★ " + window.App.perfiles[key].nombre, window.App.perfiles[key].id));
         });
+        
         select.append(groupPerfiles);
         select.select2({
             theme: "bootstrap-5",
