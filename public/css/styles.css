@@ -441,3 +441,18 @@ input[type=number] { -moz-appearance: textfield; }
 .examen-items-row td { padding: 0 !important; }
 .perfil-item-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
 .tabla-item-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+
+/* ============================================================
+   BADGE DE PERFIL EN LA TABLA DE EXÁMENES (vista Orden)
+   ============================================================ */
+.badge-perfil {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px 3px 0 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #087999;
+    background: #e7f4f9;
+    border: 1px solid #a7e0f0;
+    border-radius: 3px;
+}

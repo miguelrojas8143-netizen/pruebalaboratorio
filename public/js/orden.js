@@ -108,7 +108,7 @@
         inputs.forEach(function(input) { window.validarResultado(input); });
     };
 
-    function crearExamenDesdeCatalogo(datos) {
+    function crearExamenDesdeCatalogo(datos, perfilOrigen) {
         var nuevoExamen = {
             id: datos.id,
             nombre: datos.nombre,
@@ -167,7 +167,28 @@
             nuevoExamen.tipo = 'perfil';
             nuevoExamen.resultado = '{}';
         }
+        if (perfilOrigen) {
+            nuevoExamen.perfilesOrigen = [perfilOrigen];
+        }
         return nuevoExamen;
+    }
+
+    function renderBadgePerfiles(examen) {
+        var origen = examen.perfilesOrigen;
+        if ((!origen || origen.length === 0) && window.pacienteActivo) {
+            if (window.pacienteActivo.perfiles && window.App.perfiles) {
+                origen = window.pacienteActivo.perfiles.filter(function(pid) {
+                    var p = window.App.perfiles[pid];
+                    return p && p.examenes.some(function(ex) { return ex.id === examen.id; });
+                });
+            }
+        }
+        if (!origen || origen.length === 0) return '';
+        var badges = origen.map(function(pid) {
+            var p = window.App.perfiles[pid];
+            return '<span class="badge-perfil">' + (p ? p.nombre : pid) + '</span>';
+        });
+        return '<div class="mt-1">' + badges.join('') + '</div>';
     }
 
     function renderizarTablaExamenes() {
@@ -269,6 +290,8 @@
                     }
                 }
             }
+            var primerTd = fila.querySelector('td.fw-semibold');
+            if (primerTd) primerTd.innerHTML += renderBadgePerfiles(examen);
             tbody.appendChild(fila);
         });
     }
@@ -294,14 +317,14 @@
                 if (examenPerfil.tipo === 'perfil' && window.App.perfiles[examenPerfil.id]) {
                     var perfilHijo = window.App.perfiles[examenPerfil.id];
                     perfilHijo.examenes.forEach(function(examenHijo) {
-                        var override = catalogoMap[examenHijo.id];
-                        var merged = override ? Object.assign({}, examenHijo, override) : examenHijo;
-                        examenesPerfil.push(window.crearExamenDesdeCatalogo(merged));
+                    var override = catalogoMap[examenHijo.id];
+                    var merged = override ? Object.assign({}, examenHijo, override) : examenHijo;
+                    examenesPerfil.push(window.crearExamenDesdeCatalogo(merged, examenId));
                     });
                 } else {
                     var override = catalogoMap[examenPerfil.id];
                     var merged = override ? Object.assign({}, examenPerfil, override) : examenPerfil;
-                    examenesPerfil.push(window.crearExamenDesdeCatalogo(merged));
+                    examenesPerfil.push(window.crearExamenDesdeCatalogo(merged, examenId));
                 }
             });
             var nuevos = examenesPerfil.filter(function(e) { return !idsExistentes.includes(e.id); });
@@ -315,6 +338,10 @@
                     e.area = actualizado.area;
                     e.unidad = actualizado.unidad;
                     e.grupo = actualizado.grupo;
+                    if (examenId) {
+                        if (!e.perfilesOrigen) e.perfilesOrigen = [];
+                        if (!e.perfilesOrigen.includes(examenId)) e.perfilesOrigen.push(examenId);
+                    }
                 }
                 return e;
             }).concat(nuevos);

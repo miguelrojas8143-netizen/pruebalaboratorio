@@ -82,21 +82,31 @@
        // Función para agregar los exámenes seleccionados del perfil a la orden
       window.agregarExamenesPerfilSeleccionados = function() {
         var checkboxes = document.querySelectorAll('.perfil-examen-check:checked');
-      window.agregarExamenesPerfilSeleccionados = function() {
-        var checkboxes = document.querySelectorAll('.perfil-examen-check:checked');
         if (checkboxes.length === 0) {
             alert('Debe seleccionar al menos un examen del perfil.');
             return;
         }
+
+        var modalPerfilEl = document.getElementById('modalPerfil');
+        var perfilId = modalPerfilEl ? modalPerfilEl.getAttribute('data-perfil-id') : null;
 
         var catalogo = window.obtenerCatalogo();
         var catalogoMap = {};
         catalogo.forEach(function(e) { catalogoMap[e.id] = e; });
 
         var agregados = 0;
+        var acumulados = 0;
         checkboxes.forEach(function(chk) {
             var examenId = chk.value;
-            if (window.examenesOrden.some(function(e) { return e.id === examenId; })) return;
+            var existente = window.examenesOrden.find(function(e) { return e.id === examenId; });
+            if (existente) {
+                if (perfilId) {
+                    if (!existente.perfilesOrigen) existente.perfilesOrigen = [];
+                    if (!existente.perfilesOrigen.includes(perfilId)) existente.perfilesOrigen.push(perfilId);
+                }
+                acumulados++;
+                return;
+            }
 
             var datos = null;
             Object.keys(window.App.perfiles).forEach(function(perfilKey) {
@@ -108,17 +118,16 @@
             if (!datos) return;
             var override = catalogoMap[datos.id];
             var merged = override ? Object.assign({}, datos, override) : datos;
-            window.examenesOrden.push(window.crearExamenDesdeCatalogo(merged));
+            window.examenesOrden.push(window.crearExamenDesdeCatalogo(merged, perfilId));
             agregados++;
         });
 
-        if (agregados === 0) {
+        if (agregados === 0 && acumulados === 0) {
             alert('Los exámenes seleccionados ya están en la orden o no se pudieron agregar.');
             return;
         }
 
         if (window.pacienteActivo) {
-            var perfilId = document.getElementById('modalPerfil').getAttribute('data-perfil-id');
             if (perfilId && window.App.perfiles[perfilId]) {
                 if (!window.pacienteActivo.perfiles) {
                     window.pacienteActivo.perfiles = [];
@@ -134,6 +143,4 @@
         if (modal) modal.hide();
         window.renderizarTablaExamenes();
     };
-
-}
 })();
