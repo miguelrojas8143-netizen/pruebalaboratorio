@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title >Reporte de Resultados </title>
-
-
+    <title>Reporte de Resultados</title>
      <!-- Bootstrap CSS local -->
 <link href="../public/lib/bootstrap.min.css" rel="stylesheet">
 <!-- Bootstrap Icons local -->
@@ -25,16 +23,11 @@
 </nav>
     <div class="container mb-5">
         <div class="mb-3 no-imprimir d-flex gap-2">
-            <button class="btn btn-volver" onclick="window.location.href='orden.html?orden='+getOrden()">
+            <button class="btn btn-volver" onclick="window.location.href='orden.html?orden=' + getOrden()">
                 <i class="bi bi-arrow-left me-1"></i> Volver
             </button>
-            <button class="btn btn-outline-secondary" onclick="vistaPrevia()">
-                <i class="bi bi-eye me-1"></i> Vista Previa
-            </button>
-            
-
-            <button class="btn btn-outline-primary" onclick="descargarPDF()">
-                <i class="bi bi-printer me-1"></i>DESCARGAR PDF
+            <button class="btn btn-outline-primary" onclick="vistaPrevia()">
+                <i class="bi bi-printer me-1"></i> Imprimir
             </button>
         </div>
 
@@ -76,35 +69,30 @@
                </div>
             </div>
              <div>
-                <h6 class="reporte-seccion-titulo"> Resultados de Exámenes de Laboratorio</h6>
-            <div class="reporte-tabla">
-                <div id="contenedorResultados"></div>
-            </div>
-
+                 <h6 class="reporte-seccion-titulo">Resultados de Exámenes de Laboratorio</h6>
+             <div class="reporte-tabla">
+                 <div id="contenedorResultados"></div>
              </div>
-         
-            <div class="reporte-firma-impresion solo-imprimir">
-                <div class="firma-linea">Lcda. Andréina Rondón</div>
-                <div class="firma-profesional">
-                    Bioanalista Responsable<br>
-                    C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
-                </div>
-      
-            </div>
-            
-            <div id="bloqueHeces"></div>
-            <div id="bloqueUroanalisis"></div>
+              </div>
 
-<!--
-           <div class="reporte-firma no-imprimir">
-                <div class="firma-linea">Lcda. Andréina Rondón</div>
-                <div class="firma-profesional">
-                    Bioanalista Responsable<br>
-                    C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
-                </div>
-            </div>
--->
+             <div id="bloqueHeces"></div>
+             <div id="bloqueUroanalisis"></div>
 
+             <div class="reporte-firma-impresion solo-imprimir">
+                 <div class="firma-linea">Lcda. Andréina Rondón</div>
+                 <div class="firma-profesional">
+                     Bioanalista Responsable<br>
+                     C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
+                 </div>
+             </div>
+
+             <div class="reporte-firma no-imprimir">
+                 <div class="firma-linea">Lcda. Andréina Rondón</div>
+                 <div class="firma-profesional">
+                     Bioanalista Responsable<br>
+                     C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
+                 </div>
+             </div>
         </div> 
 <footer class="footer-developer">
     <div class="container">

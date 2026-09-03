@@ -157,11 +157,14 @@ window.App.perfiles.hematologia_completa = {
         { id: 'eosinofilos_num', nombre: 'Eosinófilos #', area: 'Hematología', unidad: 'x10³/µL', refMin: 0.0, refMax: 0.5, tipo: 'calculado', grupo: 'Absolutos' },
         { id: 'monocitos_num', nombre: 'Monocitos #', area: 'Hematología', unidad: 'x10³/µL', refMin: 0.2, refMax: 1.0, tipo: 'calculado', grupo: 'Absolutos' },
         { id: 'basofilos_num', nombre: 'Basófilos #', area: 'Hematología', unidad: 'x10³/µL', refMin: 0.0, refMax: 0.2, tipo: 'calculado', grupo: 'Absolutos' },
+      
+      
         { id: 'neutrofilos_por', nombre: 'Neutrófilos %', area: 'Hematología', unidad: '%', refMin: 0, refMax: 0, tipo: 'texto', grupo: 'Porcentuales' },
         { id: 'linfocitos_por', nombre: 'Linfocitos %', area: 'Hematología', unidad: '%', refMin: 0, refMax: 0, tipo: 'texto', grupo: 'Porcentuales' },
         { id: 'eosinofilos_por', nombre: 'Eosinófilos %', area: 'Hematología', unidad: '%', refMin: 0, refMax: 0, tipo: 'texto', grupo: 'Porcentuales' },
         { id: 'monocitos_por', nombre: 'Monocitos %', area: 'Hematología', unidad: '%', refMin: 0, refMax: 0, tipo: 'texto', grupo: 'Porcentuales' },
         { id: 'basofilos_por', nombre: 'Basofilos %', area: 'Hematología', unidad: '%', refMin: 0, refMax: 0, tipo: 'texto', grupo: 'Porcentuales' },
+       
         { id: 'globulos_rojos', nombre: 'Glóbulos Rojos', area: 'Hematología', unidad: 'x10⁶/µL', refMin: 4.0, refMax: 6.0, grupo: 'Hemograma' },
         { id: 'hemoglobina', nombre: 'Hemoglobina', area: 'Hematología', unidad: 'g/dL', refMin: 12.0, refMax: 17.0, grupo: 'Hemograma' },
         { id: 'hematocrito', nombre: 'Hematocrito', area: 'Hematología', unidad: '%', refMin: 36, refMax: 54, grupo: 'Hemograma' },

@@ -4,56 +4,56 @@
    Estilos de impresión propios de reporte.html. Se cargan SOLO
    en reporte.html (el único punto de impresión activo).
 
-   OPTIMIZACIÓN PARA PDF:
-   - Márgenes de página reservados para encabezado (148px) y firma (50px)
-   - Tablas completas se mantienen en una misma hoja cuando es posible
-   - Saltos automáticos entre áreas principales
-   - Filas individuales nunca se cortan entre páginas
+    OPTIMIZACIÓN PARA PDF:
+    - Márgenes de página reservados para encabezado (150px) y firma (65px) en TODAS las páginas
+    - Tablas permiten salto entre filas, filas individuales no se cortan
+    - Títulos de área/subárea se mantienen con su contenido (page-break-after: avoid)
+    - Heces y Urina se renderizan antes del footer fijo en el DOM
+    - Estilos Bootstrap sobrescritos en print para celdas legibles
    ============================================================ */
+   
 @media print {
+    /* Configuración de página para impresión en PDF */
     @page {
-        size: A4 portrait;
-        margin: 148px 12px 50px;
+        size: A4 portrait;/* Tamaño A4 vertical */
+         margin: 20px 12px 65px;/* Márgenes: superior 10px (header fijo compensado con .reporte-container padding-top), laterales 12px, inferior 65px (firma fija) */
     }
-    /* Estilos para impresión */
+
+
+    /* Configuración de estilo general para impresión */
     html, body {
-        margin: 0;
-        padding: 0;
-        height: auto;/* */
+        margin: 23px;/* Márgenes mínimos para impresión */
+        padding: 0;/* Sin relleno adicional */
+        height: auto;/* Altura automática para ajustarse al contenido */
+
 
     }
+
+
+    /* Estilo general del cuerpo del documento */
     body { 
         background: white;
         font-size: 10pt;
         line-height: 1.3;
     }
-
-
-/*
-    Ocultar elementos no deseados en impresión*/
- 
     .no-imprimir { display: none !important; }
     .footer-developer { display: none !important; }
-    
 
 
-    /* Mostrar encabezado y firma de impresión 
-    
-    */
+    /* Mostrar encabezado y firma de impresión */
     .solo-imprimir { display: block !important; }
 
-
-
+    
     /* Encabezado fijo en cada página */
     .reporte-encabezado-impresion {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        z-index: 1000;
+        z-index: 1000;/* Asegura que el encabezado esté por encima del contenido */
         background: white;
-        padding: 6px 15px;
-        border-bottom: 2px solid #000;
+        padding: 0px 15px;/* Ajusta el relleno según sea necesario */
+        border-bottom:2px solid #000;/* Línea de separación */
     }
 
     .reporte-encabezado-impresion .encabezado-superior {
@@ -160,12 +160,11 @@
     /* Contenedor principal sin sombra ni bordes */
     .reporte-container {
         box-shadow: none;
-        padding: 0 12px;
+        padding: 155px 12px 0;/* 155px top pisa el header fijo (~150px) + margen @page 10px */
         max-width: 100%;
         border-radius: 0;
         margin: 0;
     }
-
 
     /* ========================================
        REGLAS CRÍTICAS PARA SALTOS DE PÁGINA
@@ -173,9 +172,9 @@
     
     /* Cada área principal (Hematología, Química, etc.) intenta mantenerse completa */
     .reporte-area-grupo {
-        page-break-inside: avoid;
-        break-inside: avoid;
-        margin-bottom: 8px;
+        page-break-inside: avoid;/* Evita que el área se divida entre páginas */
+        break-inside: avoid;/* Evita que el área se divida entre páginas */
+       margin-bottom: 8px;/* Espacio inferior para separar áreas */
     }
 
     /* Las tablas de resultados permiten salto solo entre filas, no dentro de una fila */
@@ -183,9 +182,9 @@
     .reporte-tabla table,
     #bloqueHeces table,
     #bloqueUroanalisis table {
-        page-break-inside: avoid;
-        break-inside: avoid;
-        margin-bottom: 6px;
+        page-break-inside: avoid;/* Evita que la tabla se divida entre páginas */
+        break-inside: avoid;/* Evita que la tabla se divida entre páginas */
+       margin-bottom: 8px;/* Espacio inferior para separar tablas */
     }
 
     /* Cada fila de tabla se mantiene completa en una página */
@@ -247,112 +246,193 @@
         color: #000; 
         line-height: 1.4; 
     }
+     /* ========================================
+       ESTILOS DE TABLAS Y CONTENIDO
+       ======================================== */
+     .reporte-seccion-titulo { 
+         color: #0c0c0c; 
+         font-weight: 800; /* Negrita fuerte */
+         font-size: 1.05rem; /* Tamaño de fuente destacado */
+         text-align: center; /* Centrado */
+         text-transform: uppercase; /* Mayúsculas */
+         border-bottom: 1px solid #000; /* Línea de separación */
+         padding-bottom: 4px; /* Espacio debajo del título */
+         margin: 16px 0 10px; /* Márgenes superior e inferior */
+         page-break-after: avoid; /* Título con su contenido */
+     }
+    /* ========================================
+       ESTILOS DE TABLAS Y CONTENIDO
+       ======================================== */
+     .reporte-tabla { 
+         margin-bottom: 10px; 
+         margin: 0 0 10px;
+     }
+    
 
-    .reporte-seccion-titulo { 
-        color: #000; 
-        font-weight: 700; 
-        font-size: 0.85rem; 
-        text-align: center; 
-        text-transform: uppercase; 
-        border-bottom: 1px solid #000; 
-        padding-bottom: 1px; 
-        margin: 14px 0 8px; 
-    }
-    
-    .reporte-tabla { 
-        margin-bottom: 6px; 
-    }
-    
-    .reporte-area-titulo { 
-        color: #000; 
-        font-weight: 700; 
-        font-size: 0.82rem; 
-        text-align: center; 
-        text-transform: uppercase; 
-        border-bottom: 1px solid #000; 
-        padding-bottom: 1px; 
-        margin: 6px 0 2px; 
-    }
-    
-    .reporte-subarea-titulo { 
-        color: #000; 
-        font-weight: 600; 
-        font-size: 0.78rem; 
-        font-style: italic; 
-        margin-top: 2px; 
-        text-align: center; 
-    }
-    
+     .reporte-area-titulo { 
+         color: #000; 
+         font-weight: 700; 
+         font-size: 0.9rem; 
+         text-align: center; 
+         text-transform: uppercase; 
+         border-bottom: 1px solid #000; 
+         padding-bottom: 2px; 
+         margin: 12px 0 6px; 
+         page-break-after: avoid;
+     }
+     
+     .reporte-subarea-titulo { 
+         color: #000; 
+         font-weight: 600; 
+         font-size: 0.85rem; 
+         font-style: italic; 
+         margin-top: 6px; 
+         text-align: center; 
+         page-break-after: avoid;
+     }
+    /* ========================================
+       ESTILOS DE TABLAS Y CONTENIDO
+       ======================================== */
     .ref-adaptadas-badge {
-        grid-column: 1 / -1;
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: #000;
-        background-color: #e9e9e9;
-        border: 1px solid #000;
-        padding: 2px 8px;
-        border-radius: 3px;
-        margin-top: 4px;
-        text-align: left;
+        grid-column: 1 / -1;/* Ocupa toda la fila en el grid */
+        display: inline-block;/* Se muestra como un bloque en línea */
+        font-size: 0.62rem;/* Tamaño de fuente más pequeño */
+        font-weight: 700;/* Negrita */
+        color: #000;/* Color del texto negro */
+        background-color: #e9e9e9;/* Color de fondo gris */
+        border: 1px solid #000;/* Borde sólido */
+        padding: 2px 8px;/* Relleno */
+        border-radius: 3px;/* Esquinas redondeadas */
+        margin-top: 4px;/* Margen superior */
+        text-align: left;/* Alineación del texto */
     }
     
-    .reporte-tabla table { 
-        font-size: 0.74rem; 
-        width: 100%; 
-        border-collapse: collapse; 
-    }
-    
+
+    /* Estilos para la tabla en el reporte */
+     .reporte-tabla table { 
+         font-size: 0.74rem; /* Tamaño de fuente */
+         width: 100%; /* Ancho completo */
+         border-collapse: collapse; /* Colapsar bordes */
+     }
+    /* Estilos para los encabezados de tabla */
     .reporte-tabla th { 
-        font-weight: 700; 
-        padding: 2px 5px; 
-        border: 1px solid #000; 
-        color: #000; 
+        font-weight: 700;/* Negrita */
+        padding: 3px 6px; /* Relleno */
+        border: 1px solid #000; /* Borde */
+        color: #000; /* Color del texto */
     }
-    
+    /* Estilos para las celdas de tabla */
     .reporte-tabla td { 
-        padding: 2px 5px; 
-        border: 1px solid #ccc; 
-        color: #000; 
-    }
-    
-    .reporte-area-grupo {
-        margin-bottom: 4px;
+        padding: 3px 6px; /* Relleno */
+        border: 1px solid #ccc; /* Borde */
+        color: #000; /* Color del texto */
     }
 
-    #bloqueHeces { 
-        margin-bottom: 4px; 
-    }
-    
-    #bloqueHeces table { 
-        font-size: 0.74rem; 
-        width: 100%; 
-        border-collapse: collapse; 
-    }
-    
-    #bloqueHeces th { 
-        font-weight: 700; 
-        padding: 2px 5px; 
-        border: 1px solid #000; 
-        color: #000; 
-        background-color: #e9e9e9 !important; 
-    }
-    
-    #bloqueHeces td { 
-        padding: 2px 5px; 
-        border: 1px solid #ccc; 
-        color: #000; 
-    }
 
+  /* ========================================
+       ESTILOS DE TABLAS Y CONTENIDO
+       ======================================== */  
+     .reporte-area-grupo {
+         margin-bottom: 14px;
+     }
+
+
+
+      /* ========================================
+         BLOQUE HECES
+         ======================================== */
+     #bloqueHeces { 
+         margin-bottom: 12px; 
+     }
+     /* Estilos de tabla específicos para Heces */
+     #bloqueHeces table { 
+         font-size: 0.74rem;
+         width: 100%; 
+         border-collapse: collapse;
+     }
+
+     /* Cambiar el color de fondo de los encabezados de tabla en Heces */
+     #bloqueHeces th { 
+         font-weight: 700;
+         padding: 3px 6px;
+         border: 1px solid #000;
+         color: #000;
+         background-color: #e9e9e9 !important;
+     }
+
+     #bloqueHeces td { 
+         padding: 3px 6px; 
+         border: 1px solid #ccc; 
+         color: #000; 
+     }
+
+     /* ========================================
+         BLOQUE URÓLISIS (estilos de print)
+         ======================================== */
+     #bloqueUroanalisis {
+         margin-bottom: 12px;
+     }
+     #bloqueUroanalisis table {
+         font-size: 0.74rem;
+         width: 100%;
+         border-collapse: collapse;
+     }
+     #bloqueUroanalisis th {
+         font-weight: 700;
+         padding: 3px 6px;
+         border: 1px solid #000;
+         color: #000;
+         background-color: #e9e9e9 !important;
+     }
+     #bloqueUroanalisis td {
+         padding: 3px 6px;
+         border: 1px solid #ccc;
+         color: #000;
+     }
+
+
+     /* ========================================
+        ANULACIÓN DE ESTILOS BOOTSTRAP EN IMPRESIÓN
+        ======================================== */
+     /* Bootstrap .table-sm reduce padding a 0.25rem (≈3px) en pantalla;
+        en print se necesita padding >= 6px para celdas legibles. */
+      #bloqueHeces .table-sm td,
+      #bloqueHeces .table-sm th,
+      #bloqueHeces .table-bordered td,
+      #bloqueHeces .table-bordered th,
+      #bloqueUroanalisis .table-sm td,
+      #bloqueUroanalisis .table-sm th,
+      #bloqueUroanalisis .table-bordered td,
+      #bloqueUroanalisis .table-bordered th,
+      .reporte-tabla .table-sm td,
+      .reporte-tabla .table-sm th,
+      .reporte-tabla .table-bordered td,
+      .reporte-tabla .table-bordered th {
+          padding: 4px 6px !important;
+      }
+
+      /* Anular sombras y bordes de Bootstrap que no aportan en PDF */
+      .reporte-tabla .table,
+      .reporte-tabla .table-bordered,
+      #bloqueHeces .table,
+      #bloqueHeces .table-bordered,
+      #bloqueUroanalisis .table,
+      #bloqueUroanalisis .table-bordered {
+          box-shadow: none;
+          border: none;
+      }
+
+     /* Estilos para la firma en impresión */
     .reporte-firma-impresion { 
         padding: 2px 12px 6px; 
     }
     
-    .reporte-firma-impresion .firma-linea { 
-        width: 200px; 
-        margin: 22px auto 2px; 
-        padding-top: 3px; 
-        font-size: 0.7rem; 
-    }
+     .reporte-firma-impresion .firma-linea { 
+         width: 200px; 
+         margin: 16px auto 2px; 
+         padding-top: 3px; 
+         font-size: 0.72rem; 
+     }
     
     .reporte-firma-impresion .firma-profesional { 
         font-size: 0.6rem; 

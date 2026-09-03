@@ -476,7 +476,6 @@
             alert('No hay exámenes en la orden para guardar.');
             return;
         }
-        // Filtrar exámenes con resultados válidos
         var examenesConResultado = window.examenesOrden.filter(function(e) {
             if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipo === 'multiselect_cantidad') {
                 try {
@@ -488,7 +487,6 @@
             }
             return String(e.resultado || '').trim() !== '';
         });
-        
         var pacientes = window.obtenerPacientes();
         var index = pacientes.findIndex(function(p) { return p.id === window.pacienteActivo.id; });
         if (index === -1) {

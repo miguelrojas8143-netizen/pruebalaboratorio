@@ -163,6 +163,7 @@ input[type=number] { -moz-appearance: textfield; }
     margin-top: 8px;
 }
 
+
 /* Datos del paciente en líneas "Etiqueta: valor" */
 .reporte-paciente {
     margin-bottom: 16px;

@@ -377,8 +377,8 @@
        Rama A unificada: lee del payload con page-break-inside: auto. */
     function renderTablaInline(rows) {
         var esSecrecionVaginal = rows.length > 0 && rows[0].esSecrecionVaginal;
-        var html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid;">';
-        html += '<thead><tr style="page-break-inside: avoid; break-inside: avoid;"><th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 35%; text-align: left;">Examen</th>';
+        var html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 12px; page-break-inside: auto; break-inside: auto;">';
+        html += '<thead style="page-break-after: avoid;"><tr style="page-break-inside: avoid; break-inside: avoid;"><th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 35%; text-align: left;">Examen</th>';
         if (esSecrecionVaginal) {
             html += '<th style="font-weight: bold; padding: 4px 6px; border: 1px solid #000; background: #e9e9e9; width: 65%; text-align: left;">Resultado</th>';
         } else {
@@ -405,43 +405,40 @@
         var h = payload.header;
         var html = '<div style="font-family: Arial, Helvetica, sans-serif; color: #000; background: #fff; padding: 30px 40px; font-size: 10pt; line-height: 1.3;">';
 
-        /* Encabezado del laboratorio con logo */
-        html += '<div style="display: flex; align-items: flex-start; gap: 20px; padding-bottom: 10px; border-bottom: 2px solid #000; margin-bottom: 14px;">';
-        html += '<div style="flex-shrink: 0;">';
-        html += '<img src="../public/imagen/logo1.png" alt="logo" style="max-height: 100px; max-width: 100px; object-fit: contain;">';
+        /* Encabezado del laboratorio */
+        html += '<div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px;">';
+        html += '<div style="font-size: 1.1rem; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</div>';
+        html += '<div style="font-size: 0.7rem; line-height: 1.35;">Calle Principal Casa N° S/N Barrio Paéz. El Nula, Estado Apure, Venezuela<br>RIF: J-412745735 &nbsp;|&nbsp; Teléfono: 0416 4740671</div>';
         html += '</div>';
-        html += '<div style="flex: 1; text-align: center;">';
-        html += '<div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</div>';
-        html += '<div style="font-size: 0.62rem; line-height: 1.35;">Calle Principal Casa N° S/N Barrio Paéz. El Nula, Estado Apure, Venezuela<br>RIF: J-412745735 &nbsp;|&nbsp; Teléfono: 0416 4740671</div>';
-        html += '</div>';
-        html += '<div style="font-size: 0.62rem; text-align: right; white-space: nowrap; flex-shrink: 0;">';
-        html += '<strong>Fecha de Emisión:</strong> ' + escapeHtml(h.fechaEmision);
-        html += '</div>';
-        html += '</div>';
+          html += '<br>';
+              html += '<br>';
+          
 
-        /* Datos del paciente en grid */
-        html += '<div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px 15px; margin-bottom: 14px; padding-top: 4px; border-top: 1px solid #ccc; font-size: 0.78rem;">';
+        /* Datos del paciente */
+        html += '<div style="margin-bottom: 14px; font-size: 0.78rem;">';
         html += '<div><strong>Nombre y Apellido:</strong> ' + escapeHtml(h.nombre) + '</div>';
-        html += '<div><strong>Cédula de Identidad:</strong> ' + escapeHtml(h.cedula) + '</div>';
+        html += '<div><strong>Cédula:</strong> ' + escapeHtml(h.cedula) + '</div>';
         html += '<div><strong>Edad:</strong> ' + escapeHtml(h.edad) + '</div>';
         html += '<div><strong>Sexo:</strong> ' + escapeHtml(h.sexo) + '</div>';
-        html += '<div><strong>Teléfono de Contacto:</strong> ' + escapeHtml(h.telefono) + '</div>';
+        html += '<div><strong>Teléfono:</strong> ' + escapeHtml(h.telefono) + '</div>';
         html += '<div><strong>Orden N°:</strong> ' + escapeHtml(h.orden) + '</div>';
-        if (h.perfiles.length > 0) html += '<div style="grid-column: 1 / -1;"><strong>Perfil(es):</strong> ' + escapeHtml(h.perfiles.join(', ')) + '</div>';
-        if (payload.refAdaptadas) html += '<div style="grid-column: 1 / -1;"><strong>Referencias adaptadas:</strong> (' + payload.categoriaRef + ')</div>';
+        if (h.perfiles.length > 0) html += '<div><strong>Perfil(es):</strong> ' + escapeHtml(h.perfiles.join(', ')) + '</div>';
+        if (payload.refAdaptadas) html += '<div><strong>Referencias adaptadas:</strong> (' + payload.categoriaRef + ')</div>';
         html += '</div>';
+       
 
-        /* Título de resultados */
-        html += '<h2 style="font-size: 0.95rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 4px; margin: 20px 0 12px;">Resultados de Exámenes de Laboratorio</h2>';
+
+         /* Título de resultados */
+         html += '<h2 style="font-size: 1.1rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 4px; margin: 22px 0 12px;">Resultados de Exámenes de Laboratorio</h2>';
 
         /* Áreas de resultados */
         payload.secciones.forEach(function(seccion) {
-            html += '<h3 style="font-size: 0.85rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 12px 0 8px;">' + seccion.nombre + '</h3>';
+            html += '<h3 style="font-size: 0.9rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px; page-break-after: avoid;">' + seccion.nombre + '</h3>';
             seccion.subareas.forEach(function(sub) {
-                if (sub.titulo) html += '<h4 style="font-size: 0.78rem; font-weight: 600; font-style: italic; margin: 4px 0 2px; text-align: center;">' + sub.titulo + '</h4>';
+                if (sub.titulo) html += '<h4 style="font-size: 0.85rem; font-weight: 600; font-style: italic; margin: 6px 0 4px; text-align: center; page-break-after: avoid;">' + sub.titulo + '</h4>';
                 if (sub.rows) html += renderTablaInline(sub.rows);
                 if (sub.notas) {
-                    html += '<h4 style="font-size: 0.78rem; font-weight: 600; font-style: italic; margin: 4px 0 2px; text-align: center;">Notas y Observaciones</h4>';
+                    html += '<h4 style="font-size: 0.85rem; font-weight: 600; font-style: italic; margin: 6px 0 4px; text-align: center; page-break-after: avoid;">Notas y Observaciones</h4>';
                     html += '<div style="background: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; margin-bottom: 6px; white-space: pre-wrap; font-size: 0.78rem;">' + escapeHtml(sub.notas) + '</div>';
                 }
             });
@@ -450,8 +447,8 @@
         /* Heces */
         if (payload.heces) {
             var d = payload.heces.datos;
-            html += '<h3 style="font-size: 0.85rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 12px 0 8px; page-break-after: avoid;">Examen de Heces</h3>';
-            html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 10px; page-break-inside: avoid;"><tbody>';
+             html += '<h3 style="font-size: 0.9rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px; page-break-after: avoid;">Examen de Heces</h3>';
+             html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 12px; page-break-inside: auto; break-inside: auto;"><tbody>';
             function hecesRow(label, val) {
                 html += '<tr style="page-break-inside: avoid;"><td style="font-weight: 600; padding: 4px 6px; border: 1px solid #ccc; width: 40%;">' + label + '</td><td style="padding: 4px 6px; border: 1px solid #ccc;">' + (val || '-') + '</td></tr>';
             }
@@ -472,11 +469,11 @@
 
         /* Uroanálisis */
         if (payload.uro) {
-            html += '<h3 style="font-size: 0.85rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 12px 0 8px; page-break-after: avoid;">Examen de Orina / Uroanálisis</h3>';
-            payload.uro.ordenGrupos.forEach(function(grupo) {
-                if (!payload.uro.grupos[grupo]) return;
-                html += '<h4 style="font-size: 0.78rem; font-weight: 600; font-style: italic; margin: 4px 0 2px; text-align: center; page-break-after: avoid;">' + grupo + '</h4>';
-                html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 10px; page-break-inside: avoid;"><tbody>';
+             html += '<h3 style="font-size: 0.9rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px; page-break-after: avoid;">Examen de Orina / Uroanálisis</h3>';
+             payload.uro.ordenGrupos.forEach(function(grupo) {
+                 if (!payload.uro.grupos[grupo]) return;
+                 html += '<h4 style="font-size: 0.85rem; font-weight: 600; font-style: italic; margin: 6px 0 4px; text-align: center; page-break-after: avoid;">' + grupo + '</h4>';
+                 html += '<table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 12px; page-break-inside: auto; break-inside: auto;"><tbody>';
                 payload.uro.grupos[grupo].forEach(function(f) {
                     var val = payload.uro.datos[f.id] || '-';
                     if (val === '') val = '-';
@@ -511,7 +508,7 @@
         }
 
         if (typeof html2pdf === 'undefined') {
-            window.print();
+            window.vistaPrevia();
             return;
         }
 
@@ -552,19 +549,19 @@
                 orientation: 'portrait',
                 compress: true
             },
-            pagebreak: { 
-                mode: ['avoid-all', 'css', 'legacy'],
-                before: '.reporte-area-grupo, #bloqueHeces, #bloqueUroanalisis',
-                after: '.reporte-area-titulo, .reporte-subarea-titulo',
-                avoid: 'tr, tbody, .reporte-tabla'
-            }
+             pagebreak: { 
+                 mode: ['css', 'legacy'],
+                 before: '.reporte-area-grupo',
+                 after: '.reporte-area-titulo, .reporte-subarea-titulo',
+                 avoid: 'tr, tbody'
+             }
         }).save().then(function() {
             if (div.parentNode) document.body.removeChild(div);
         }).catch(function(err) {
             console.error('Error generando PDF:', err);
             if (div.parentNode) document.body.removeChild(div);
             // Fallback a impresión nativa si falla html2pdf
-            window.print();
+            window.vistaPrevia();
         });
     }
 
