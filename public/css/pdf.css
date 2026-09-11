@@ -32,8 +32,8 @@
 
 /* El Uroanálisis comienza en una hoja nueva para no dejar su título aislado. */
 .pdf-uroanalisis {
-    page-break-before: always;
-    break-before: page;
+    page-break-before: auto;
+    break-before: auto;
 }
 
 /* Mantiene el título unido al primer grupo que presenta sus resultados. */
@@ -304,8 +304,8 @@
 }
 
 .pdf-firma-fija {
-    display: block !important;
-    position: fixed !important;
+    display: block;
+    position: fixed;
     left: 0;
     right: 0;
     bottom: 5mm;
@@ -700,6 +700,10 @@ sup {
         margin-top: 2px;
     }
 
+    .reporte-firma-impresion {
+        display: none !important;
+    }
+
     .reporte-area-grupo,
     .pdf-bloque,
     .pdf-especial {
@@ -737,8 +741,8 @@ sup {
     }
 
     #bloqueUroanalisis {
-        page-break-before: always;
-        break-before: page;
+        page-break-before: auto;
+        break-before: auto;
     }
 
 
