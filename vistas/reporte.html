@@ -14,6 +14,7 @@
 <link href="../public/lib/select2-bootstrap-5-theme.min.css" rel="stylesheet">
 <link href="../public/css/styles.css" rel="stylesheet">
 <link href="../public/css/pdf.css" rel="stylesheet">
+
 </head>
 <body>
 <nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
@@ -41,6 +42,10 @@
         </div>
 
              <div id="area-imprimir" class="reporte-container">
+            <table class="reporte-tabla-maestra">
+                <thead>
+                    <tr>
+                        <td>
             <div class="reporte-encabezado-impresion solo-imprimir">
                 <div class="encabezado-superior">
                     <div class="encabezado-logo">
@@ -54,7 +59,7 @@
                         </div>
                     </div>
                     <div class="encabezado-fecha">
-                         <strong>Fecha de Emisión:</strong> <span id="fechaEmision"></span>
+                        <strong>Fecha de Emisión:</strong> <span id="fechaEmision"></span>
                     </div>
                 </div>
                 <div class="encabezado-paciente ">
@@ -68,14 +73,31 @@
                     <div id="reporteRefAdaptadas" class="ref-adaptadas-badge" style="display:none;"></div>
                </div>
             </div>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
              <div>
                  <h6 class="reporte-seccion-titulo">Resultados de Exámenes de Laboratorio</h6>
              <div class="reporte-tabla">
+                 
                  <div id="contenedorResultados"></div>
              </div>
-              </div>
 
+              </div>
+          
              <div id="bloqueHeces"></div>
+
+             <div class="reporte-firma-primera solo-imprimir">
+                 <div class="firma-linea">Lcda. Andréina Rondón</div>
+                 <div class="firma-profesional">
+                     Bioanalista Responsable<br>
+                     C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
+                 </div>
+             </div>
+
              <div id="bloqueUroanalisis"></div>
 
              <div class="reporte-firma-impresion solo-imprimir">
@@ -93,6 +115,10 @@
                      C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
                  </div>
              </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div> 
 <footer class="footer-developer">
     <div class="container">
@@ -103,15 +129,6 @@
                     <p class="mb-0">ING: Miguel Antonio Rojas - Sistema de Gestión de Exámenes Médicos</p>
                      <small><i class="bi bi-envelope me-1"></i> miguelrojas8143@gmail.com</small>
                       </div>
-
-               <!--<div class="col-md-4 text-md-end">
-                    <div class="developer-info">
-                        <strong>ING: Miguel Antonio Rojas</strong><br>
-                      <small class="text-muted">Desarrollador</small><br>
-                    </div>
-                    </div>
-                   -->
-
             </div>
         </div>
     </div>
