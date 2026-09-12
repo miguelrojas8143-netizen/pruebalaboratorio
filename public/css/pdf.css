@@ -14,8 +14,8 @@
 
 }
 /* ============================================================
-   2. REGLAS DE SALTO DE PÁGINA PARA HTML2PDF.JS
-   (Deben estar FUERA de @media print para que html2pdf.js las vea)
+    2. REGLAS DE SALTO DE PÁGINA PARA LA VISTA HTML IMPRIMIBLE
+    (Se conservan para window.print() y la vista previa.)
    ============================================================ */
 
 /* Bloques de contenido: áreas de exámenes */

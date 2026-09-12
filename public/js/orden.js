@@ -178,7 +178,16 @@
             tbody.innerHTML = '<tr id="filaVaciaExamenes"><td colspan="5" class="sin-examenes"><i class="bi bi-inbox display-4"></i><p class="mt-2">No hay exámenes agregados. Use el selector de la izquierda.</p></td></tr>';
             return;
         }
+        var grupoAnterior = null;
         window.examenesOrden.forEach(function(examen, index) {
+            var grupoActual = examen.grupoPerfil || 'Exámenes individuales';
+            if (grupoActual !== grupoAnterior) {
+                var filaGrupo = document.createElement('tr');
+                filaGrupo.className = 'grupo-examen-row';
+                filaGrupo.innerHTML = '<td colspan="5"><i class="bi bi-folder2-open me-2"></i>' + grupoActual + '</td>';
+                tbody.appendChild(filaGrupo);
+                grupoAnterior = grupoActual;
+            }
             var fila = document.createElement('tr');
             fila.className = 'examen-row';
             fila.setAttribute('data-examen-id', examen.id);
@@ -312,6 +321,9 @@
                 }
             });
             var nuevos = examenesPerfil.filter(function(e) { return !idsExistentes.includes(e.id); });
+            nuevos.forEach(function(examen) {
+                examen.grupoPerfil = perfil.nombre;
+            });
             window.examenesOrden = window.examenesOrden.map(function(e) {
                 var actualizado = examenesPerfil.find(function(n) { return n.id === e.id; });
                 if (actualizado) {

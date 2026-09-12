@@ -108,7 +108,10 @@
             if (!datos) return;
             var override = catalogoMap[datos.id];
             var merged = override ? Object.assign({}, datos, override) : datos;
-            window.examenesOrden.push(window.crearExamenDesdeCatalogo(merged));
+            var nuevoExamen = window.crearExamenDesdeCatalogo(merged);
+            var perfilSeleccionado = document.getElementById('modalPerfil').getAttribute('data-perfil-id');
+            nuevoExamen.grupoPerfil = window.App.perfiles[perfilSeleccionado] ? window.App.perfiles[perfilSeleccionado].nombre : 'Exámenes del perfil';
+            window.examenesOrden.push(nuevoExamen);
             agregados++;
         });
 

@@ -1,7 +1,6 @@
 /**
  * Módulo de generación / impresión del PDF del reporte.
- * Versión corregida: usa <div> con display:table en lugar de <table>
- * para que html2pdf.js respete los saltos de página.
+ * La descarga usa jsPDF + jspdf-autotable; la vista previa conserva HTML/CSS.
  */
 (function() {
     'use strict';
@@ -81,6 +80,40 @@
         return examenes.map(clasificarFila);
     }
 
+    function expandirExamenesDetallados(examenes) {
+        var resultado = [];
+        examenes.forEach(function(examen) {
+            var detalle = window.App && window.App.examenesDetallados
+                ? window.App.examenesDetallados[examen.id]
+                : null;
+            if (examen.tipo !== 'perfil' || !detalle || !detalle.items || !detalle.items.length) {
+                resultado.push(examen);
+                return;
+            }
+
+            var valores = {};
+            try {
+                valores = JSON.parse(examen.resultado || '{}');
+            } catch (e) {}
+
+            detalle.items.forEach(function(item) {
+                resultado.push({
+                    id: item.id,
+                    nombre: item.nombre,
+                    area: item.area || examen.area || 'General',
+                    unidad: item.unidad || '',
+                    refMin: item.refMin,
+                    refMax: item.refMax,
+                    tipo: item.tipo === 'calculado' ? 'numerico' : (item.tipo || 'numerico'),
+                    resultado: valores[item.id] == null ? '' : String(valores[item.id]),
+                    grupoPerfil: examen.grupoPerfil,
+                    grupo: item.grupo || examen.nombre
+                });
+            });
+        });
+        return resultado;
+    }
+
     /* ---------- Construcción del payload unificado ---------- */
     function buildPayload(paciente) {
         var examenes = JSON.parse(JSON.stringify(paciente.examenes || []));
@@ -112,6 +145,8 @@
                 });
             }
         }
+
+        examenesNormales = expandirExamenesDetallados(examenesNormales);
 
         var refAdaptadas = !!paciente.refAdaptadas;
         var categoriaRef = (paciente.edad !== null && paciente.edad !== undefined && paciente.edad !== '' && paciente.edad < 18) ? 'pedagógicas' : 'adultas';
@@ -344,214 +379,14 @@
         if (bloqueUro) bloqueUro.innerHTML = renderUroDom(payload.uro);
     }
 
-    /* ============================================================
-       HELPERS para "tablas" con <div> (html2pdf-friendly)
-       Usamos display:table/table-row/table-cell en <div>s
-       para que html2pdf.js maneje bien los saltos de página.
-       ============================================================ */
-    var TD_BORDER = 'border: 1px solid #ccc;';
-    var TH_BORDER = 'border: 1px solid #000;';
-    var CELL_PAD = 'padding: 4px 6px;';
-
-    function divTableOpen() {
-        return '<div style="display: table; width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 12px;">';
-    }
-    function divTableClose() { return '</div>'; }
-
-    function divTheadOpen() {
-        return '<div style="display: table-header-group; font-weight: bold;">';
-    }
-    function divTheadClose() { return '</div>'; }
-
-    function divTbodyOpen() {
-        return '<div style="display: table-row-group;">';
-    }
-    function divTbodyClose() { return '</div>'; }
-
-    function divTrOpen() {
-        return '<div style="display: table-row; page-break-inside: avoid; break-inside: avoid;">';
-    }
-    function divTrClose() { return '</div>'; }
-
-    function divTh(content, widthPct, align) {
-        var w = widthPct ? 'width: ' + widthPct + ';' : '';
-        var a = align ? 'text-align: ' + align + ';' : 'text-align: left;';
-        return '<div style="display: table-cell; ' + CELL_PAD + ' ' + TH_BORDER + ' background: #e9e9e9; ' + w + ' ' + a + '">' + content + '</div>';
-    }
-
-    function divTd(content, clase, align, widthPct) {
-        var w = widthPct ? 'width: ' + widthPct + ';' : '';
-        var a = align ? 'text-align: ' + align + ';' : '';
-        var c = clase ? 'class="' + clase + '"' : '';
-        return '<div ' + c + ' style="display: table-cell; ' + CELL_PAD + ' ' + TD_BORDER + ' ' + w + ' ' + a + '">' + content + '</div>';
-    }
-
-    /* ---------- Render inline (html2pdf) con DIVs ---------- */
-    function renderTablaInline(rows) {
-        var esSecrecionVaginal = rows.length > 0 && rows[0].esSecrecionVaginal;
-        var html = divTableOpen();
-
-        /* Encabezado */
-        html += divTheadOpen();
-        html += divTrOpen();
-        html += divTh('Examen', '35%');
-        if (esSecrecionVaginal) {
-            html += divTh('Resultado', '65%');
-        } else {
-            html += divTh('Resultado', '20%', 'center');
-            html += divTh('Unidad', '15%', 'center');
-            html += divTh('Valores de Referencia', '30%', 'center');
-        }
-        html += divTrClose();
-        html += divTheadClose();
-
-        /* Cuerpo */
-        html += divTbodyOpen();
-        rows.forEach(function(row) {
-            html += divTrOpen();
-            html += divTd('<strong>' + row.nombre + '</strong>', '', '', '35%');
-            if (esSecrecionVaginal) {
-                html += divTd(row.texto, row.clase, 'center', '65%');
-            } else {
-                html += divTd(row.texto, row.clase, 'center', '20%');
-                html += divTd(row.unidad, '', 'center', '15%');
-                html += divTd(row.refTexto, '', 'center', '30%');
-            }
-            html += divTrClose();
-        });
-        html += divTbodyClose();
-        html += divTableClose();
-        return html;
-    }
-
-    function buildInlineHtml(payload) {
-        var h = payload.header;
-        var html = '<div style="font-family: Arial, Helvetica, sans-serif; color: #000; background: #fff; padding: 30px 40px; font-size: 10pt; line-height: 1.3;">';
-
-        /* Encabezado del laboratorio */
-        html += '<div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px;">';
-        html += '<div style="font-size: 1.1rem; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</div>';
-        html += '<div style="font-size: 0.7rem; line-height: 1.35;">Calle Principal Casa N° S/N Barrio Paéz. El Nula, Estado Apure, Venezuela<br>RIF: J-412745735 &nbsp;|&nbsp; Teléfono: 0416 4740671</div>';
-        html += '</div>';
-        html += '<br><br>';
-
-        /* Datos del paciente */
-        html += '<div style="margin-bottom: 14px; font-size: 0.78rem;">';
-        html += '<div><strong>Nombre y Apellido:</strong> ' + escapeHtml(h.nombre) + '</div>';
-        html += '<div><strong>Cédula:</strong> ' + escapeHtml(h.cedula) + '</div>';
-        html += '<div><strong>Edad:</strong> ' + escapeHtml(h.edad) + '</div>';
-        html += '<div><strong>Sexo:</strong> ' + escapeHtml(h.sexo) + '</div>';
-        html += '<div><strong>Teléfono:</strong> ' + escapeHtml(h.telefono) + '</div>';
-        html += '<div><strong>Orden N°:</strong> ' + escapeHtml(h.orden) + '</div>';
-        if (h.perfiles.length > 0) html += '<div><strong>Perfil(es):</strong> ' + escapeHtml(h.perfiles.join(', ')) + '</div>';
-        if (payload.refAdaptadas) html += '<div><strong>Referencias adaptadas:</strong> (' + payload.categoriaRef + ')</div>';
-        html += '</div>';
-
-        /* Título de resultados */
-        html += '<h2 style="font-size: 1.1rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 4px; margin: 22px 0 12px;">Resultados de Exámenes de Laboratorio</h2>';
-
-        /* Áreas de resultados */
-        payload.secciones.forEach(function(seccion) {
-            html += '<div class="pdf-bloque">';
-            html += '<h3 style="font-size: 0.9rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px;">' + seccion.nombre + '</h3>';
-            seccion.subareas.forEach(function(sub) {
-                if (sub.titulo) html += '<h4 style="font-size: 0.85rem; font-weight: 600; font-style: italic; margin: 6px 0 4px; text-align: center;">' + sub.titulo + '</h4>';
-                if (sub.rows) html += renderTablaInline(sub.rows);
-                if (sub.notas) {
-                    html += '<h4 style="font-size: 0.85rem; font-weight: 600; font-style: italic; margin: 6px 0 4px; text-align: center;">Notas y Observaciones</h4>';
-                    html += '<div style="background: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; margin-bottom: 6px; white-space: pre-wrap; font-size: 0.78rem;">' + escapeHtml(sub.notas) + '</div>';
-                }
-            });
-            html += '</div>';
-        });
-
-        /* Heces */
-        if (payload.heces) {
-            var d = payload.heces.datos;
-            html += '<div class="pdf-bloque pdf-especial">';
-            html += '<h3 style="font-size: 0.9rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px;">Examen de Heces</h3>';
-            html += divTableOpen();
-            html += divTbodyOpen();
-            function hecesRow(label, val) {
-                html += divTrOpen();
-                html += divTd('<strong>' + label + '</strong>', '', '', '40%');
-                html += divTd(val || '-', '');
-                html += divTrClose();
-            }
-            hecesRow('Moco Fecal', d.mocoFecal);
-            hecesRow('pH Heces', d.phHeces);
-            hecesRow('Glucosa Heces', d.glucosaHeces);
-            hecesRow('Leucocitos PMN', d.leucocitosPMN);
-            hecesRow('Leucocitos Mononucleados', d.leucocitosMononucleados);
-            html += divTrOpen();
-            html += divTd('<strong>Sustancias Reductoras</strong>', '', '', '40%');
-            html += divTd(d.sustanciasReductoras ? d.sustanciasReductoras + ' (' + window.interpretarSustanciasReductoras(d.sustanciasReductoras).texto + ')' : '-', '');
-            html += divTrClose();
-            hecesRow('Consistencia', d.consistencia);
-            hecesRow('Color Heces', d.colorHeces);
-            hecesRow('Directo Concentración', d.directoConcentracion);
-            hecesRow('Entamoeba coli', d.entamoebaColi);
-            hecesRow('Restos Alimentos', d.restosAlimentos);
-            hecesRow('Flora Bacteriana', d.floraBacteriana);
-            html += divTbodyClose();
-            html += divTableClose();
-            html += '</div>';
-        }
-
-        /* Firma compacta al cierre de la primera hoja. */
-        html += '<div class="reporte-firma-primera pdf-firma-primera">';
-        html += '<div class="firma-linea">Lcda. Andréina Rondón</div>';
-        html += '<div class="firma-profesional">Bioanalista Responsable<br>C.B. 17.774 | MPPS 20.913</div>';
-        html += '</div>';
-
-        /* Uroanálisis */
-        if (payload.uro) {
-            html += '<div class="pdf-bloque pdf-especial pdf-uroanalisis">';
-            var primerGrupoUro = true;
-            payload.uro.ordenGrupos.forEach(function(grupo) {
-                if (!payload.uro.grupos[grupo]) return;
-                if (primerGrupoUro) {
-                    html += '<div class="pdf-titulo-contenido">';
-                    html += '<h3 style="font-size: 0.9rem; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px;">Examen de Orina / Uroanálisis</h3>';
-                }
-                html += '<h4 style="font-size: 0.85rem; font-weight: 600; font-style: italic; margin: 6px 0 4px; text-align: center;">' + grupo + '</h4>';
-                html += divTableOpen();
-                html += divTbodyOpen();
-                payload.uro.grupos[grupo].forEach(function(f) {
-                    var val = payload.uro.datos[f.id] || '-';
-                    if (val === '') val = '-';
-                    html += divTrOpen();
-                    html += divTd('<strong>' + f.nombre + '</strong>', '', '', '40%');
-                    html += divTd(val, '');
-                    html += divTrClose();
-                });
-                html += divTbodyClose();
-                html += divTableClose();
-                if (primerGrupoUro) {
-                    html += '</div>';
-                    primerGrupoUro = false;
-                }
-            });
-            html += '</div>';
-        }
-
-        /* Firma */
-        var f = payload.firma;
-        html += '<div class="reporte-firma-impresion pdf-firma-fija" style="margin-top: 30px; text-align: center; font-size: 0.78rem;">';
-        html += '<div style="border-top: 1px solid #000; width: 220px; margin: 28px auto 3px; padding-top: 4px; text-align: center; font-weight: 700; font-size: 0.72rem;">' + f.nombre + '</div>';
-        html += '<div style="text-align: center; font-size: 0.62rem; line-height: 1.3;">' + f.cargo + '<br>C.B. 17.774 | MPPS 20.913</div>';
-        html += '</div>';
-
-        html += '</div>';
-        return html;
-    }
+    /*
+     * Generacion HTML para html2pdf.js desactivada.
+     * El PDF se genera exclusivamente con jsPDF + jspdf-autotable.
+     * La vista previa del reporte usa renderDom() directamente.
+     */
 
     /* ---------- Acciones ---------- */
-    function vistaPrevia() {
-        window.print();
-    }
-
-    function descargarPDF() {
+    async function generarPDF(accion) {
         var orden = new URLSearchParams(window.location.search).get('orden') || '';
         var paciente = window.obtenerPacientes().find(function(p) { return p.orden === orden; });
         if (!paciente) {
@@ -559,9 +394,20 @@
             return;
         }
 
-        if (typeof html2pdf === 'undefined') {
-            window.vistaPrevia();
+        if (!window.jspdf || !window.jspdf.jsPDF || !window.jspdf.jsPDF.API.autoTable) {
+            alert('No se pudo cargar el generador PDF. Revise las librerías jsPDF y autoTable.');
             return;
+        }
+
+        var ventanaImpresion = null;
+        if (accion === 'imprimir') {
+            ventanaImpresion = window.open('', '_blank');
+            if (!ventanaImpresion) {
+                alert('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
+                return;
+            }
+            ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando documento para imprimir...</p>');
+            ventanaImpresion.document.close();
         }
 
         var nombreSanitizado = (paciente.orden || paciente.nombre || 'reporte')
@@ -570,47 +416,211 @@
             .replace(/_+/g, '_')
             .substring(0, 100);
 
-        var payload = buildPayload(paciente);
-        var html = buildInlineHtml(payload);
+        var logoData = await cargarLogoPDF();
+        var doc = construirPDF(buildPayload(paciente), logoData);
+        if (!doc) {
+            if (ventanaImpresion) ventanaImpresion.close();
+            return;
+        }
 
-        var div = document.createElement('div');
-        div.innerHTML = html;
-        document.body.appendChild(div);
+        if (accion === 'imprimir') {
+            doc.autoPrint();
+            ventanaImpresion.location.href = doc.output('bloburl');
+        } else {
+            doc.save(nombreSanitizado + '.pdf');
+        }
+    }
 
-        html2pdf().from(div).set({
-            filename: nombreSanitizado + '.pdf',
-            margin: [10, 10, 10, 10],
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                letterRendering: true,
-                allowTaint: false,
-                logging: false
-            },
-            jsPDF: {
-                unit: 'mm',
-                format: 'a4',
-                orientation: 'portrait',
-                compress: true
-            },
-            pagebreak: {
-                mode: ['css', 'legacy'],
-                avoid: ['.pdf-titulo-contenido', '.pdf-bloque h3', '.pdf-bloque h4', '[style*="display: table-row"]']
+    function vistaPrevia() {
+        generarPDF('imprimir');
+    }
+
+    function textoPlano(valor) {
+        return String(valor == null ? '' : valor).replace(/<[^>]*>/g, '').trim();
+    }
+
+    function agregarTablaPDF(doc, titulo, encabezados, filas, opciones) {
+        opciones = opciones || {};
+        var filasTabla = filas.slice();
+        var yInicial = opciones.y || 20;
+        var pageHeight = doc.internal.pageSize.getHeight();
+        var espacioInferior = 30;
+        if (titulo && opciones.alturaMinima && yInicial + opciones.alturaMinima > pageHeight - espacioInferior) {
+            doc.addPage();
+            if (opciones.didDrawPage) {
+                opciones.didDrawPage({ pageNumber: doc.getNumberOfPages() });
             }
-        }).save().then(function() {
-            if (div.parentNode) document.body.removeChild(div);
-        }).catch(function(err) {
-            console.error('Error generando PDF:', err);
-            if (div.parentNode) document.body.removeChild(div);
-            window.vistaPrevia();
+            yInicial = 56;
+        }
+        if (titulo) {
+            filasTabla.unshift([{
+                content: titulo.toUpperCase(),
+                colSpan: encabezados.length,
+                styles: {
+                    fillColor: [224, 235, 242],
+                    textColor: [31, 78, 104],
+                    fontStyle: 'bold',
+                    fontSize: 8.5,
+                    halign: 'left'
+                }
+            }]);
+        }
+        doc.autoTable({
+            startY: yInicial,
+            head: [encabezados],
+            body: filasTabla,
+            theme: 'grid',
+            margin: { top: 43, right: 14, bottom: 30, left: 14 },
+            styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.5, textColor: [25, 25, 25] },
+            headStyles: { fillColor: [31, 78, 104], textColor: [255, 255, 255], fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [248, 251, 253] },
+            columnStyles: opciones.columnStyles || {},
+            didDrawPage: opciones.didDrawPage,
+            pageBreak: opciones.pageBreak || 'avoid',
+            rowPageBreak: 'avoid'
         });
+        return doc.lastAutoTable.finalY + 7;
+    }
+
+    function construirPDF(payload, logoData) {
+        if (!window.jspdf || !window.jspdf.jsPDF) return null;
+        var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+        var pageWidth = doc.internal.pageSize.getWidth();
+        var pageHeight = doc.internal.pageSize.getHeight();
+        var h = payload.header;
+
+        function encabezadoPagina(data) {
+            var logoX = 14;
+            var logoY = 14;
+            var logoSize = 22;
+            if (logoData) {
+                try {
+                    doc.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize);
+                } catch (e) {}
+            }
+            doc.setTextColor(25, 25, 25);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10.5);
+            doc.text('UNIDAD MÉDICO QUIRÚRGICA', 42, 16);
+            doc.text('LUZ CORONADO C. A.', 42, 21);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.text('Calle Principal Casa N° S/N Barrio Páez. El Nula, Estado Apure, Venezuela', 42, 26);
+            doc.text('RIF: J-412745735  |  Teléfono: 0416 4740671', 42, 30);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.text('Fecha de Emisión:', pageWidth - 14, 17, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+            doc.text(textoPlano(h.fechaEmision), pageWidth - 14, 22, { align: 'right' });
+            doc.text('Orden N° ' + textoPlano(h.orden), pageWidth - 14, 27, { align: 'right' });
+            doc.setDrawColor(31, 78, 104);
+            doc.setLineWidth(0.5);
+            doc.line(14, 36, pageWidth - 14, 36);
+            doc.setFontSize(7);
+            doc.setTextColor(90, 90, 90);
+            doc.text('Página ' + data.pageNumber, pageWidth / 2, pageHeight - 8, { align: 'center' });
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.line(pageWidth / 2 - 30, pageHeight - 22, pageWidth / 2 + 30, pageHeight - 22);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(25, 25, 25);
+            doc.text('Lcda. Andréina Rondón', pageWidth / 2, pageHeight - 18, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.text('Bioanalista Responsable  |  C.B. 17.774  |  MPPS 20.913', pageWidth / 2, pageHeight - 14, { align: 'center' });
+        }
+
+        doc.setProperties({ title: 'Reporte de resultados - ' + textoPlano(h.nombre), subject: 'Resultados de laboratorio' });
+        encabezadoPagina({ pageNumber: 1 });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(25, 25, 25);
+        var datosPaciente = 'Paciente: ' + textoPlano(h.nombre) +
+            '  |  Cédula: ' + textoPlano(h.cedula) +
+            '  |  Edad: ' + textoPlano(h.edad) +
+            '  |  Sexo: ' + textoPlano(h.sexo) +
+            '  |  Teléfono: ' + textoPlano(h.telefono);
+        var lineasPaciente = doc.splitTextToSize(datosPaciente, pageWidth - 28);
+        doc.text(lineasPaciente, 14, 43);
+        var lineaSeparadoraY = 43 + (lineasPaciente.length * 3.5) + 1;
+        doc.setDrawColor(190, 200, 210);
+        doc.setLineWidth(0.25);
+        doc.line(14, lineaSeparadoraY, pageWidth - 14, lineaSeparadoraY);
+
+        var y = lineaSeparadoraY + 9;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('RESULTADOS DE EXÁMENES DE LABORATORIO', pageWidth / 2, y, { align: 'center' });
+        y += 6;
+
+        payload.secciones.forEach(function(seccion) {
+            seccion.subareas.forEach(function(sub) {
+                if (sub.rows) {
+                    var tituloSeccion = seccion.nombre + (sub.titulo ? ' - ' + sub.titulo : '');
+                    y = agregarTablaPDF(doc, tituloSeccion, ['Examen', 'Resultado', 'Unidad', 'Valores de referencia'], sub.rows.map(function(row) {
+                        return [textoPlano(row.nombre), textoPlano(row.texto), textoPlano(row.unidad), textoPlano(row.refTexto)];
+                    }), { y: y, alturaMinima: 18, didDrawPage: encabezadoPagina });
+                }
+                if (sub.notas) {
+                    y = agregarTablaPDF(doc, seccion.nombre + ' - Notas y Observaciones', ['Observación'], [[textoPlano(sub.notas)]], { y: y, didDrawPage: encabezadoPagina });
+                }
+            });
+            y += 2;
+        });
+
+        if (payload.heces) {
+            var d = payload.heces.datos;
+            var hecesFilas = [
+                ['Moco Fecal', d.mocoFecal], ['pH Heces', d.phHeces], ['Glucosa Heces', d.glucosaHeces],
+                ['Leucocitos PMN', d.leucocitosPMN], ['Leucocitos Mononucleados', d.leucocitosMononucleados],
+                ['Sustancias Reductoras', d.sustanciasReductoras ? d.sustanciasReductoras + ' (' + window.interpretarSustanciasReductoras(d.sustanciasReductoras).texto + ')' : '-'],
+                ['Consistencia', d.consistencia], ['Color Heces', d.colorHeces], ['Directo Concentración', d.directoConcentracion],
+                ['Entamoeba coli', d.entamoebaColi], ['Restos Alimentos', d.restosAlimentos], ['Flora Bacteriana', d.floraBacteriana]
+            ];
+            y = agregarTablaPDF(doc, 'EXAMEN DE HECES', ['Parámetro', 'Resultado'], hecesFilas.map(function(row) { return [row[0], textoPlano(row[1] || '-')]; }), { y: y, alturaMinima: 72, didDrawPage: encabezadoPagina });
+        }
+
+        if (payload.uro) {
+            payload.uro.ordenGrupos.forEach(function(grupo) {
+                if (!payload.uro.grupos[grupo]) return;
+                y = agregarTablaPDF(doc, 'EXAMEN DE ORINA - ' + grupo, ['Parámetro', 'Resultado'], payload.uro.grupos[grupo].map(function(field) {
+                    return [textoPlano(field.nombre), textoPlano(payload.uro.datos[field.id] || '-')];
+                }), { y: y, didDrawPage: encabezadoPagina });
+            });
+        }
+
+        return doc;
+    }
+
+    function cargarLogoPDF() {
+        return new Promise(function(resolve) {
+            var imagen = new Image();
+            imagen.onload = function() {
+                try {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = imagen.naturalWidth || imagen.width;
+                    canvas.height = imagen.naturalHeight || imagen.height;
+                    canvas.getContext('2d').drawImage(imagen, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch (e) {
+                    resolve(null);
+                }
+            };
+            imagen.onerror = function() { resolve(null); };
+            imagen.src = '../public/imagen/logo1.png';
+        });
+    }
+
+    function descargarPDF() {
+        generarPDF('descargar');
     }
 
     window.PdfReport = {
         buildPayload: buildPayload,
         renderDom: renderDom,
-        buildInlineHtml: buildInlineHtml,
+        construirPDF: construirPDF,
+        generarPDF: generarPDF,
         vistaPrevia: vistaPrevia,
         descargarPDF: descargarPDF
     };

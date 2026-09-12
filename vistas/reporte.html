@@ -30,6 +30,12 @@
             <button class="btn btn-outline-primary" onclick="vistaPrevia()">
                 <i class="bi bi-printer me-1"></i> Imprimir
             </button>
+            <!--
+            <button class="btn btn-primary" onclick="descargarPDF()">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF
+            </button>
+            -->
+
         </div>
 
         <div id="sinResultados" class="sin-resultados no-imprimir" style="display: none;">
@@ -73,41 +79,24 @@
                     <div id="reporteRefAdaptadas" class="ref-adaptadas-badge" style="display:none;"></div>
                </div>
             </div>
-                        </td>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-             <div>
-                 <h6 class="reporte-seccion-titulo">Resultados de Exámenes de Laboratorio</h6>
+        </td>
+         </tr>
+        </thead>
+        <tbody>
+            <tr>
+            <td>
+        <div>
+        <h6 class="reporte-seccion-titulo">Resultados de Exámenes de Laboratorio</h6>
              <div class="reporte-tabla">
-                 
-                 <div id="contenedorResultados"></div>
+                <div id="contenedorResultados"></div>
              </div>
 
               </div>
-          
              <div id="bloqueHeces"></div>
-
-             <div class="reporte-firma-primera solo-imprimir">
-                 <div class="firma-linea">Lcda. Andréina Rondón</div>
-                 <div class="firma-profesional">
-                     Bioanalista Responsable<br>
-                     C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
-                 </div>
-             </div>
-
+          
              <div id="bloqueUroanalisis"></div>
-
-             <div class="reporte-firma-impresion solo-imprimir">
-                 <div class="firma-linea">Lcda. Andréina Rondón</div>
-                 <div class="firma-profesional">
-                     Bioanalista Responsable<br>
-                     C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
-                 </div>
-             </div>
-
+            
+            
              <div class="reporte-firma no-imprimir">
                  <div class="firma-linea">Lcda. Andréina Rondón</div>
                  <div class="firma-profesional">
@@ -115,7 +104,18 @@
                      C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
                  </div>
              </div>
-                        </td>
+
+               <div class="reporte-firma-impresion solo-imprimir">
+                 <div class="firma-linea">Lcda. Andréina Rondón</div>
+                 <div class="firma-profesional">
+                     Bioanalista Responsable<br>
+                     C.B. 17.774 &nbsp;|&nbsp; MPPS 20.913
+                 </div>
+             </div>
+
+
+
+                </td>
                     </tr>
                 </tbody>
             </table>
@@ -138,7 +138,8 @@
 <!-- Bootstrap JS local -->
 <script src="../public/lib/bootstrap.bundle.min.js"></script>
 
-    <script src="../public/lib/html2pdf.bundle.min.js"></script>
+    <script src="../public/lib/jspdf.umd.min.js"></script>
+    <script src="../public/lib/jspdf.plugin.autotable.min.js"></script>
     <script src="../public/js/catalogo-base.js"></script>
     <script src="../public/js/perfiles.js"></script>
     <script src="../public/js/examenes-detallados.js"></script>

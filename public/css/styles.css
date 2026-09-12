@@ -85,6 +85,20 @@ input[type=number] { appearance: textfield; -moz-appearance: textfield; }
 /* Resaltado al pasar el mouse sobre la fila */
 .examen-row:hover { background-color: #f8f9fa; }
 
+/* Separador visual entre perfiles o grupos de examenes. */
+.grupo-examen-row td {
+    background: #eaf2f8;
+    border-top: 10px solid #ffffff;
+    border-bottom: 1px solid #c9d9e6;
+    color: #1f4e68;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    padding: 9px 12px;
+    text-transform: uppercase;
+}
+.grupo-examen-row:first-child td { border-top-width: 0; }
+
 /* Ancho del input de resultado */
 .resultado-input { max-width: 120px; }
 
