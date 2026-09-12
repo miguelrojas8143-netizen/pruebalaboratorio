@@ -58,7 +58,7 @@ input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
-input[type=number] { -moz-appearance: textfield; }
+input[type=number] { appearance: textfield; -moz-appearance: textfield; }
 
 /* ============================================================
    FICHA DEL PACIENTE (vista Orden)
@@ -91,6 +91,70 @@ input[type=number] { -moz-appearance: textfield; }
 /* Ancho de los inputs de valores de referencia (mín/máx) */
 .ref-min-input,
 .ref-max-input { width: 80px; display: inline-block; }
+
+/* Panel de tipificacion sanguinea */
+.tipificacion-panel {
+    border: 1px solid #d9e4ee;
+    border-radius: 6px;
+    background: #f8fbfd;
+    padding: 9px 10px;
+    min-width: 440px;
+    max-width: 100%;
+}
+.tipificacion-titulo {
+    color: #164e63;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+.tipificacion-ayuda {
+    color: #526575;
+    font-size: .72rem;
+    line-height: 1.25;
+    margin-bottom: 7px;
+}
+.reactivo-card {
+    background: #ffffff;
+    border: 1px solid #d9e4ee;
+    border-radius: 5px;
+    padding: 7px;
+    height: 100%;
+}
+.reactivo-card .form-label { color: #334e68; }
+.reactivo-card .form-select { font-size: .76rem; }
+.reactivo-estado {
+    display: block;
+    font-size: .69rem;
+    margin-top: 3px;
+}
+.tipificacion-panel .resultado-calculado { height: 34px; font-size: .82rem; }
+.resultado-calculado {
+    background: #e8f5ee !important;
+    border: 1px solid #8fc9a7 !important;
+    color: #146c43 !important;
+    font-weight: 700;
+    max-width: none;
+    opacity: 1 !important;
+}
+.resultado-calculado:disabled { cursor: default; }
+
+/* La tabla reserva mas espacio para el panel y evita que crezca hacia abajo. */
+#tablaExamenes .examen-row:has(.tipificacion-panel) > td:nth-child(2) {
+    width: 55%;
+}
+
+/* La tipificacion se elimina desde la orden completa, no desde cada fila. */
+#tablaExamenes .tipificacion-row > td:last-child {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .tipificacion-panel {
+        min-width: 0;
+        padding: 8px;
+    }
+}
 
 
 
