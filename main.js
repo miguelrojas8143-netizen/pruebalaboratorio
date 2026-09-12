@@ -2,7 +2,7 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
 // Configuración de la Demo
-const DIAS_DEMO = 15;
+const DIAS_DEMO = 10;
 const NOMBRE_APP = 'LabMig_Demo';
 
 function verificarDemo() {
