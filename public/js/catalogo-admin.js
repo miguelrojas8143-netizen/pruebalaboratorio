@@ -5,6 +5,37 @@
     'use strict';
 // Sección de administración del catálogo de exámenes
 
+    function mostrarToast(mensaje, tipo) {
+        var container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1080';
+            document.body.appendChild(container);
+        }
+        var esError = tipo === 'danger';
+        var toastClase = esError ? 'toast-danger-catalogo' : 'toast-success-catalogo';
+        var icono = esError ? 'bi bi-x-circle' : 'bi bi-check-lg';
+        var titulo = esError ? 'Error' : 'Guardado';
+        var toastEl = document.createElement('div');
+        toastEl.className = 'toast ' + toastClase + ' border-0';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        toastEl.innerHTML =
+            '<div class="toast-header">' +
+            '<i class="' + icono + ' me-2"></i>' +
+            '<span class="me-auto small fw-medium">' + titulo + '</span>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Cerrar"></button>' +
+            '</div>' +
+            '<div class="toast-body">' + mensaje + '</div>';
+        container.appendChild(toastEl);
+        var bsToast = new bootstrap.Toast(toastEl, { delay: 4500 });
+        bsToast.show();
+        toastEl.addEventListener('hidden.bs.toast', function() { toastEl.remove(); });
+    }
+
     function actualizarTablaCatalogo() {
         var contenedor = document.getElementById('catalogoAcordeones');
         if (!contenedor) return;
@@ -27,7 +58,7 @@
             var item = document.createElement('div');
             item.className = 'accordion-item';
             item.innerHTML = '<h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#' + areaId + '">' + area + ' <span class="badge bg-secondary ms-2">' + examenes.length + '</span></button></h2><div id="' + areaId + '" class="accordion-collapse collapse"><div class="accordion-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 align-middle"><thead class="table-light"><tr><th width="15%">ID</th><th width="18%">Nombre</th><th width="13%">Área</th><th width="13%">Unidad</th><th width="13%">Ref. Mín</th><th width="13%">Ref. Máx</th><th width="10%" class="text-center">Guardar</th></tr></thead><tbody>' + examenes.map(function(examen) {
-                return '<tr data-id="' + examen.id + '"><td>' + examen.id + '</td><td><input type="text" class="form-control form-control-sm cat-nombre" value="' + (examen.nombre || '') + '"></td><td><input type="text" class="form-control form-control-sm cat-area" value="' + (examen.area || '') + '"></td><td><input type="text" class="form-control form-control-sm cat-unidad" value="' + (examen.unidad || '') + '"></td><td><input type="number" step="0.01" class="form-control form-control-sm cat-refmin" value="' + (examen.refMin !== undefined ? examen.refMin : '') + '"></td><td><input type="number" step="0.01" class="form-control form-control-sm cat-refmax" value="' + (examen.refMax !== undefined ? examen.refMax : '') + '"></td><td class="text-center"><button class="btn btn-sm btn-outline-success btn-guardar-examen" data-id="' + examen.id + '" onclick="window.guardarExamenCatalogo(\'' + examen.id + '\')" title="Guardar este examen"><i class="bi bi-save"></i></button></td></tr>';
+                return '<tr data-id="' + examen.id + '"><td>' + examen.id + '</td><td><input type="text" class="form-control form-control-sm cat-nombre" value="' + (examen.nombre || '') + '"></td><td><input type="text" class="form-control form-control-sm cat-area" value="' + (examen.area || '') + '"></td><td><input type="text" class="form-control form-control-sm cat-unidad" value="' + (examen.unidad || '') + '"></td><td><input type="number" step="0.01" class="form-control form-control-sm cat-refmin" value="' + (examen.refMin !== undefined ? examen.refMin : '') + '"></td><td><input type="number" step="0.01" class="form-control form-control-sm cat-refmax" value="' + (examen.refMax !== undefined ? examen.refMax : '') + '"></td><td class="text-center"><button class="btn btn-sm btn-success btn-guardar-examen" data-id="' + examen.id + '" title="Guardar este examen"><i class="bi bi-save"></i></button></td></tr>';
             }).join('') + '</tbody></table></div></div></div>';
             contenedor.appendChild(item);
         });
@@ -39,6 +70,17 @@
                 } catch (err) {
                     console.error('[guardarExamenCatalogo]', err);
                 }
+            });
+        });
+        contenedor.querySelectorAll('tr[data-id]').forEach(function(tr) {
+            var btn = tr.querySelector('.btn-guardar-examen');
+            if (!btn) return;
+            tr.querySelectorAll('.cat-nombre, .cat-area, .cat-unidad, .cat-refmin, .cat-refmax').forEach(function(input) {
+                input.addEventListener('input', function() {
+                    btn.classList.remove('guardado');
+                    var icono = btn.querySelector('i');
+                    if (icono) icono.className = 'bi bi-save';
+                });
             });
         });
     }
@@ -77,8 +119,14 @@
             custom.push(entry);
         }
         localStorage.setItem('catalogoCustom', JSON.stringify(custom));
-        fila.style.backgroundColor = '#d4edda';
-        setTimeout(function() { fila.style.backgroundColor = ''; }, 1500);
+        mostrarToast("Examen '" + nombre + "' guardado.", "success");
+        fila.classList.add('fila-guardada');
+        var btnGuardar = fila.querySelector('.btn-guardar-examen');
+        if (btnGuardar) {
+            btnGuardar.classList.add('guardado');
+            var iconoGuardar = btnGuardar.querySelector('i');
+            if (iconoGuardar) iconoGuardar.className = 'bi bi-check-lg';
+        }
     };
 // Función para restablecer el catálogo a los valores predeterminados
     window.initCatalogo = function() {
@@ -140,7 +188,7 @@
         localStorage.setItem('catalogoCustom', JSON.stringify(custom));
         window.refrescarSelect2Catalogos();
         actualizarTablaCatalogo();
-        alert('Catálogo guardado exitosamente.');
+        mostrarToast("Catálogo guardado exitosamente.", "success");
     };
 
     window.restablecerCatalogo = function() {

@@ -69,3 +69,34 @@
     font-size: 0.8rem;
     padding: 4px 8px;
 }
+
+/* Botón de guardar individual por examen */
+.btn-guardar-examen {
+    transition: all 0.2s ease;
+}
+.btn-guardar-examen.guardado i {
+    color: #ffffff;
+}
+
+/* Fila recién guardada: animación de fondo verde claro -> transparente */
+.fila-guardada {
+    animation: filaGuardarFade 1.2s ease-out;
+}
+@keyframes filaGuardarFade {
+    0% { background-color: #d1e7dd; }
+    100% { background-color: transparent; }
+}
+
+/* Toasts de confirmación: paleta existente (#198754 / #d1e7dd / #dc3545 / #f8d7da), sin colores nuevos */
+.toast-success-catalogo {
+    --bs-toast-color: #198754;
+    --bs-toast-bg: #d1e7dd;
+    --bs-toast-border-color: #d1e7dd;
+    --bs-toast-header-bg: transparent;
+}
+.toast-danger-catalogo {
+    --bs-toast-color: #dc3545;
+    --bs-toast-bg: #f8d7da;
+    --bs-toast-border-color: #f8d7da;
+    --bs-toast-header-bg: transparent;
+}

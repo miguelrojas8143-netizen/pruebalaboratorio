@@ -64,8 +64,9 @@
 
     function clasificarFila(examen) {
         var r = clasificarResultado(examen);
-        var refTexto = (examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
-            ? examen.refMin + ' - ' + examen.refMax : '-';
+        var refTexto = examen.refTexto ||
+            ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
+                ? examen.refMin + ' - ' + examen.refMax : '-');
         return {
             nombre: examen.nombre,
             texto: r.texto,

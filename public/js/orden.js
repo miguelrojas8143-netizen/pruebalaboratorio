@@ -116,6 +116,7 @@
             unidad: datos.unidad,
             refMin: datos.refMin,
             refMax: datos.refMax,
+            refTexto: datos.refTexto,
             resultado: ''
         };
         if (datos.tipo === 'texto') {
@@ -234,7 +235,9 @@
                 } catch(e) {}
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioUroanalisis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenUro + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'texto') {
-                var refTexto = (examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax)) ? examen.refMin + ' - ' + examen.refMax : '-';
+                var refTexto = examen.refTexto ||
+                    ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
+                        ? examen.refMin + ' - ' + examen.refMax : '-');
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><input type="text" class="form-control resultado-input texto-input" value="' + (examen.resultado || '') + '" onchange="window.actualizarResultado(this)"></td><td class="text-muted small">' + (examen.unidad || '-') + '</td><td class="text-muted small">' + refTexto + '</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'tipo_sanguineo') {
                 var opcionesABO = ['A', 'B', 'AB', 'O'];
