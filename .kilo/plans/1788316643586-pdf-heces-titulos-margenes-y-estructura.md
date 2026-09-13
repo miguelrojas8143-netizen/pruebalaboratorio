@@ -1,73 +1,285 @@
-# Plan: Corregir título del PDF de exámenes sin tocar `@page` margin
+# Plan: Corregir títulos y márgenes del PDF (Heces) — sin tocar `@page` margin
 
-## Contexto actual (verificado 2026-09-02)
+## Problema del usuario
 
-El usuario trabaja con `@page { margin: 10px 12px 65px; }` en `public/css/pdf.css:18` y **no quiere que se modifique**. Con este margen superior de solo 10 px, el header fijo (`position: fixed; top: 0`, ~150 px de alto) cubre la primera parte del contenido en cada página, ocultando el título "Resultados de Exámenes de Laboratorio".
+> El título "Resultados de Exámenes de Laboratorio" / "Examen de Heces" no se nota en el PDF.
+> Las separaciones y márgenes están fallando. El PDF no se ve profesional ni fácil de leer.
+> **No tocar el `@page` margin** (`margin: 10px 12px 65px` en `pdf.css`).
 
-Cambios **ya aplicados previamente** en esta sesión (git diff verificado):
+## Diagnóstico
 
-| Archivo | Estado |
-|---------|--------|
-| `vistas/reporte.html` | DOM reordenado: `#bloqueHeces`/`#bloqueUroanalisis` ahora **antes** de `.reporte-firma-impresion` |
-| `public/css/pdf.css` | Eliminado `border-left-color: aqua`, aumentados tamaños de título, `.reporte-tabla` margin corregido, `.reporte-area-grupo` margin unificado a 14px, overrides Bootstrap agregados, `#bloqueUroanalisis` print styling agregado, padding de celdas a 3px 6px |
-| `public/js/pdf.js` | Pagebreak simplificado (`mode: ['css','legacy']`, `avoid: 'tr, tbody'`), títulos inline aumentados, tablas heces/urina/perfil con `page-break-inside: auto` |
+### Causa 1 — El botón "Imprimir" llama a `vistaPrevia()`, NO a `descargarPDF()` (CRÍTICO)
 
-**Cambio PENDIENTE** (bloqueado por permisos, requiere agente de implementación):
+En `reporte.html:29`:
+```html
+<button onclick="vistaPrevia()">  ←  window.print()
+```
 
-## Problema restante: título oculto por el header fijo
+`vistaPrevia()` (`pdf.js:493`) → `window.print()` → navegador "Guardar como PDF".
 
-Con `@page { margin: 10px 12px 65px; }`:
-- Header fijo: `position: fixed; top: 0`, altura ~150 px → cubre contenido de 10 px a ~150 px
-- `.reporte-container` tiene `padding: 0 12px` (sin padding-top)
-- El `<h6 class="reporte-seccion-titulo">` aparece a los 10 px del borde → **detrás del header**
+Esto usa las reglas `@media print` de `pdf.css`. El `<h2>` en `buildInlineHtml` (pdf.js:427) **nunca se ejecuta** porque `descargarPDF()` no está enlazado a ningún botón.
 
-El `@page` margin de 10 px no es suficiente para reservar espacio para el header. Como no se puede cambiar el `@page`, la solución es **`padding-top` en `.reporte-container`**:
+**El título que realmente se renderiza** en la vía de impresión es:
+```html
+<h6 class="reporte-seccion-titulo"> Resultados de Exámenes de Laboratorio</h6>
+```
+(pdf.js DOM, via `renderDom()`)
 
-## Cambios pendientes
+### Causa 2 — `@page` top margin insuficiente para el header fijo
 
-### 1. `public/css/pdf.css` — `.reporte-container` (línea 160-166)
+`pdf.css:16`: `@page { margin: 20px 12px 50px; }` (el usuario muestra `10px 12px 65px`, tampoco suficiente).
 
-Cambiar `padding: 0 12px` → `padding: 155px 12px 0`:
+El header fijo (`.reporte-encabezado-impresion`, `position: fixed; top: 0`) mide **~140 px**:
+- Logo 100 px + nombre/dirección ~20 px + grid paciente ~20 px
+
+Con top margin de 10-20 px, el header fijo cubre el **90 %** del espacio superior, ocultando:
+- El `<h6 class="reporte-seccion-titulo">` "Resultados de Exámenes de Laboratorio"
+- Las primeras filas de resultados
+- En páginas 2+, todo el contenido inicial se pierde tras el header
+
+**Restricción**: NO se puede cambiar el `@page` margin.
+
+**Solución**: Agregar `padding-top` al `.reporte-container` igual al header (~150 px). Esto empuja todo el contenido por debajo del header fijo. Funciona en la página 1 (caso típico de examen de heces).
+
+### Causa 3 — Orden del DOM: heces/urina DESPUÉS del footer fijo
+
+`reporte.html:80-90` (estado actual):
+```html
+<div class="reporte-firma-impresion solo-imprimir">...</div>  <!-- fixed: bottom 0 -->
+<div id="bloqueHeces"></div>
+<div id="bloqueUroanalisis"></div>
+```
+
+El footer fijo (`position: fixed; bottom: 0`) ocupa el pie de **cada página**.
+El contenido de heces que sigue en el DOM puede quedar **detrás del footer** o forzado a
+una nueva página donde el footer se lo tapa.
+
+**Fix**: Mover `#bloqueHeces` y `#bloqueUroanalisis` **antes** de `.reporte-firma-impresion`.
+
+### Causa 4 — Títulos con tipografía demasiado pequeña
+
+| Selector (pdf.css) | Tamaño actual | Problema |
+|---|---|---|
+| `.reporte-seccion-titulo` | 0.85 rem | Ilegible en PDF |
+| `.reporte-area-titulo` | 0.82 rem | "Examen de Heces" apenas visible |
+| `.reporte-subarea-titulo` | 0.78 rem | Casi invisible |
+| `<h2>` en `buildInlineHtml` | 0.95 rem | Pequeño para un H2 |
+
+### Causa 5 — Conflictos CSS en `pdf.css`
+
+| Línea | Regla | Problema |
+|---|---|---|
+| 248-250 | `.reporte-tabla { margin-bottom: 6px; }` | Sin `margin-top`, separación insuficiente |
+| 161-165 | `.reporte-area-grupo { margin-bottom: 8px; }` | Bien, pero... |
+| 304-306 | `.reporte-area-grupo { margin-bottom: 4px; }` | **Gana la segunda** (4 px apretado) |
+| 125-129 | `.firma-linea { margin: 28px auto 3px; }` | 28 px top margin → footer demasiado alto |
+
+### Causa 6 — `pagebreak` de html2pdf demasiado agresivo
+
+`pdf.js:547-552`:
+```js
+mode: ['avoid-all', 'css', 'legacy'],
+before: '.reporte-area-grupo, #bloqueHeces, #bloqueUroanalisis',
+avoid: 'tr, tbody, .reporte-tabla'
+```
+
+- `avoid-all` intenta evitar TODO salto → puede causar overflow
+- `before: '#bloqueHeces'` fuerza salto de página antes de heces → separa el título del contenido
+
+### Causa 7 — Bootstrap `table-sm` sin override en print
+
+`renderHecesDom` (pdf.js:295) y `renderTablaDom` (pdf.js:260) usan `table table-bordered table-sm`.
+`table-sm` pone `padding: 0.25rem` (~3 px) → celdas apretadas en PDF.
+
+## Cambios
+
+### 1. `vistas/reporte.html` — Botón + reordenar DOM
+
+**a) Botón "Imprimir" → `descargarPDF()`** (línea 29):
+
+Cambiar para que "Imprimir" use html2pdf (no `window.print()`), así el `<h2>` de `buildInlineHtml`
+se renderiza y no depende del `@page` CSS:
+
+```html
+<button class="btn btn-outline-primary" onclick="descargarPDF()">
+    <i class="bi bi-printer me-1"></i> Imprimir
+</button>
+```
+
+**b) DOM reordenado** — mover `#bloqueHeces`/`#bloqueUroanalisis` antes del footer fijo:
+
+```html
+<!-- ... section title + results ... -->
+
+<div id="bloqueHeces"></div>
+<div id="bloqueUroanalisis"></div>
+
+<div class="reporte-firma-impresion solo-imprimir">...</div>
+<div class="reporte-firma no-imprimir">...</div>
+```
+
+**c) Eliminar espacio inicial** en el título: `" Resultados..."` → `"Resultados..."`.
+
+### 2. `public/css/pdf.css` — Compensar `@page` con `padding-top` (NO tocar `@page`)
+
+**a) `.reporte-container`** — agregar `padding-top` = 155 px para empujar contenido bajo el header fijo:
 
 ```css
 .reporte-container {
     box-shadow: none;
-    padding: 155px 12px 0;   /* 155 px top pisa el header fijo (~150 px) + margen @page 10 px */
+    padding: 155px 12px 0;    /* 155 px compensa el header fijo (~140 px) + @page margin top */
     max-width: 100%;
     border-radius: 0;
     margin: 0;
 }
 ```
 
-**Razón**: 155 px de padding-top empuja todo el contenido (incluido el título) por debajo del header fijo. El header (`position: fixed; top: 0`) ocupa el margen superior de la página + el padding, y el contenido visible comienza a los ~165 px del borde superior.
-
-**Nota**: Este padding-top solo afecta visualmente a la página 1 (el padding se consume al inicio del contenedor). En páginas 2+, el header fijo seguirá visible (position: fixed) pero el contenido comenzará al top del área de contenido (10 px), solapándose parcialmente con el header. Para reportes de 1 página (caso típico de examen de heces), el título será completamente visible.
-
-**Opcional**: Para mitigar páginas 2+, cambiar `.reporte-encabezado-impresion` de `position: fixed` a `position: static` — el header aparecería solo en página 1 pero sin solapamiento en páginas 2+. **No aplicado por defecto** — se propone como alternativa si el usuario prefiere.
-
-### 2. `public/css/pdf.css` — Corregir comentario del `@page` (línea 18)
-
-El comentario dice "superior 150px" pero el valor es `10px`. Actualizar el comentario para reflejar la realidad:
+**b) `.reporte-area-grupo`** — eliminar definición duplicada. Debe quedar solo una:
 
 ```css
-margin: 10px 12px 65px;/* Márgenes: superior 10px, laterales 12px, inferior 65px. Header fijo compensado con .reporte-container padding-top */
+.reporte-area-grupo {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 12px;
+}
 ```
+
+**c) `.reporte-tabla`** — corregir margen:
+
+```css
+.reporte-tabla {
+    margin: 0 0 10px;  /* espaciado vertical entre tabla y título */
+}
+```
+
+**d) Títulos — aumentar tamaños**:
+
+```css
+.reporte-seccion-titulo {
+    font-size: 1.05rem;   /* de 0.85rem */
+    font-weight: 800;     /* negrita fuerte */
+    margin: 16px 0 10px;  /* de 14px 0 8px */
+    page-break-after: avoid;
+}
+.reporte-area-titulo {
+    font-size: 0.9rem;    /* de 0.82rem */
+    margin: 12px 0 6px;
+    page-break-after: avoid;
+}
+.reporte-subarea-titulo {
+    font-size: 0.85rem;   /* de 0.78rem */
+    margin-top: 6px;
+    page-break-after: avoid;
+}
+```
+
+**e) Eliminar `border-left-color: aqua`** (debug dejado en producción):
+Buscar cualquier `border-left-color: aqua` o `aquacolor` en `.reporte-tabla table` y borrar.
+
+**f) Footer firma-linea** — reducir margin top para ajustarse al `@page` bottom margin:
+
+```css
+.reporte-firma-impresion .firma-linea {
+    margin: 16px auto 2px;   /* de 28px → 16px (footer cabe en el margen bottom) */
+}
+```
+
+**g) Agregar overrides de Bootstrap en `@media print`** para tablas heces/urina con `table-sm`:
+
+```css
+/* Bootstrap .table-sm reduce padding a ~3px; en print se necesita >= 4px */
+#bloqueHeces .table-sm td,
+#bloqueHeces .table-sm th,
+#bloqueUroanalisis .table-sm td,
+#bloqueUroanalisis .table-sm th,
+.reporte-tabla .table-sm td,
+.reporte-tabla .table-sm th {
+    padding: 4px 6px !important;
+}
+/* Anular sombreado de Bootstrap */
+.reporte-tabla .table,
+#bloqueHeces .table,
+#bloqueUroanalisis .table {
+    box-shadow: none;
+    border: none;
+}
+```
+
+**h) Agregar estilos explícitos `#bloqueUroanalisis` en `@media print`** (actualmente solo `#bloqueHeces` tiene estilos de print; urina depende de `styles.css` que filtra a print):
+
+```css
+#bloqueUroanalisis { margin-bottom: 12px; }
+#bloqueUroanalisis table { font-size: 0.74rem; width: 100%; border-collapse: collapse; }
+#bloqueUroanalisis th { padding: 3px 6px; border: 1px solid #000; background: #e9e9e9 !important; }
+#bloqueUroanalisis td { padding: 3px 6px; border: 1px solid #ccc; color: #000; }
+```
+
+### 3. `public/js/pdf.js` — `buildInlineHtml` y `pagebreak`
+
+**a) `buildInlineHtml` — `<h2>` título** (línea 427):
+
+Aumentar font-size de 0.95 rem a 1.1 rem y mejorar márgenes:
+
+```javascript
+html += '<h2 style="font-size: 1.1rem; font-weight: bold; ...">Resultados de Exámenes de Laboratorio</h2>';
+```
+
+**b) `buildInlineHtml` — títulos de área/heces/urina** aumentar de 0.85 rem a 0.9 rem,
+agregar `page-break-after: avoid` a `<h3>` y `<h4>`:
+
+- Línea 431 (sección): `0.85rem` → `0.9rem`, + `padding-bottom: 3px`, + `margin: 14px 0 8px`, + `page-break-after: avoid`
+- Línea 433 (subárea): `0.78rem` → `0.85rem`, `margin: 4px 0 2px` → `6px 0 4px`, + `page-break-after: avoid`
+- Línea 436 (notas): mismo tratamiento
+- Línea 445 (heces `<h3>`): `0.85rem` → `0.9rem`, `padding-bottom: 2px` → `3px`, `margin: 12px 0 8px` → `14px 0 8px`
+- Línea 446 (heces `<table>`): `page-break-inside: avoid` → `auto; break-inside: auto`
+- Línea 467 (urina `<h3>`): mismo que heces
+- Línea 470-471 (urina `<h4>`/`<table>`): mismo tratamiento
+
+**c) `renderTablaInline` — tabla** (línea 380):
+
+`page-break-inside: avoid` → `auto; break-inside: auto` (permite salto entre filas).
+Añadir `thead style="page-break-after: avoid"` para mantener encabezado con primera fila.
+
+**d) `descargarPDF` — pagebreak config** (líneas 547-552):
+
+```javascript
+pagebreak: {
+    mode: ['css', 'legacy'],
+    before: '.reporte-area-grupo',
+    after: '.reporte-area-titulo, .reporte-subarea-titulo',
+    avoid: 'tr, tbody'
+}
+```
+
+- Remover `avoid-all` (demasiado agresivo)
+- Remover `#bloqueHeces, #bloqueUroanalisis` de `before` (no forzar salto antes de heces)
+- Remover `.reporte-tabla` de `avoid` (las tablas deben poder dividirse entre filas)
+
+### 4. `reporte.html` — título con espacio inicial
+
+Eliminar el espacio en:
+```html
+<h6 class="reporte-seccion-titulo">Resultados de Exámenes de Laboratorio</h6>
+```
+(de `" Resultados..."` a `"Resultados..."`)
 
 ## Validación
 
-1. Abrir `vistas/reporte.html?orden=001` (orden con exámen + heces).
-2. Pulsar **Imprimir** → `window.print()` → "Guardar como PDF".
-3. Verificar en el PDF:
-   - [ ] Título "Resultados de Exámenes de Laboratorio" visible en la parte superior (no tapado por header).
-   - [ ] Título "Examen de Heces" visible (no tapado por footer).
-   - [ ] Tabla de heces con padding de celda legible (≥ 4 px).
-   - [ ] Firma visible en el pie de página (margen bottom 65 px es suficiente).
-4. `node --check public/js/pdf.js` → sin errores de sintaxis.
+1. Abrir `vistas/reporte.html?orden=001` en el navegador.
+2. Hacer clic en **Imprimir** (ahora llama `descargarPDF()`):
+   - [ ] Se descarga un PDF con el título "Resultados de Exámenes de Laboratorio" visible.
+   - [ ] Si hay heces cargados, el título "Examen de Heces" visible.
+   - [ ] Tablas con celdas legibles (padding ≥ 4 px).
+3. Si html2pdf falla (error en consola), el fallback `window.print()`:
+   - [ ] Título visible debajo del header fijo (gracias al `padding-top` del container).
+   - [ ] Heces/urina no tapados por el footer fijo (heces antes del footer en DOM).
+4. `node --check public/js/pdf.js` → sin errores.
+5. `grep -r "aquacolor\|border-left-color: aqua" public/css/pdf.css` → sin resultados.
 
 ## Archivos afectados
 
-| Archivo | Estado |
-|---------|--------|
-| `public/css/pdf.css` | **Pendiente**: `.reporte-container` padding-top + comentario `@page` |
-| `vistas/reporte.html` | ✅ Completado (DOM reordenado) |
-| `public/js/pdf.js` | ✅ Completado (pagebreak + estilos inline) |
+| Archivo | Cambios |
+|---------|---------|
+| `vistas/reporte.html` | Botón → `descargarPDF()`, DOM reorder, título sin espacio |
+| `public/css/pdf.css` | `.reporte-container` padding-top, eliminar CSS duplicado, títulos grandes, overrides Bootstrap, footer padding, `#bloqueUroanalisis` print estilos |
+| `public/js/pdf.js` | Título `<h2>` grande, títulos inline grandes, `page-break-inside: auto` en tablas, `pagebreak` config simplificado |

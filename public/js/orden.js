@@ -108,7 +108,7 @@
         inputs.forEach(function(input) { window.validarResultado(input); });
     };
 
-    function crearExamenDesdeCatalogo(datos, perfilOrigen) {
+    function crearExamenDesdeCatalogo(datos) {
         var nuevoExamen = {
             id: datos.id,
             nombre: datos.nombre,
@@ -167,28 +167,7 @@
             nuevoExamen.tipo = 'perfil';
             nuevoExamen.resultado = '{}';
         }
-        if (perfilOrigen) {
-            nuevoExamen.perfilesOrigen = [perfilOrigen];
-        }
         return nuevoExamen;
-    }
-
-    function renderBadgePerfiles(examen) {
-        var origen = examen.perfilesOrigen;
-        if ((!origen || origen.length === 0) && window.pacienteActivo) {
-            if (window.pacienteActivo.perfiles && window.App.perfiles) {
-                origen = window.pacienteActivo.perfiles.filter(function(pid) {
-                    var p = window.App.perfiles[pid];
-                    return p && p.examenes.some(function(ex) { return ex.id === examen.id; });
-                });
-            }
-        }
-        if (!origen || origen.length === 0) return '';
-        var badges = origen.map(function(pid) {
-            var p = window.App.perfiles[pid];
-            return '<span class="badge-perfil">' + (p ? p.nombre : pid) + '</span>';
-        });
-        return '<div class="mt-1">' + badges.join('') + '</div>';
     }
 
     function renderizarTablaExamenes() {
@@ -199,10 +178,22 @@
             tbody.innerHTML = '<tr id="filaVaciaExamenes"><td colspan="5" class="sin-examenes"><i class="bi bi-inbox display-4"></i><p class="mt-2">No hay exámenes agregados. Use el selector de la izquierda.</p></td></tr>';
             return;
         }
+        var grupoAnterior = null;
         window.examenesOrden.forEach(function(examen, index) {
+            var grupoActual = examen.grupoPerfil || 'Exámenes individuales';
+            if (grupoActual !== grupoAnterior) {
+                var filaGrupo = document.createElement('tr');
+                filaGrupo.className = 'grupo-examen-row';
+                filaGrupo.innerHTML = '<td colspan="5"><i class="bi bi-folder2-open me-2"></i>' + grupoActual + '</td>';
+                tbody.appendChild(filaGrupo);
+                grupoAnterior = grupoActual;
+            }
             var fila = document.createElement('tr');
             fila.className = 'examen-row';
             fila.setAttribute('data-examen-id', examen.id);
+            if (examen.tipo === 'tipo_sanguineo') {
+                fila.classList.add('tipificacion-row');
+            }
             if (examen.tipoFormulario === 'heces') {
                 var resumenHtml = '';
                 try {
@@ -251,7 +242,11 @@
                 var esABO = examen.id === 'grupo_sanguineo_abo';
                 var opciones = esABO ? opcionesABO : opcionesRh;
                 var opcionesHtml = opciones.map(function(opt) { return '<option value="' + opt + '" ' + (examen.resultado === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('');
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><select class="form-select resultado-input" onchange="window.actualizarResultado(this)"><option value="">Seleccionar...</option>' + opcionesHtml + '</select></td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                if (esABO) {
+                    fila.innerHTML = '<td class="fw-semibold align-top">' + examen.nombre + '</td><td><div class="tipificacion-panel"><div class="tipificacion-titulo"><i class="bi bi-droplet-half me-1"></i>Tipificación del sistema ABO</div><div class="tipificacion-ayuda">Observe si se produce aglutinación con cada reactivo y registre la lectura.</div><div class="row g-2"><div class="col-md-6"><div class="reactivo-card"><label class="form-label small fw-semibold mb-1" for="antiA">Reactivo Anti-A</label><select id="antiA" class="form-select form-select-sm" onchange="window.determinarTipoSangre()"><option value="">Seleccione la lectura...</option><option value="si">Sí, reacciona (aglutinación)</option><option value="no">No, no reacciona</option></select><small id="antiAEstado" class="reactivo-estado text-muted">Lectura pendiente</small></div></div><div class="col-md-6"><div class="reactivo-card"><label class="form-label small fw-semibold mb-1" for="antiB">Reactivo Anti-B</label><select id="antiB" class="form-select form-select-sm" onchange="window.determinarTipoSangre()"><option value="">Seleccione la lectura...</option><option value="si">Sí, reacciona (aglutinación)</option><option value="no">No, no reacciona</option></select><small id="antiBEstado" class="reactivo-estado text-muted">Lectura pendiente</small></div></div></div><label class="form-label small fw-semibold mt-3 mb-1" for="grupoSanguineoResultado">Resultado ABO calculado</label><select id="grupoSanguineoResultado" class="form-select resultado-input resultado-calculado" disabled title="Resultado calculado a partir de las lecturas Anti-A y Anti-B"><option value="">Pendiente de completar las lecturas</option>' + opcionesHtml + '</select></div></td><td class="text-muted small align-top">-</td><td class="align-top">-</td><td class="text-center align-top"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+                } else {
+                    fila.innerHTML = '<td class="fw-semibold align-top">' + examen.nombre + '</td><td><div class="tipificacion-panel"><div class="tipificacion-titulo"><i class="bi bi-shield-check me-1"></i>Determinación del factor Rh</div><div class="tipificacion-ayuda">Observe si se produce aglutinación con el reactivo Anti-D.</div><div class="reactivo-card"><label class="form-label small fw-semibold mb-1" for="antiD">Reactivo Anti-D (Rh)</label><select id="antiD" class="form-select form-select-sm" onchange="window.determinarTipoSangre()"><option value="">Seleccione la lectura...</option><option value="si">Sí, reacciona (aglutinación)</option><option value="no">No, no reacciona</option></select><small id="antiDEstado" class="reactivo-estado text-muted">Lectura pendiente</small></div><label class="form-label small fw-semibold mt-3 mb-1" for="factorRhResultado">Factor Rh calculado</label><select id="factorRhResultado" class="form-select resultado-input resultado-calculado" disabled title="Resultado calculado a partir de la lectura Anti-D"><option value="">Pendiente de completar la lectura</option>' + opcionesHtml + '</select></div></td><td class="text-muted small align-top">-</td><td class="align-top">-</td><td class="text-center align-top"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+                }
             } else if (examen.tipo === 'seleccion_unica') {
                 var opcionesHtml2 = (examen.opciones || []).map(function(opt) { return '<option value="' + opt + '" ' + (examen.resultado === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('');
                 if (window.esSecrecionVaginal(examen)) {
@@ -290,8 +285,6 @@
                     }
                 }
             }
-            var primerTd = fila.querySelector('td.fw-semibold');
-            if (primerTd) primerTd.innerHTML += renderBadgePerfiles(examen);
             tbody.appendChild(fila);
         });
     }
@@ -317,17 +310,20 @@
                 if (examenPerfil.tipo === 'perfil' && window.App.perfiles[examenPerfil.id]) {
                     var perfilHijo = window.App.perfiles[examenPerfil.id];
                     perfilHijo.examenes.forEach(function(examenHijo) {
-                    var override = catalogoMap[examenHijo.id];
-                    var merged = override ? Object.assign({}, examenHijo, override) : examenHijo;
-                    examenesPerfil.push(window.crearExamenDesdeCatalogo(merged, examenId));
+                        var override = catalogoMap[examenHijo.id];
+                        var merged = override ? Object.assign({}, examenHijo, override) : examenHijo;
+                        examenesPerfil.push(window.crearExamenDesdeCatalogo(merged));
                     });
                 } else {
                     var override = catalogoMap[examenPerfil.id];
                     var merged = override ? Object.assign({}, examenPerfil, override) : examenPerfil;
-                    examenesPerfil.push(window.crearExamenDesdeCatalogo(merged, examenId));
+                    examenesPerfil.push(window.crearExamenDesdeCatalogo(merged));
                 }
             });
             var nuevos = examenesPerfil.filter(function(e) { return !idsExistentes.includes(e.id); });
+            nuevos.forEach(function(examen) {
+                examen.grupoPerfil = perfil.nombre;
+            });
             window.examenesOrden = window.examenesOrden.map(function(e) {
                 var actualizado = examenesPerfil.find(function(n) { return n.id === e.id; });
                 if (actualizado) {
@@ -338,10 +334,6 @@
                     e.area = actualizado.area;
                     e.unidad = actualizado.unidad;
                     e.grupo = actualizado.grupo;
-                    if (examenId) {
-                        if (!e.perfilesOrigen) e.perfilesOrigen = [];
-                        if (!e.perfilesOrigen.includes(examenId)) e.perfilesOrigen.push(examenId);
-                    }
                 }
                 return e;
             }).concat(nuevos);

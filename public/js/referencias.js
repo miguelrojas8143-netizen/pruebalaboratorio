@@ -14,6 +14,7 @@ window.App.referencias.sexSpecific = {
         pediatrico: { M: { refMin: 3.5,  refMax: 5.5 },  F: { refMin: 3.5,  refMax: 5.2 }  }
     }
 };
+
 window.App.referencias.shared = {
     globulos_blancos:  { adulto: { refMin: 4.5,  refMax: 11.0 }, pediatrico: { refMin: 6.0,  refMax: 17.0 } },
     neutrofilos_por:   { adulto: { refMin: 40,   refMax: 70 },  pediatrico: { refMin: 35,   refMax: 65 } },

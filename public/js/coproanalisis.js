@@ -2,7 +2,7 @@
  * Módulo para gestionar los exámenes de coproanalisis
  * 
  */
-/**
+
 (function() {
     'use strict';
 
@@ -20,4 +20,3 @@
     ];
 
 })();
-*/

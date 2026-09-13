@@ -1,11 +1,18 @@
 /* ============================================================
-   ESTILOS GLOBALES / BASE
+   ESTILOS GLOBALES / BASE - Solo pantalla
    ============================================================ */
 
-/* Fondo gris claro y tipografía base de todo el sistema */
-body { 
-    background-color: #f4f7f6; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+/* Reseteo y tipografía base */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 10.5pt;
+    color: #222222;
+    margin: 0;
+    padding: 0;
 }
 
 /* ============================================================
@@ -16,19 +23,19 @@ body {
 .card { border: none; border-radius: 12px; }
 
 /* Cabecera de las tarjetas: azul con texto blanco */
-.card-header { 
-    background-color: #0d6efd; 
-    color: white; 
-    border-radius: 12px 12px 0 0 !important; 
-    font-weight: 600; 
+.card-header {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
 }
 
 /* Botón primario azul (sin borde) */
-.btn-primary { 
-    background-color: #0d6efd; 
-    border: none; 
-    padding: 10px 20px; 
-    font-weight: 500; 
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 500;
 }
 /* Hover del botón primario: azul más oscuro */
 .btn-primary:hover { background-color: #0b5ed7; }
@@ -46,23 +53,23 @@ body {
 .badge-orden { font-size: 0.9rem; padding: 5px 10px; }
 
 /* Oculta las flechas de incremento en inputs numéricos (más limpio) */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-    -webkit-appearance: none; 
-    margin: 0; 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
-input[type=number] { -moz-appearance: textfield; }
+input[type=number] { appearance: textfield; -moz-appearance: textfield; }
 
 /* ============================================================
    FICHA DEL PACIENTE (vista Orden)
    ============================================================ */
 
 /* Recuadro con degradado morado que muestra los datos del paciente activo */
-.paciente-info { 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-    color: white; 
-    border-radius: 12px; 
-    padding: 20px; 
+.paciente-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
 }
 .paciente-info h4 { margin: 0; font-weight: 600; }
 .paciente-info .badge { font-size: 1.1rem; padding: 8px 15px; }
@@ -78,12 +85,90 @@ input[type=number] { -moz-appearance: textfield; }
 /* Resaltado al pasar el mouse sobre la fila */
 .examen-row:hover { background-color: #f8f9fa; }
 
+/* Separador visual entre perfiles o grupos de examenes. */
+.grupo-examen-row td {
+    background: #eaf2f8;
+    border-top: 10px solid #ffffff;
+    border-bottom: 1px solid #c9d9e6;
+    color: #1f4e68;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    padding: 9px 12px;
+    text-transform: uppercase;
+}
+.grupo-examen-row:first-child td { border-top-width: 0; }
+
 /* Ancho del input de resultado */
 .resultado-input { max-width: 120px; }
 
 /* Ancho de los inputs de valores de referencia (mín/máx) */
 .ref-min-input,
 .ref-max-input { width: 80px; display: inline-block; }
+
+/* Panel de tipificacion sanguinea */
+.tipificacion-panel {
+    border: 1px solid #d9e4ee;
+    border-radius: 6px;
+    background: #f8fbfd;
+    padding: 9px 10px;
+    min-width: 440px;
+    max-width: 100%;
+}
+.tipificacion-titulo {
+    color: #164e63;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+.tipificacion-ayuda {
+    color: #526575;
+    font-size: .72rem;
+    line-height: 1.25;
+    margin-bottom: 7px;
+}
+.reactivo-card {
+    background: #ffffff;
+    border: 1px solid #d9e4ee;
+    border-radius: 5px;
+    padding: 7px;
+    height: 100%;
+}
+.reactivo-card .form-label { color: #334e68; }
+.reactivo-card .form-select { font-size: .76rem; }
+.reactivo-estado {
+    display: block;
+    font-size: .69rem;
+    margin-top: 3px;
+}
+.tipificacion-panel .resultado-calculado { height: 34px; font-size: .82rem; }
+.resultado-calculado {
+    background: #e8f5ee !important;
+    border: 1px solid #8fc9a7 !important;
+    color: #146c43 !important;
+    font-weight: 700;
+    max-width: none;
+    opacity: 1 !important;
+}
+.resultado-calculado:disabled { cursor: default; }
+
+/* La tabla reserva mas espacio para el panel y evita que crezca hacia abajo. */
+#tablaExamenes .examen-row:has(.tipificacion-panel) > td:nth-child(2) {
+    width: 55%;
+}
+
+/* La tipificacion se elimina desde la orden completa, no desde cada fila. */
+#tablaExamenes .tipificacion-row > td:last-child {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .tipificacion-panel {
+        min-width: 0;
+        padding: 8px;
+    }
+}
 
 
 
@@ -109,258 +194,6 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* Mensaje centrado cuando no hay exámenes en la orden */
 .sin-examenes { text-align: center; padding: 40px; color: #6c757d; }
-
-/* ============================================================
-   REPORTE — CONTENEDOR Y ENCABEZADO
-   ============================================================ */
-
-/* Caja blanca del reporte: centrada, 10.5pt, texto negro */
-.reporte-container {
-    background: white;
-    border-radius: 12px;
-    padding: 40px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    max-width: 800px;
-    margin: 0 auto;
-    font-size: 10.5pt;
-    color: #000;
-}
-
-/* Encabezado del laboratorio: nombre y dirección centrados */
-.reporte-header { 
-    border-bottom: 2px solid #000; 
-    padding-bottom: 12px; 
-    margin-bottom: 16px; 
-    text-align: center; 
-}
-
-.reporte-logo {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #000;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-}
-
-/* Imagen del logo */
-.reporte-logo-img {
-    max-height: 100px;
-    max-width: 100px;
-    margin-right: 50px;
-    vertical-align: middle;
-}
-
-.reporte-info-lab {
-    font-size: 0.72rem;
-    color: #000;
-    line-height: 1.4;
-}
-
-/* Fecha de emisión centrada debajo de los datos del laboratorio */
-.reporte-emision {
-    font-size: 0.72rem;
-    color: #000;
-    margin-top: 8px;
-}
-
-
-/* Datos del paciente en líneas "Etiqueta: valor" */
-.reporte-paciente {
-    margin-bottom: 16px;
-    font-size: 0.8rem;
-}
-
-.reporte-linea { margin-bottom: 2px; }
-
-.reporte-paciente .info-label,
-.reporte-linea .info-label { 
-    font-weight: 700; 
-    color: #000; 
-    margin-right: 4px; 
-}
-
-/* Título principal de resultados */
-.reporte-seccion-titulo { 
-    color: #000; 
-    font-weight: 700; 
-    font-size: 0.9rem; 
-    text-align: center; 
-    text-transform: uppercase; 
-    border-bottom: 1px solid #000; 
-    padding-bottom: 2px; 
-    margin: 18px 0 10px; 
-}
-
-/* Contenedor de tablas de resultados */
-.reporte-tabla { 
-    margin-bottom: 10px; 
-    page-break-inside: auto;
-}
-
-/* Título de cada área (Hematología, Química...) centrado */
-.reporte-area-titulo { 
-    color: #000; 
-    font-weight: 700; 
-    font-size: 0.85rem; 
-    text-align: center; 
-    text-transform: uppercase; 
-    border-bottom: 1px solid #000; 
-    padding-bottom: 2px; 
-    margin: 12px 0 6px; 
-}
-
-/* Grupo de área que debe mantenerse junto al imprimir */
-.reporte-area-grupo { 
-    margin-bottom: 1rem; 
-    page-break-inside: avoid; 
-    break-inside: avoid; 
-}
-
-/* Subtítulos dentro de áreas (ej: Macroscópico, Químico) */
-.reporte-subarea-titulo { 
-    color: #000; 
-    font-weight: 600; 
-    font-size: 0.8rem; 
-    font-style: italic; 
-    margin-top: 8px; 
-    text-align: center; 
-    page-break-after: avoid;
-}
-
-/* Tablas de resultados */
-.reporte-tabla table { 
-    font-size: 0.75rem; 
-    width: 100%; 
-    border-collapse: collapse; 
-    page-break-inside: auto;
-}
-
-.reporte-tabla thead { 
-    background-color: #e9e9e9 !important; 
-    color: #000; 
-}
-
-.reporte-tabla th { 
-    font-weight: 700; 
-    padding: 3px 6px; 
-    border: 1px solid #000; 
-    color: #000; 
-}
-
-.reporte-tabla td { 
-    padding: 3px 6px; 
-    border: 1px solid #ccc; 
-    color: #000; 
-}
-
-/* Filas de tabla que no deben cortarse entre páginas */
-.reporte-tabla tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
-
-/* Estilos para resultados */
-.resultado-alto-texto { 
-    color: #000; 
-    font-weight: bold; 
-}
-
-.resultado-bajo-texto { 
-    color: #000; 
-    font-weight: bold; 
-}
-
-.resultado-normal-texto { 
-    color: #000; 
-}
-
-/* Bloque de heces: tabla de 2 columnas (parámetro / valor) */
-#bloqueHeces { 
-    margin-bottom: 10px; 
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
-
-#bloqueHeces table { 
-    font-size: 0.75rem; 
-    width: 100%; 
-    border-collapse: collapse; 
-    page-break-inside: avoid;
-}
-
-#bloqueHeces th { 
-    font-weight: 700; 
-    padding: 3px 6px; 
-    border: 1px solid #000; 
-    color: #000; 
-    background-color: #e9e9e9 !important; 
-}
-
-#bloqueHeces td { 
-    padding: 3px 6px; 
-    border: 1px solid #ccc; 
-    color: #000; 
-}
-
-/* Bloque de uroanálisis: tabla de 2 columnas (parámetro / valor) */
-#bloqueUroanalisis { 
-    margin-bottom: 10px; 
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
-
-#bloqueUroanalisis table { 
-    font-size: 0.75rem; 
-    width: 100%; 
-    border-collapse: collapse; 
-    page-break-inside: avoid;
-}
-
-#bloqueUroanalisis th { 
-    font-weight: 700; 
-    padding: 3px 6px; 
-    border: 1px solid #000; 
-    color: #000; 
-    background-color: #e9e9e9 !important; 
-}
-
-#bloqueUroanalisis td { 
-    padding: 3px 6px; 
-    border: 1px solid #ccc; 
-    color: #000; 
-}
-
-
-/* Firma del bioanalista dentro del cuerpo del documento (al pie) */
-.reporte-firma { margin-top: 30px; text-align: center; color: #000; }
-.firma-linea {
-    border-top: 1px solid #000;
-    width: 280px;
-    margin: 40px auto 6px;
-    padding-top: 6px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #000;
-}
-.firma-profesional { text-align: center; color: #000; font-size: 0.75rem; line-height: 1.3; }
-.firma-print { display: none; }
-.solo-imprimir { display: none; }
-.reporte-footer {
-    margin-top: 25px;
-    padding-top: 12px;
-    border-top: 1px solid #000;
-    text-align: center;
-    font-size: 0.7rem;
-    color: #000;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 12px;
-}
-.sin-resultados { text-align: center; padding: 60px 20px; color: #000; }
-.sin-resultados i { font-size: 4rem; margin-bottom: 20px; }
-
-.orden-print-header { display: none; }
 
 /* ============================================================
    FORMULARIO DE HECES (vista Orden)

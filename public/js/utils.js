@@ -5,11 +5,15 @@
         if (!examen) return examen;
         if (!examen.area) examen.area = 'General';
         if (!examen.tipo) {
-            examen.tipo = examen.tipoFormulario === 'heces' ? 'heces' : 'numerico';
+            if (examen.id === 'grupo_sanguineo' || examen.id === 'grupo_sanguineo_abo' || examen.id === 'factor_rh') {
+                examen.tipo = examen.id === 'grupo_sanguineo' ? 'texto' : 'tipo_sanguineo';
+            } else {
+                examen.tipo = examen.tipoFormulario === 'heces' ? 'heces' : 'numerico';
+            }
         }
         return examen;
     }
-
+   // Función para calcular el estado del paciente según sus exámenes
     function calcularEstadoPaciente(paciente) {
         var examenes = (paciente.examenes || []).map(normalizarExamen);
         if (examenes.length === 0) return 'en_espera';
@@ -29,6 +33,7 @@
         return 'completo';
     }
 
+// Función para obtener el texto y la clase CSS correspondiente al estado del paciente
     function textoEstado(estado) {
         switch (estado) {
             case 'completo': return { texto: 'Completo', clase: 'bg-success' };
@@ -82,7 +87,7 @@
         var el = document.getElementById('fechaHoy');
         if (el) el.textContent = hoy.charAt(0).toUpperCase() + hoy.slice(1);
     };
-
+     // Interpretar resultado de sustancias reductoras  
     function interpretarSustanciasReductoras(valor) {
         var num = parseFloat(valor);
         if (isNaN(num)) {
@@ -96,7 +101,7 @@
             return { texto: 'POSITIVO', clase: 'text-danger fw-bold' };
         }
     }
-
+   // Funciones para verificar si un examen tiene datos válidos
     function tieneDatosHeces(examen) {
         try {
             var datos = JSON.parse(examen.resultado || '{}');
@@ -105,7 +110,7 @@
             return false;
         }
     }
-
+// Función para verificar si un examen de uroanálisis tiene datos válidos
     function tieneDatosUroanalisis(examen) {
         try {
             var datos = JSON.parse(examen.resultado || '{}');
@@ -114,7 +119,7 @@
             return false;
         }
     }
-
+// Función para obtener el valor numérico de un examen por su ID
     function obtenerValor(examenesOrden, examenId) {
         var examen = examenesOrden.find(function(e) { return e.id === examenId; });
         if (!examen || !examen.resultado) return NaN;
@@ -131,5 +136,56 @@
     window.tieneDatosHeces = tieneDatosHeces;
     window.tieneDatosUroanalisis = tieneDatosUroanalisis;
     window.obtenerValor = obtenerValor;
+
+    window.determinarTipoSangre = function() {
+        var antiA = document.getElementById('antiA');
+        var antiB = document.getElementById('antiB');
+        var antiD = document.getElementById('antiD');
+        if (!antiA || !antiB || !antiD) return null;
+
+        var reaccionaA = antiA.value === 'si';
+        var reaccionaB = antiB.value === 'si';
+        var reaccionaRh = antiD.value === 'si';
+        var entradasCompletas = antiA.value !== '' && antiB.value !== '' && antiD.value !== '';
+        var grupo = '';
+        var factorRh = '';
+
+        if (entradasCompletas) {
+            if (reaccionaA && reaccionaB) grupo = 'AB';
+            else if (reaccionaA) grupo = 'A';
+            else if (reaccionaB) grupo = 'B';
+            else grupo = 'O';
+            factorRh = reaccionaRh ? 'Positivo (+)' : 'Negativo (-)';
+        }
+
+        var resultadoABO = document.getElementById('grupoSanguineoResultado');
+        var resultadoRh = document.getElementById('factorRhResultado');
+        if (resultadoABO) resultadoABO.value = grupo;
+        if (resultadoRh) resultadoRh.value = factorRh;
+
+        var estadoA = document.getElementById('antiAEstado');
+        var estadoB = document.getElementById('antiBEstado');
+        var estadoD = document.getElementById('antiDEstado');
+        if (estadoA) estadoA.textContent = antiA.value === '' ? 'Pendiente' : (reaccionaA ? 'Hay reacción' : 'No hay reacción');
+        if (estadoB) estadoB.textContent = antiB.value === '' ? 'Pendiente' : (reaccionaB ? 'Hay reacción' : 'No hay reacción');
+        if (estadoD) estadoD.textContent = antiD.value === '' ? 'Pendiente' : (reaccionaRh ? 'Hay reacción' : 'No hay reacción');
+
+        var examenes = window.examenesOrden || [];
+        var examenABO = examenes.find(function(examen) { return examen.id === 'grupo_sanguineo_abo'; });
+        var examenRh = examenes.find(function(examen) { return examen.id === 'factor_rh'; });
+        if (examenABO) examenABO.resultado = grupo;
+        if (examenRh) examenRh.resultado = factorRh;
+
+        var resultadoTexto = document.getElementById('resultadoTexto');
+        var resultadoCaja = document.getElementById('resultadoCaja');
+        if (resultadoTexto) {
+            resultadoTexto.innerText = entradasCompletas
+                ? 'Grupo Sanguíneo: ' + grupo + ' ' + factorRh
+                : 'Complete las reacciones para determinar el grupo sanguíneo';
+        }
+        if (resultadoCaja) resultadoCaja.style.display = entradasCompletas ? 'block' : 'none';
+
+        return entradasCompletas ? { grupo: grupo, factorRh: factorRh } : null;
+    };
 
 })();

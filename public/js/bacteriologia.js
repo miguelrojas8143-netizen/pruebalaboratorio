@@ -3,7 +3,6 @@
  * Módulo para gestionar la bacteriología
  */
 
-/*
 (function() {
     'use strict';
 
@@ -19,4 +18,3 @@
     ];
 
 })();
-*/
