@@ -313,23 +313,16 @@
         if (!uro) return '';
         var datosUro = uro.datos;
         var html = '<h6 class="reporte-area-titulo">Examen de Orina / Uroanálisis</h6>';
-        var primerGrupoUro = true;
+        html += '<div class="table-responsive"><table class="table table-bordered table-sm"><tbody>';
         uro.ordenGrupos.forEach(function(grupo) {
             if (!uro.grupos[grupo]) return;
-            if (primerGrupoUro) html += '<div class="pdf-titulo-contenido">';
-            html += '<h6 class="reporte-subarea-titulo mt-3">' + grupo + '</h6>';
-            html += '<div class="table-responsive"><table class="table table-bordered table-sm"><tbody>';
             uro.grupos[grupo].forEach(function(f) {
                 var val = datosUro[f.id] || '-';
                 if (val === '') val = '-';
                 html += '<tr><td class="fw-semibold" width="40%">' + f.nombre + '</td><td>' + val + '</td></tr>';
             });
-            html += '</tbody></table></div>';
-            if (primerGrupoUro) {
-                html += '</div>';
-                primerGrupoUro = false;
-            }
         });
+        html += '</tbody></table></div>';
         return html;
     }
 
@@ -451,7 +444,7 @@
             if (opciones.didDrawPage) {
                 opciones.didDrawPage({ pageNumber: doc.getNumberOfPages() });
             }
-            yInicial = 56;
+            yInicial = opciones.startY || 56;
         }
 
         if (titulo) {
@@ -468,7 +461,7 @@
             head: [encabezados],
             body: filasTabla,
             theme: 'grid',
-            margin: { top: 43, right: 14, bottom: 30, left: 14 },
+            margin: { top: opciones.marginTop || 43, right: 14, bottom: 30, left: 14 },
             styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.5, textColor: [25, 25, 25] },
             headStyles: { fillColor: [31, 78, 104], textColor: [255, 255, 255], fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [248, 251, 253] },
@@ -514,6 +507,14 @@
             doc.setDrawColor(31, 78, 104);
             doc.setLineWidth(0.5);
             doc.line(14, 36, pageWidth - 14, 36);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(25, 25, 25);
+            doc.text(lineasPaciente, 14, 43);
+            var lineaSeparadoraY = 43 + (lineasPaciente.length * 3.5) + 1;
+            doc.setDrawColor(190, 200, 210);
+            doc.setLineWidth(0.25);
+            doc.line(14, lineaSeparadoraY, pageWidth - 14, lineaSeparadoraY);
             doc.setFontSize(7);
             doc.setTextColor(90, 90, 90);
             doc.text('Página ' + data.pageNumber, pageWidth / 2, pageHeight - 8, { align: 'center' });
@@ -530,45 +531,51 @@
         }
 
         doc.setProperties({ title: 'Reporte de resultados - ' + textoPlano(h.nombre), subject: 'Resultados de laboratorio' });
-        encabezadoPagina({ pageNumber: 1 });
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(25, 25, 25);
         var datosPaciente = 'Paciente: ' + textoPlano(h.nombre) +
             '  |  Cédula: ' + textoPlano(h.cedula) +
             '  |  Edad: ' + textoPlano(h.edad) +
             '  |  Sexo: ' + textoPlano(h.sexo) +
             '  |  Teléfono: ' + textoPlano(h.telefono);
         var lineasPaciente = doc.splitTextToSize(datosPaciente, pageWidth - 28);
-        doc.text(lineasPaciente, 14, 43);
-        var lineaSeparadoraY = 43 + (lineasPaciente.length * 3.5) + 1;
-        doc.setDrawColor(190, 200, 210);
-        doc.setLineWidth(0.25);
-        doc.line(14, lineaSeparadoraY, pageWidth - 14, lineaSeparadoraY);
-
-        var y = lineaSeparadoraY + 3;// espacio inicial antes de la primera tabla
+        var yDespuesEncabezado = 43 + (lineasPaciente.length * 3.5) + 1 + 8;
+        encabezadoPagina({ pageNumber: 1 });
+        var y = yDespuesEncabezado;
         doc.setFont('helvetica', 'bold');// para títulos de secciones
         doc.setFontSize(11);// tamaño de fuente para títulos de secciones
         doc.text('', pageWidth / 2, y, { align: 'center' });// espacio para posibles títulos de sección
         y += 6;// espacio después del título de sección
 
         
+        var requiereNuevaPagina = false;
+
         payload.secciones.forEach(function(seccion) {
+            if (requiereNuevaPagina) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            requiereNuevaPagina = true;
             seccion.subareas.forEach(function(sub) {
                 if (sub.rows) {
                     var tituloSeccion = seccion.nombre + (sub.titulo ? ' - ' + sub.titulo : '');
                     y = agregarTablaPDF(doc, tituloSeccion, ['Examen', 'Resultado', 'Unidad', 'Valores de referencia'], sub.rows.map(function(row) {
                         return [textoPlano(row.nombre), textoPlano(row.texto), textoPlano(row.unidad), textoPlano(row.refTexto)];
-                    }), { y: y, alturaMinima: 18, didDrawPage: encabezadoPagina });
+                    }), { y: y, alturaMinima: 18, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado, marginTop: yDespuesEncabezado });
                 }
                 if (sub.notas) {
-                    y = agregarTablaPDF(doc, seccion.nombre + ' - Notas y Observaciones', ['Observación'], [[textoPlano(sub.notas)]], { y: y, didDrawPage: encabezadoPagina });
+                    y = agregarTablaPDF(doc, seccion.nombre + ' - Notas y Observaciones', ['Observación'], [[textoPlano(sub.notas)]], { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado, marginTop: yDespuesEncabezado });
                 }
             });
             y += 2;
         });
 
         if (payload.heces) {
+            if (requiereNuevaPagina) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            requiereNuevaPagina = true;
             var d = payload.heces.datos;
             var hecesFilas = [
                 ['Moco Fecal', d.mocoFecal], ['pH Heces', d.phHeces], ['Glucosa Heces', d.glucosaHeces],
@@ -577,16 +584,24 @@
                 ['Consistencia', d.consistencia], ['Color Heces', d.colorHeces], ['Directo Concentración', d.directoConcentracion],
                 ['Entamoeba coli', d.entamoebaColi], ['Restos Alimentos', d.restosAlimentos], ['Flora Bacteriana', d.floraBacteriana]
             ];
-            y = agregarTablaPDF(doc, 'EXAMEN DE HECES', ['Parámetro', 'Resultado'], hecesFilas.map(function(row) { return [row[0], textoPlano(row[1] || '-')]; }), { y: y, alturaMinima: 72, didDrawPage: encabezadoPagina });
+            y = agregarTablaPDF(doc, 'EXAMEN DE HECES', ['Parámetro', 'Resultado'], hecesFilas.map(function(row) { return [row[0], textoPlano(row[1] || '-')]; }), { y: y, alturaMinima: 72, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado, marginTop: yDespuesEncabezado });
         }
 
         if (payload.uro) {
+            if (requiereNuevaPagina) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            requiereNuevaPagina = true;
+            var uroFilas = [];
             payload.uro.ordenGrupos.forEach(function(grupo) {
                 if (!payload.uro.grupos[grupo]) return;
-                y = agregarTablaPDF(doc, 'EXAMEN DE ORINA - ' + grupo, ['Parámetro', 'Resultado'], payload.uro.grupos[grupo].map(function(field) {
+                uroFilas = uroFilas.concat(payload.uro.grupos[grupo].map(function(field) {
                     return [textoPlano(field.nombre), textoPlano(payload.uro.datos[field.id] || '-')];
-                }), { y: y, didDrawPage: encabezadoPagina });
+                }));
             });
+            y = agregarTablaPDF(doc, 'EXAMEN DE ORINA', ['Parámetro', 'Resultado'], uroFilas, { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado, marginTop: yDespuesEncabezado });
         }
 
         return doc;

@@ -532,6 +532,16 @@ sup {
         break-inside: avoid;
     }
 
+    .reporte-area-grupo:not(:first-of-type) {
+        page-break-before: always;
+        break-before: page;
+    }
+
+    #bloqueHeces {
+        page-break-before: always;
+        break-before: page;
+    }
+
     #bloqueUroanalisis {
         page-break-before: always;
         break-before: page;

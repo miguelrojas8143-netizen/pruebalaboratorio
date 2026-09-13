@@ -63,38 +63,6 @@ window.App.examenesDetallados.examen_orina = {
         { id: 'ur_cristales', nombre: 'Cristales', unidad: '', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['Ausentes', 'Oxalato de calcio', 'Fosfatos', 'Uratas', 'Carbonatos'] }
     ]
 };
-// A continuación se presentan exámenes detallados adicionales.
-//
-
-/*
-window.App.examenesDetallados.uroanalisis = {
-    nombre: 'Uroanálisis',
-    items: [
-        { id: 'ur_aspecto', nombre: 'Aspecto', unidad: '', tipo: 'seleccion_unica', grupo: 'Macroscópico', opciones: ['Límpido', 'Turbio', 'Ligeramente turbio'] },
-        { id: 'ur_color', nombre: 'Color', unidad: '', tipo: 'seleccion_unica', grupo: 'Macroscópico', opciones: ['Amarillo claro', 'Amarillo oscuro', 'Incoloro o amarillo muy pálido', 'Ámbar / Rojizo'] },
-        { id: 'ur_olor', nombre: 'Olor', unidad: '', tipo: 'seleccion_unica', grupo: 'Macroscópico', opciones: ['Sui géneris (característica normal)', 'Fétido (amoniacal)', 'Afrutado (cetónico)', 'Fuerte'] },
-        { id: 'ur_reaccion', nombre: 'Reacción', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Ácida', 'Alcalina'] },
-        { id: 'ur_ph', nombre: 'pH', unidad: '', refMin: 4.5, refMax: 8.0, grupo: 'Químico' },
-        { id: 'ur_densidad', nombre: 'Densidad', unidad: '', refMin: 1.005, refMax: 1.030, grupo: 'Químico' },
-        { id: 'ur_urobilinogeno', nombre: 'Urobilinógeno', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Normal', 'Aumentado', 'Disminuido'] },
-        { id: 'ur_albumina', nombre: 'Albúmina', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Trazas', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_glucosa', nombre: 'Glucosa', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_cetonas', nombre: 'Cetonas', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_proteinas', nombre: 'Proteínas', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_hemoglobina', nombre: 'Hemoglobina', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Trazas', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_bilirrubina', nombre: 'Bilirrubina', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_nitritos', nombre: 'Nitritos', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Positivo'] },
-        { id: 'ur_leucocitos_tira', nombre: 'Leucocitos', unidad: '', tipo: 'seleccion_unica', grupo: 'Químico', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-        { id: 'ur_leucocitos_micro', nombre: 'Leucocitos (Micro)', unidad: 'cpo/campo', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['0-2 por campo', '3-10 por campo', '11-20 por campo', '21-50 por campo', '> 50 por campo'] },
-        { id: 'ur_celulas_epiteliales', nombre: 'Células Epiteliales', unidad: 'cpo/campo', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['Ausentes', 'Escasas', 'Moderadas', 'Abundantes'] },
-        { id: 'ur_eritrocitos', nombre: 'Eritrocitos', unidad: 'cpo/campo', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['0-1 por campo', '2-5 por campo', '6-10 por campo', '> 10 por campo'] },
-        { id: 'ur_bacterias', nombre: 'Bacterias', unidad: '', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['Ausentes', 'Escasas', 'Moderadas', 'Abundantes'] },
-        { id: 'ur_cilindros', nombre: 'Cilindros', unidad: '', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['Ausentes', 'Hialinas', 'Granulosos', 'Eritrocitarios', 'Leucocíticos'] },
-        { id: 'ur_cristales', nombre: 'Cristales', unidad: '', tipo: 'seleccion_unica', grupo: 'Microscópico', opciones: ['Ausentes', 'Oxalato de calcio', 'Fosfatos', 'Uratas', 'Carbonatos'] }
-    ]
-};
-
-*/
 
 
 // A continuación se presentan exámenes detallados adicionales.
