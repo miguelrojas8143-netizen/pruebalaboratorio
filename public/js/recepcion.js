@@ -122,7 +122,7 @@
             encontrados.slice(0, 5).forEach(function(p) {
                 var estado = window.calcularEstadoPaciente(p);
                 var badge = window.textoEstado(estado);
-                html += '<div class="list-group-item d-flex justify-content-between align-items-center"><div><strong>' + p.nombre + '</strong><small class="text-muted d-block">Cédula: ' + (p.cedula || 'N/A') + ' | Orden: #' + p.orden + ' | Visitas: ' + (p.visitas || 1) + '</small></div><div class="d-flex gap-2"><a href="vistas/orden.html?orden=' + p.orden + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-right-circle"></i> Ir a Orden</a><button class="btn btn-sm btn-success" onclick="window.crearNuevaOrden(' + p.id + ')"><i class="bi bi-plus-circle"></i> Nueva Orden</button></div></div>';
+                html += '<div class="list-group-item d-flex justify-content-between align-items-center"><div><strong>' + p.nombre + '</strong><small class="text-muted d-block">Cédula: ' + (p.cedula || 'N/A') + ' | Orden: #' + p.orden + ' | Visitas: ' + (p.visitas || 1) + '</small></div><div class="d-flex gap-2"><a href="vistas/orden.html?orden=' + p.orden + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-right-circle"></i> Ir a Orden</a><a href="vistas/historial.html?id=' + p.id + '" class="btn btn-sm btn-outline-info"><i class="bi bi-clock-history"></i> Historial</a><button class="btn btn-sm btn-success" onclick="window.crearNuevaOrden(' + p.id + ')"><i class="bi bi-plus-circle"></i> Nueva Orden</button></div></div>';
             });
             listaDiv.innerHTML = html;
             resultadosDiv.style.display = 'block';

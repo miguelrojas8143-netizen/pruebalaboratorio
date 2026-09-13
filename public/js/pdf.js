@@ -615,11 +615,50 @@
         generarPDF('descargar');
     }
 
+    async function generarDesdePayload(payload, accion, nombreArchivo) {
+        if (!window.jspdf || !window.jspdf.jsPDF || !window.jspdf.jsPDF.API.autoTable) {
+            alert('No se pudo cargar el generador PDF. Revise las librerías jsPDF y autoTable.');
+            return;
+        }
+
+        var ventanaImpresion = null;
+        if (accion === 'imprimir') {
+            ventanaImpresion = window.open('', '_blank');
+            if (!ventanaImpresion) {
+                alert('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
+                return;
+            }
+            ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando documento para imprimir...</p>');
+            ventanaImpresion.document.close();
+        }
+
+        var logoData = await cargarLogoPDF();
+        var doc = construirPDF(payload, logoData);
+        if (!doc) {
+            if (ventanaImpresion) ventanaImpresion.close();
+            return;
+        }
+
+        var nombreFinal = nombreArchivo || payload.header.orden || 'reporte';
+        nombreFinal = nombreFinal.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9_-]/g, '_')
+            .replace(/_+/g, '_')
+            .substring(0, 100);
+
+        if (accion === 'imprimir') {
+            doc.autoPrint();
+            ventanaImpresion.location.href = doc.output('bloburl');
+        } else {
+            doc.save(nombreFinal + '.pdf');
+        }
+    }
+
     window.PdfReport = {
         buildPayload: buildPayload,
         renderDom: renderDom,
         construirPDF: construirPDF,
         generarPDF: generarPDF,
+        generarDesdePayload: generarDesdePayload,
         vistaPrevia: vistaPrevia,
         descargarPDF: descargarPDF
     };
