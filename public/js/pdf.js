@@ -530,7 +530,7 @@
             doc.text('Bioanalista Responsable  |  C.B. 17.774  |  MPPS 20.913', pageWidth / 2, pageHeight - 14, { align: 'center' });
         }
 
-        doc.setProperties({ title: 'Reporte de resultados - ' + textoPlano(h.nombre), subject: 'Resultados de laboratorio' });
+        doc.setProperties({ title: 'Reporte de resultados - ' + textoPlano(h.nombre) + '-' + textoPlano(h.orden), subject: 'Resultados de laboratorio' });
         var datosPaciente = 'Paciente: ' + textoPlano(h.nombre) +
             '  |  Cédula: ' + textoPlano(h.cedula) +
             '  |  Edad: ' + textoPlano(h.edad) +
