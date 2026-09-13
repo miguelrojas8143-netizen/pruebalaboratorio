@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Paciente</title>
+
+    <!-- Bootstrap CSS local -->
+    <link href="../public/lib/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons local -->
+    <link href="../public/lib/bootstrap-icons.css" rel="stylesheet">
+
+    <link href="../public/css/styles.css" rel="stylesheet">
+    <link href="../public/css/modificar.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-heart-pulse-fill me-2"></i> UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.</span>
+        <div class="d-flex align-items-center">
+            <span class="text-white small no-imprimir"><i class="bi bi-calendar3 me-1"></i> <span id="fechaHoy"></span></span>
+        </div>
+    </div>
+</nav>
+
+    <div class="mb-3 no-imprimir">
+        <button type="button" id="btnVolverOrden" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-1"></i> Volver a Órden
+        </button>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-xl-6">
+                <div class="card shadow-sm h-100 formulario-modificar">
+                    <div class="card-header">
+                        <i class="bi bi-pencil-square me-2"></i> Editar Datos del Paciente
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="formModificar">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="modNombre">Nombre y Apellido <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="modNombre" required placeholder="Ej: Juan Pérez García">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold" for="modSexo">Sexo <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="modSexo" required>
+                                        <option value="" selected disabled>Seleccione</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold" for="modCedula">Cédula</label>
+                                    <input type="text" class="form-control" id="modCedula" placeholder="Opcional">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold" for="modFechaNac">Fecha Nacimiento</label>
+                                    <input type="text" class="form-control" id="modFechaNac" placeholder="DD/MM/AAAA" maxlength="10" onkeyup="formatearFecha(this); mostrarEdad(this)">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold" for="modEdad">Edad</label>
+                                    <input type="text" class="form-control" id="modEdad" placeholder="Auto" readonly>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold" for="modTelefono">Teléfono</label>
+                                    <input type="text" class="form-control" id="modTelefono" placeholder="Opcional">
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <button type="button" class="btn btn-outline-secondary" id="modCancelar">
+                                    <i class="bi bi-x-lg me-1"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-save me-1"></i> Guardar Cambios
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<footer class="footer-developer">
+    <div class="container">
+        <div class="developer-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1"><i class="bi bi-code-slash me-2"></i> Desarrollador del Sistema</h5>
+                    <p class="mb-0">ING: Miguel Antonio Rojas - Sistema de Gestión de Exámenes Médicos</p>
+                    <small><i class="bi bi-envelope me-1"></i> miguelrojas8143@gmail.com</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap JS local -->
+<script src="../public/lib/bootstrap.bundle.min.js"></script>
+<script src="../public/js/utils.js"></script>
+<script src="../public/js/storage.js"></script>
+<script src="../public/js/modificar.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        window.mostrarFechaHoy();
+        window.initModificar();
+    });
+</script>
+
+</body>
+</html>

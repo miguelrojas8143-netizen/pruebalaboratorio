@@ -55,11 +55,41 @@
         localStorage.setItem('ultimoOrdenLab', numero);
     }
 
+    function archivarOrdenAnterior(paciente) {
+        if (!paciente) return;
+        var tieneExamenes = paciente.examenes && paciente.examenes.length > 0;
+        var tieneHistorialResultados = false;
+        if (paciente.examenes && paciente.examenes.length > 0) {
+            tieneHistorialResultados = paciente.examenes.some(function(e) {
+                if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipo === 'multiselect_cantidad') {
+                    try {
+                        var datos = JSON.parse(e.resultado || '{}');
+                        return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
+                    } catch(err) { return false; }
+                }
+                return String(e.resultado || '').trim() !== '';
+            });
+        }
+        if (!tieneExamenes && !tieneHistorialResultados) return;
+        if (!paciente.ordenesPrevias) {
+            paciente.ordenesPrevias = [];
+        }
+        paciente.ordenesPrevias.push({
+            orden: String(paciente.orden || '').padStart(3, '0'),
+            fecha: paciente.fechaRegistro || new Date().toLocaleDateString('es-ES'),
+            examenes: JSON.parse(JSON.stringify(paciente.examenes || [])),
+            refAdaptadas: !!paciente.refAdaptadas,
+            perfiles: paciente.perfiles ? paciente.perfiles.slice() : [],
+            historial: paciente.historial ? JSON.parse(JSON.stringify(paciente.historial || [])) : []
+        });
+    }
+
     window.obtenerOrdenDiaria = obtenerOrdenDiaria;
     window.obtenerCatalogo = obtenerCatalogo;
     window.obtenerPacientes = obtenerPacientes;
     window.guardarPacientes = guardarPacientes;
     window.obtenerUltimaOrden = obtenerUltimaOrden;
     window.guardarUltimaOrden = guardarUltimaOrden;
+    window.archivarOrdenAnterior = archivarOrdenAnterior;
 
-})();
+})();;

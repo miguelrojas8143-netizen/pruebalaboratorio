@@ -78,6 +78,8 @@
                 pacientes[index].visitas = 0;
             }
             pacientes[index].visitas++;
+            if (!pacientes[index].ordenesPrevias) pacientes[index].ordenesPrevias = [];
+            window.archivarOrdenAnterior(pacientes[index]);
             var nuevoOrden = window.obtenerOrdenDiaria();
             pacientes[index].orden = String(nuevoOrden).padStart(3, '0');
             pacientes[index].fechaRegistro = new Date().toLocaleDateString('es-ES');
@@ -136,6 +138,8 @@
                 pacientes[index].visitas = 0;
             }
             pacientes[index].visitas++;
+            if (!pacientes[index].ordenesPrevias) pacientes[index].ordenesPrevias = [];
+            window.archivarOrdenAnterior(pacientes[index]);
             var nuevoOrden = window.obtenerOrdenDiaria();
             pacientes[index].orden = String(nuevoOrden).padStart(3, '0');
             pacientes[index].fechaRegistro = new Date().toLocaleDateString('es-ES');

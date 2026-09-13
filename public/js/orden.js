@@ -98,6 +98,7 @@
         window.refrescarSelect2Catalogos();
         renderizarTablaExamenes();
         renderizarHistorial();
+        renderizarHistorialOrdenes();
     }
 
     window.toggleRefAdaptadas = function() {
@@ -470,6 +471,7 @@
 
     function renderizarHistorial() {
         var contenedor = document.getElementById('historialPaciente');
+        if (!contenedor) return;
         var paciente = window.pacienteActivo;
         if (!paciente || !paciente.historial || paciente.historial.length === 0) {
             contenedor.innerHTML = '<p class="text-muted text-center mb-0">No hay historial previo.</p>';
@@ -636,5 +638,76 @@
     window.crearExamenDesdeCatalogo = crearExamenDesdeCatalogo;
 
     window.initOrden = initOrden;
+
+    function renderizarHistorialOrdenes() {
+        var contenedor = document.getElementById('historialOrdenes');
+        if (!contenedor) return;
+        var paciente = window.pacienteActivo;
+        if (!paciente || !paciente.ordenesPrevias || paciente.ordenesPrevias.length === 0) {
+            contenedor.innerHTML = '<p class="text-muted text-center mb-0 py-3">No hay órdenes anteriores registradas.</p>';
+            return;
+        }
+        var html = '';
+        paciente.ordenesPrevias.slice().reverse().forEach(function(ord) {
+            var estadoClass = 'bg-warning text-dark';
+            var estadoTexto = 'Sin resultados';
+            var tieneResultados = false;
+            if (ord.examenes && ord.examenes.length > 0) {
+                tieneResultados = ord.examenes.some(function(e) {
+                    if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipo === 'multiselect_cantidad') {
+                        try {
+                            var datos = JSON.parse(e.resultado || '{}');
+                            return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
+                        } catch(err) { return false; }
+                    }
+                    return String(e.resultado || '').trim() !== '';
+                });
+            }
+            var totalExamenes = (ord.examenes || []).length;
+            if (tieneResultados) {
+                estadoClass = 'bg-success';
+                estadoTexto = 'Con resultados';
+            } else if (totalExamenes > 0) {
+                estadoClass = 'bg-primary';
+                estadoTexto = 'En proceso';
+            }
+            html += '<div class="card mb-2 shadow-sm orden-anterior-card">';
+            html += '<div class="card-header d-flex justify-content-between align-items-center">';
+            html += '<div><strong>Orden #' + ord.orden + '</strong> <span class="text-muted small"> - ' + (ord.fecha || 'N/A') + '</span></div>';
+            html += '<span class="badge ' + estadoClass + '">' + estadoTexto + '</span>';
+            html += '</div>';
+            html += '<div class="card-body">';
+            if (totalExamenes > 0) {
+                html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>Examen</th><th>Resultado</th><th>Unidad</th></tr></thead><tbody>';
+                ord.examenes.forEach(function(e) {
+                    var resultado = '-';
+                    try {
+                        if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipo === 'multiselect_cantidad') {
+                            var datos = JSON.parse(e.resultado || '{}');
+                            var keys = Object.keys(datos).filter(function(k) { return datos[k] !== ''; });
+                            if (keys.length > 0) {
+                                resultado = keys.map(function(k) { return datos[k]; }).join(', ');
+                            } else {
+                                resultado = '-';
+                            }
+                        } else {
+                            resultado = e.resultado || '-';
+                        }
+                    } catch(err) {
+                        resultado = e.resultado || '-';
+                    }
+                    html += '<tr><td>' + (e.nombre || e.id || '-') + '</td><td>' + resultado + '</td><td>' + (e.unidad || '-') + '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<p class="text-muted mb-0">Sin exámenes registrados.</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+        });
+        contenedor.innerHTML = html;
+    }
+
+    window.renderizarHistorialOrdenes = renderizarHistorialOrdenes;
 
 })();

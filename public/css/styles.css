@@ -230,8 +230,24 @@ input[type=number] { appearance: textfield; -moz-appearance: textfield; }
 }
 
 /* ============================================================
-   VISTAS / CAMBIO DE PANTALLA (patrón SPA)
-   ============================================================ */
+    ÓRDENES ANTERIORES (vista Orden)
+    ============================================================ */
+.orden-anterior-card .card-header {
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+}
+.orden-anterior-card .card-header strong {
+    color: #0d6efd;
+}
+#collapseOrdenesAnteriores .card-header {
+    cursor: pointer;
+}
+
+/* ============================================================
+    VISTAS / CAMBIO DE PANTALLA (patrón SPA)
+    ============================================================ */
 
 /* ============================================================
    FOOTER DEL DESARROLLADOR (solo pantalla)
