@@ -17,7 +17,7 @@ window.App.perfiles.perfil_preoperatorio = {
         { id: 'glicemia_basal', nombre: 'Glicemia Basal', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 70, refMax: 100 },
         { id: 'vdrl', nombre: 'V.D.R.L.', area: 'Inmunología', unidad: '', tipo: 'texto' },
         { id: 'uroanalisis', nombre: 'Uroanálisis', area: 'Uroanálisis', unidad: '', tipo: 'uroanalisis' },
-       //{id: 'examen_heces', nombre: 'Examen de Heces', area: 'Coproanálisis', unidad: '', tipo: 'heces' },
+      
         { id: 'grupo_sanguineo', nombre: 'Grupo Sanguíneo', area: 'Hematología', unidad: '', tipo: 'texto' },
         { id: 'creatinina', nombre: 'Creatinina', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0.7, refMax: 1.3 },
         { id: 'urea', nombre: 'Urea', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 10, refMax: 40 },

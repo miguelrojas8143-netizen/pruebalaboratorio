@@ -2,7 +2,7 @@
  * Módulo para gestionar los exámenes de coagulación
  * 
  */
-/**(function() {
+(function() {
     'use strict';
 // Sección de exámenes de coagulacion
     window.App = window.App || {};
@@ -16,4 +16,3 @@
     ];
 
 })();
-*/

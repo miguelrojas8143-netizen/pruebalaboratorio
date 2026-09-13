@@ -258,7 +258,7 @@
     /* ---------- Renderers para pantalla (Bootstrap) ---------- */
     function renderTablaDom(rows) {
         var esSecrecionVaginal = rows.length > 0 && rows[0].esSecrecionVaginal;
-        var html = '<div class="table-responsive"><table class="table table-bordered"><thead><tr><th width="35%">Examen</th>' +
+        var html = '<div class="table-responsive"><table class="table table-bordered"><thead><tr><th width="35%">Parámetro</th>' +
             (esSecrecionVaginal
                 ? '<th width="65%">Resultado</th>'
                 : '<th width="20%">Resultado</th><th width="15%">Unidad</th><th width="30%">Valores de Referencia</th>') +
@@ -558,7 +558,7 @@
             seccion.subareas.forEach(function(sub) {
                 if (sub.rows) {
                     var tituloSeccion = seccion.nombre + (sub.titulo ? ' - ' + sub.titulo : '');
-                    y = agregarTablaPDF(doc, tituloSeccion, ['Examen', 'Resultado', 'Unidad', 'Valores de referencia'], sub.rows.map(function(row) {
+                    y = agregarTablaPDF(doc, tituloSeccion, ['Parámetro', 'Resultado', 'Unidad', 'Valores de referencia'], sub.rows.map(function(row) {
                         return [textoPlano(row.nombre), textoPlano(row.texto), textoPlano(row.unidad), textoPlano(row.refTexto)];
                     }), { y: y, alturaMinima: 18, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado, marginTop: yDespuesEncabezado });
                 }
