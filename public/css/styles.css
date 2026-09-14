@@ -159,6 +159,31 @@ input[type=number] { appearance: textfield; -moz-appearance: textfield; }
 }
 .grupo-examen-row:first-child td { border-top-width: 0; }
 
+/* Grupo colapsable: cursor pointer y hover */
+td.grupo-header-clickable {
+    cursor: pointer !important;
+    transition: background-color 0.2s ease;
+}
+td.grupo-header-clickable:hover {
+    background: #d5e8f5;
+}
+
+/* Icono de toggle del grupo */
+.grupo-toggle-icon {
+    transition: transform 0.2s ease;
+    font-size: 0.75rem;
+}
+
+/* Grupo colapsado: icono apunta a la derecha */
+.grupo-examen-row.grupo-colapsado .grupo-toggle-icon {
+    transform: rotate(0deg);
+}
+
+/* Grupo expandido: icono apunta hacia abajo */
+.grupo-examen-row:not(.grupo-colapsado) .grupo-toggle-icon {
+    transform: rotate(90deg);
+}
+
 /* Ancho del input de resultado */
 .resultado-input { max-width: 120px; }
 

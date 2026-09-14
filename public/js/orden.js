@@ -181,18 +181,23 @@
             return;
         }
         var grupoAnterior = null;
+        var grupoId = 0;
         window.examenesOrden.forEach(function(examen, index) {
             var grupoActual = examen.grupoPerfil || 'Exámenes individuales';
             if (grupoActual !== grupoAnterior) {
                 var filaGrupo = document.createElement('tr');
                 filaGrupo.className = 'grupo-examen-row';
-                filaGrupo.innerHTML = '<td colspan="5"><i class="bi bi-folder2-open me-2"></i>' + grupoActual + '</td>';
+                filaGrupo.setAttribute('data-grupo-id', grupoId);
+                filaGrupo.innerHTML = '<td colspan="5" class="grupo-header-clickable"><i class="bi bi-chevron-right me-2 grupo-toggle-icon"></i>' + grupoActual + '<span class="badge bg-secondary ms-2">' + window.examenesOrden.filter(function(e) { return (e.grupoPerfil || 'Exámenes individuales') === grupoActual; }).length + '</span></td>';
+                filaGrupo.setAttribute('onclick', 'window.toggleGrupoExamen(' + grupoId + ')');
                 tbody.appendChild(filaGrupo);
                 grupoAnterior = grupoActual;
+                grupoId++;
             }
             var fila = document.createElement('tr');
             fila.className = 'examen-row';
             fila.setAttribute('data-examen-id', examen.id);
+            fila.setAttribute('data-grupo-id', grupoId - 1);
             if (examen.tipo === 'tipo_sanguineo') {
                 fila.classList.add('tipificacion-row');
             }
@@ -293,6 +298,31 @@
             tbody.appendChild(fila);
         });
     }
+
+    window.toggleGrupoExamen = function(grupoId) {
+        var rows = document.querySelectorAll('#tablaExamenes tr.examen-row[data-grupo-id="' + grupoId + '"]');
+        var header = document.querySelector('#tablaExamenes tr.grupo-examen-row[data-grupo-id="' + grupoId + '"]');
+        if (!header) return;
+        header.classList.toggle('grupo-colapsado');
+        rows.forEach(function(row) {
+            row.classList.toggle('d-none');
+        });
+    };
+
+    window.toggleTodosGrupos = function() {
+        var headers = document.querySelectorAll('#tablaExamenes tr.grupo-examen-row');
+        var allCollapsed = headers.length > 0 && Array.from(headers).every(function(h) { return h.classList.contains('grupo-colapsado'); });
+        headers.forEach(function(header) {
+            var rows = document.querySelectorAll('#tablaExamenes tr.examen-row[data-grupo-id="' + header.getAttribute('data-grupo-id') + '"]');
+            if (allCollapsed) {
+                header.classList.remove('grupo-colapsado');
+                rows.forEach(function(r) { r.classList.remove('d-none'); });
+            } else {
+                header.classList.add('grupo-colapsado');
+                rows.forEach(function(r) { r.classList.add('d-none'); });
+            }
+        });
+    };
 
     window.agregarExamen = function() {
         var examenId = $('#selectorExamenes').val();

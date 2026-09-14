@@ -114,7 +114,12 @@
                 <div class="card shadow-sm">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-list-check me-2"></i> Exámenes de la Orden</span>
-                        <span class="badge bg-light text-primary" id="totalExamenes">0 exámenes</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-primary" id="totalExamenes">0 exámenes</span>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleTodosGrupos()" title="Expandir/Colapsar grupos">
+                                <i class="bi bi-arrows-angle-contract"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
