@@ -1,5 +1,5 @@
 {
-  "name": "laboratorio-prueba-pro",
+  "name": "MiroLab Sistems",
   "version": "1.0.0",
   "description": "Sistema de Laboratorio Clínico - Demo",
   "main": "main.js",
@@ -17,8 +17,8 @@
     "puppeteer": "^25.10.0"
   },
   "build": {
-    "appId": "com.labsystem.pro",
-    "productName": "Laboratorio Prueba 1 Pro",
+    "appId": "com.mpirolab.sistems",
+    "productName": "MiroLab Sistems",
     "directories": {
       "output": "dist"
     },

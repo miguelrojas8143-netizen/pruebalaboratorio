@@ -16,6 +16,66 @@ body {
 }
 
 /* ============================================================
+   NAVBAR Y LOGOTIPO (index.html)
+   ============================================================ */
+
+/* Navbar: fondo azul gradiente con sombra */
+.navbar {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%) !important;
+}
+
+/* Logo circular con borde blanco y sombra */
+.logo-navbar {
+    height: 60px;
+    width: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    vertical-align: middle;
+}
+
+/* Hover: aumenta y refuerza la sombra */
+.logo-navbar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Texto del brand al lado del logo */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Texto secundario del brand */
+.navbar-brand .navbar-text {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Navbar más alto para acomodar logo */
+.navbar .container {
+    min-height: 76px;
+}
+
+/* Ajuste para móviles */
+@media (max-width: 768px) {
+    .logo-navbar {
+        height: 48px;
+        width: 48px;
+    }
+    .navbar-brand {
+        font-size: 0.95rem;
+    }
+}
+
+/* ============================================================
    TARJETAS Y BOTONES (Recepción / Orden)
    ============================================================ */
 
