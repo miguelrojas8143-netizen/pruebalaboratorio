@@ -45,7 +45,7 @@
                 ]);
             })
             .then(function(results) {
-                _cache.pacientes = results[0] || [];
+                _cache.pacientes = (results[0] && results[0].datos) ? results[0].datos : (results[0] || []);
                 _cache.catalogoCustom = results[1] || [];
                 if (results[2] !== null && results[2] !== undefined) {
                     _cache.ultimoOrdenLab = parseInt(results[2]) || 0;

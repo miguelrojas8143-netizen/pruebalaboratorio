@@ -203,17 +203,50 @@
     // FUNCIONES ESPECÍFICAS (Originales - mantener)
     // ============================================
 
-    function obtenerPacientes() {
+    function obtenerPacientes(limit, cursor) {
+        var defaultLimit = limit || 10;
+        var limitNum = parseInt(defaultLimit, 10) || 10;
+
         return requireDB().then(function(database) {
             return new Promise(function(resolve, reject) {
-                var tx = database.transaction(['pacientes'], 'readonly');
-                var store = tx.objectStore('pacientes');
-                var request = store.getAll();
-                request.onsuccess = function() { resolve(request.result || []); };
-                request.onerror = function() {
-                    console.error('[obtenerPacientes] Error:', request.error);
-                    reject(request.error);
-                };
+                try {
+                    var tx = database.transaction(['pacientes'], 'readonly');
+                    var store = tx.objectStore('pacientes');
+                    var pacientes = [];
+                    var contador = 0;
+                    var ultimaKey = null;
+                    var request = store.openCursor();
+
+                    if (cursor) {
+                        request = store.openCursor(cursor);
+                    } else {
+                        request = store.openCursor();
+                    }
+
+                    request.onsuccess = function(event) {
+                        var result = event.target.result;
+                        if (result && contador < limitNum) {
+                            pacientes.push(result.value);
+                            contador++;
+                            ultimaKey = result.key;
+                            result.continue();
+                        } else {
+                            resolve({
+                                datos: pacientes,
+                                ultimaKey: (pacientes.length === limitNum) ? ultimaKey : null,
+                                tieneMas: pacientes.length === limitNum
+                            });
+                        }
+                    };
+
+                    request.onerror = function() {
+                        console.error('[obtenerPacientes] Error en cursor:', request.error);
+                        reject(request.error);
+                    };
+                } catch (e) {
+                    console.error('[obtenerPacientes] Error:', e);
+                    reject(e);
+                }
             });
         });
     }
