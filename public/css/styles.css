@@ -1,0 +1,968 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    overflow-x: hidden;
+}
+
+body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 10.5pt;
+    color: #222222;
+    margin: 0;
+    padding: 0;
+}
+
+/* ============================================================
+   NAVBAR Y LOGOTIPO (index.html)
+   ============================================================ */
+
+/* Navbar: fondo azul gradiente con sombra */
+.navbar {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%) !important;
+}
+
+/* Logo circular con borde blanco y sombra */
+.logo-navbar {
+    height: 60px;
+    width: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    vertical-align: middle;
+}
+
+/* Hover: aumenta y refuerza la sombra */
+.logo-navbar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Texto del brand al lado del logo */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Texto secundario del brand */
+.navbar-brand .navbar-text {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Buscador de pacientes compacto en pantallas amplias */
+.buscador-paciente {
+    width: 75%;
+    max-width: 650px;
+}
+
+/* Navbar más alto para acomodar logo */
+.navbar .container {
+    min-height: 76px;
+}
+
+.dashboard-shell {
+    display: flex;
+    align-items: stretch;
+    gap: 1.25rem;
+    padding: 0 0 1.5rem;
+    max-width: none;
+    margin: 0;
+}
+
+.dashboard-sidebar {
+    width: 220px;
+    min-height: calc(100vh - 76px);
+    background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%);
+    border-radius: 0;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 1rem 1rem 0.85rem;
+    color: #fff;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-sidebar .sidebar-nav {
+    padding-top: 0.85rem;
+}
+
+.sidebar-brand .logo-navbar {
+    height: 34px;
+    width: 34px;
+    border-width: 2px;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.75rem 0.7rem;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.72rem 0.85rem;
+    color: rgba(255, 255, 255, 0.94);
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    box-shadow: inset 4px 0 0 rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-link i {
+    font-size: 0.96rem;
+    width: 1rem;
+    text-align: center;
+}
+
+.dashboard-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.orden-vista > .mb-3,
+.orden-vista > .paciente-info,
+.orden-vista > .row {
+    width: 100%;
+    max-width: 1280px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.orden-vista .paciente-info {
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+}
+
+.orden-vista .paciente-info h4 {
+    font-size: 1rem;
+}
+
+.orden-vista .paciente-info .badge {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.55rem;
+}
+
+.orden-vista .card-header {
+    padding: 0.65rem 0.9rem;
+    font-size: 0.88rem;
+}
+
+.orden-vista .card-body.p-4 {
+    padding: 0.9rem !important;
+}
+
+.orden-vista .btn {
+    padding: 0.42rem 0.7rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+}
+
+.orden-vista .table {
+    font-size: 0.8rem;
+}
+
+.orden-vista .table th,
+.orden-vista .table td {
+    padding: 0.45rem 0.65rem;
+}
+
+.orden-vista .sin-examenes {
+    padding: 2rem;
+}
+
+/* Ajuste para móviles */
+@media (max-width: 768px) {
+    .logo-navbar {
+        height: 48px;
+        width: 48px;
+    }
+    .navbar-brand {
+        font-size: 0.95rem;
+    }
+    .buscador-paciente {
+        width: 100%;
+        max-width: none;
+    }
+    .dashboard-shell {
+        flex-direction: column;
+        padding: 0 0.75rem 1rem;
+    }
+    .dashboard-sidebar {
+        width: 100%;
+        min-height: auto;
+    }
+    .orden-vista > .mb-3,
+    .orden-vista > .paciente-info,
+    .orden-vista > .row {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    .sidebar-nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ============================================================
+   RECEPCIÓN COMPACTA (index.html)
+   ============================================================ */
+
+.index-recepcion {
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: #334155;
+}
+
+.index-recepcion .container {
+    max-width: 1280px;
+}
+
+.index-recepcion .card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.index-recepcion .card-header {
+    padding: 0.65rem 0.9rem;
+    font-size: 0.88rem;
+    letter-spacing: 0.01em;
+}
+
+.index-recepcion .card-body {
+    padding: 0.9rem;
+}
+
+.index-recepcion h5 {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.index-recepcion .form-label {
+    margin-bottom: 0.25rem;
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.index-recepcion .form-control,
+.index-recepcion .form-select {
+    min-height: 36px;
+    padding: 0.42rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    color: #1e293b;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.index-recepcion .form-control:focus,
+.index-recepcion .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+}
+
+.index-recepcion .input-group-text {
+    min-height: 36px;
+    padding: 0.42rem 0.65rem;
+    font-size: 0.85rem;
+}
+
+.index-recepcion .mb-2 {
+    margin-bottom: 0.6rem !important;
+}
+
+.index-recepcion .mt-3 {
+    margin-top: 0.75rem !important;
+}
+
+.index-recepcion .btn {
+    padding: 0.42rem 0.7rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+}
+
+.index-recepcion .btn-primary {
+    padding: 0.5rem 0.8rem;
+    font-weight: 600;
+}
+
+.index-recepcion .btn-save-compact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 140px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.index-recepcion .btn-save-compact i {
+    font-size: 0.8rem;
+}
+
+.index-recepcion .badge {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.72rem;
+}
+
+.index-recepcion .table {
+    margin-bottom: 0;
+    font-size: 0.8rem;
+}
+
+.index-recepcion .table th {
+    padding: 0.55rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.index-recepcion .table td {
+    padding: 0.45rem 0.65rem;
+}
+
+.index-recepcion .modal-content {
+    border: 0;
+    border-radius: 12px;
+    font-size: 0.85rem;
+}
+
+.index-recepcion .modal-header,
+.index-recepcion .modal-footer {
+    padding: 0.75rem 1rem;
+}
+
+.index-recepcion .modal-body {
+    padding: 0.9rem 1rem;
+}
+
+@media (max-width: 768px) {
+    .index-recepcion .card-body {
+        padding: 0.75rem;
+    }
+
+    .index-recepcion .form-control,
+    .index-recepcion .form-select {
+        font-size: 0.8rem;
+    }
+}
+
+/* ============================================================
+   TARJETAS Y BOTONES (Recepción / Orden)
+   ============================================================ */
+
+/* Tarjetas: sin borde y esquinas redondeadas */
+.card { border: none; border-radius: 12px; }
+
+/* Reduce el ancho visual de los paneles principales y los separa de los bordes. */
+.paneles-principales {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+/* Cabecera de las tarjetas: azul con texto blanco */
+.card-header {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+    border-color: #222222 !important;
+}
+
+/* Botón primario azul (sin borde) */
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+/* Hover del botón primario: azul más oscuro */
+.btn-primary:hover { background-color: #0b5ed7; }
+
+/* ============================================================
+   TABLAS (cola de pacientes, exámenes)
+   ============================================================ */
+
+/* Filas de tabla con cursor y transición suave */
+.table-hover tbody tr { cursor: pointer; transition: 0.2s; }
+/* Resaltado azul claro al pasar el mouse */
+.table-hover tbody tr:hover { background-color: #e7f1ff; }
+
+/* Estilo del número de orden en la cola */
+.badge-orden { font-size: 0.9rem; padding: 5px 10px; }
+
+/* Oculta las flechas de incremento en inputs numéricos (más limpio) */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+
+/* ============================================================
+   FICHA DEL PACIENTE (vista Orden)
+   ============================================================ */
+
+/* Recuadro con degradado morado que muestra los datos del paciente activo */
+.paciente-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+}
+.paciente-info h4 { margin: 0; font-weight: 600; }
+.paciente-info .badge { font-size: 1.1rem; padding: 8px 15px; }
+
+
+/* ============================================================
+   TABLA DE EXÁMENES (vista Orden)
+   ============================================================ */
+
+/* Fila de examen con transición suave */
+.examen-row { transition: 0.3s;}
+
+/* Resaltado al pasar el mouse sobre la fila */
+.examen-row:hover { background-color: #f8f9fa; }
+
+/* Separador visual entre perfiles o grupos de examenes. */
+.grupo-examen-row td {
+    background: #eaf2f8;
+    border-top: 10px solid #ffffff;
+    border-bottom: 1px solid #c9d9e6;
+    color: #1f4e68;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    padding: 9px 12px;
+    text-transform: uppercase;
+}
+.grupo-examen-row:first-child td { border-top-width: 0; }
+
+/* Grupo colapsable: cursor pointer y hover */
+td.grupo-header-clickable {
+    cursor: pointer !important;
+    transition: background-color 0.2s ease;
+}
+td.grupo-header-clickable:hover {
+    background: #d5e8f5;
+}
+
+/* Icono de toggle del grupo */
+.grupo-toggle-icon {
+    transition: transform 0.2s ease;
+    font-size: 0.75rem;
+}
+
+/* Grupo colapsado: icono apunta a la derecha */
+.grupo-examen-row.grupo-colapsado .grupo-toggle-icon {
+    transform: rotate(0deg);
+}
+
+/* Grupo expandido: icono apunta hacia abajo */
+.grupo-examen-row:not(.grupo-colapsado) .grupo-toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* Ancho del input de resultado */
+.resultado-input { max-width: 120px; }
+
+.items-detallados-verticales > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+/* Ancho de los inputs de valores de referencia (mín/máx) */
+.ref-min-input,
+.ref-max-input { width: 80px; display: inline-block; }
+
+.referencia-item-input {
+    font-size: 0.72rem;
+    min-height: 28px;
+    color: #526575;
+}
+
+.item-referencia .referencia-item-input {
+    width: 100%;
+    margin-top: 2px;
+}
+
+/* Panel de tipificacion sanguinea */
+.tipificacion-panel {
+    border: 1px solid #d9e4ee;
+    border-radius: 6px;
+    background: #f8fbfd;
+    padding: 9px 10px;
+    min-width: 440px;
+    max-width: 100%;
+}
+.tipificacion-titulo {
+    color: #164e63;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+.tipificacion-ayuda {
+    color: #526575;
+    font-size: .72rem;
+    line-height: 1.25;
+    margin-bottom: 7px;
+}
+.reactivo-card {
+    background: #ffffff;
+    border: 1px solid #d9e4ee;
+    border-radius: 5px;
+    padding: 7px;
+    height: 100%;
+}
+.reactivo-card .form-label { color: #334e68; }
+.reactivo-card .form-select { font-size: .76rem; }
+.reactivo-estado {
+    display: block;
+    font-size: .69rem;
+    margin-top: 3px;
+}
+.tipificacion-panel .resultado-calculado { height: 34px; font-size: .82rem; }
+.resultado-calculado {
+    background: #e8f5ee !important;
+    border: 1px solid #8fc9a7 !important;
+    color: #146c43 !important;
+    font-weight: 700;
+    max-width: none;
+    opacity: 1 !important;
+}
+.resultado-calculado:disabled { cursor: default; }
+
+/* La tabla reserva mas espacio para el panel y evita que crezca hacia abajo. */
+#tablaExamenes .examen-row:has(.tipificacion-panel) > td:nth-child(2) {
+    width: 55%;
+}
+
+/* La tipificacion muestra el botón de eliminar individual */
+#tablaExamenes .tipificacion-row > td:last-child {
+    display: table-cell;
+}
+
+/* Textarea de observaciones del antibiograma: más espacio y legible */
+.observaciones-textarea {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    padding: 0.5rem;
+    min-height: 90px;
+}
+
+@media (max-width: 767.98px) {
+    .tipificacion-panel {
+        min-width: 0;
+        padding: 8px;
+    }
+}
+
+
+
+/* Color del input según el valor ingresado: alto (amarillo), bajo (rojo), normal (verde) */
+.resultado-alto { background-color: #fff3cd !important; border-color: #ffc107 !important; }
+.resultado-bajo { background-color: #f8d7da !important; border-color: #dc3545 !important; }
+/*.resultado-normal { background-color: #d1e7dd !important; border-color: #198754 !important; }
+
+
+/* Item del historial con barra lateral azul */
+.historial-item { border-left: 3px solid #0d6efd; padding-left: 10px; margin-bottom: 10px; }
+
+/* Fuerza el selector de exámenes (Select2) al 100% de ancho */
+.select2-container { width: 100% !important; }
+
+/* ============================================================
+   NAVEGACIÓN Y ESTADOS
+   ============================================================ */
+
+/* Botón "Volver" gris */
+.btn-volver { background-color: #6c757d; border: none; color: white; }
+.btn-volver:hover { background-color: #5a6268; color: white; }
+
+/* Botones compactos: el texto queda disponible para accesibilidad, pero no se muestra. */
+.btn:not(.btn-close) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.1rem;
+    min-height: 2.1rem;
+    padding: 0.35rem;
+    font-size: 0;
+    line-height: 1;
+}
+
+.btn:not(.btn-close) i {
+    margin-right: 0 !important;
+    font-size: 0.95rem;
+}
+
+.btn.btn-sm:not(.btn-close) {
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 0.3rem;
+}
+
+/* Mensaje centrado cuando no hay exámenes en la orden */
+.sin-examenes { text-align: center; padding: 40px; color: #6c757d; }
+
+/* ============================================================
+   FORMULARIO DE HECES (vista Orden)
+   ============================================================ */
+
+/* Formularios especializados flotantes para trabajar sobre la orden */
+.formulario-flotante {
+    position: fixed;
+    z-index: 1050;
+    top: 50%;
+    left: 50%;
+    width: min(900px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    transform: translate(-50%, -50%);
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.3);
+}
+
+.formulario-flotante::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(15, 23, 42, 0.35);
+}
+
+.formulario-flotante-uroanalisis {
+    width: min(600px, calc(100vw - 1rem));
+    max-height: calc(100vh - 1rem);
+}
+
+.formulario-flotante-uroanalisis .card-body {
+    padding: 0.8rem !important;
+}
+
+.formulario-flotante-uroanalisis .card-header {
+    font-size: 0.88rem;
+    padding: 0.6rem 0.8rem;
+}
+
+.formulario-flotante-uroanalisis .row {
+    row-gap: 0.4rem !important;
+}
+
+.formulario-flotante-uroanalisis .form-label {
+    font-size: 0.78rem;
+    margin-bottom: 0.2rem;
+}
+
+.formulario-flotante-uroanalisis .form-control,
+.formulario-flotante-uroanalisis .form-select {
+    font-size: 0.78rem;
+    min-height: 28px;
+    padding: 0.2rem 0.4rem;
+}
+
+.formulario-flotante-uroanalisis .form-check {
+    margin-top: 0.2rem;
+}
+
+.formulario-flotante-uroanalisis .d-grid.gap-2 {
+    gap: 0.35rem !important;
+}
+
+.formulario-flotante-uroanalisis .btn {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.5rem;
+}
+
+#modalItemsExamen .modal-dialog,
+#modalItemsExamen .modal-hematologia {
+    width: min(680px, calc(100vw - 1rem));
+    max-width: none;
+    margin: 0.5rem auto;
+}
+
+#modalItemsExamen .modal-content {
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
+    border: 0;
+    border-radius: 10px;
+    box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.3);
+}
+
+#modalItemsExamen .modal-hematologia {
+    margin: 0 auto;
+}
+
+#modalItemsExamen .modal-hematologia .modal-content {
+    width: 100%;
+}
+
+#modalItemsExamen .modal-body {
+    overflow-y: auto;
+    padding: 0.8rem 1rem;
+}
+
+#modalItemsExamen .modal-header,
+#modalItemsExamen .modal-footer {
+    padding: 0.65rem 0.9rem;
+}
+
+#modalItemsExamen .modal-body .row {
+    row-gap: 0.45rem !important;
+}
+
+#modalItemsExamen .modal-body .form-control {
+    min-height: 32px;
+    padding: 0.28rem 0.5rem;
+}
+
+#modalItemsExamen .items-detallados-cabecera,
+#modalItemsExamen .items-detallados-verticales > [class*="col-"],
+#modalItemsExamen .items-detallados-tabla > [class*="col-"] {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.35fr) minmax(82px, 0.8fr) 68px minmax(150px, 1.35fr);
+    align-items: center;
+    column-gap: 0.55rem;
+}
+
+#modalItemsExamen .items-detallados-cabecera {
+    margin: 0 0 0.35rem;
+    padding: 0 0.35rem;
+    color: #526575;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+#modalItemsExamen .items-detallados-verticales,
+#modalItemsExamen .items-detallados-tabla {
+    margin: 0;
+}
+
+#modalItemsExamen .items-detallados-verticales > [class*="col-"],
+#modalItemsExamen .items-detallados-tabla > [class*="col-"] {
+    width: 100%;
+    max-width: none;
+    flex: none;
+    margin-bottom: 0.35rem;
+}
+
+#modalItemsExamen .items-detallados-verticales label,
+#modalItemsExamen .items-detallados-tabla label,
+#modalItemsExamen .items-detallados-verticales .tabla-item-input,
+#modalItemsExamen .items-detallados-tabla .tabla-item-input,
+#modalItemsExamen .items-detallados-verticales .item-unidad,
+#modalItemsExamen .items-detallados-tabla .item-unidad,
+#modalItemsExamen .items-detallados-verticales .item-referencia,
+#modalItemsExamen .items-detallados-tabla .item-referencia {
+    margin: 0;
+}
+
+#modalItemsExamen .items-detallados-verticales .item-referencia,
+#modalItemsExamen .items-detallados-tabla .item-referencia {
+    min-width: 0;
+}
+
+@media (max-width: 600px) {
+    #modalItemsExamen .items-detallados-cabecera,
+    #modalItemsExamen .items-detallados-verticales > [class*="col-"],
+    #modalItemsExamen .items-detallados-tabla > [class*="col-"] {
+        grid-template-columns: minmax(120px, 1fr) minmax(80px, 0.8fr);
+        row-gap: 0.2rem;
+    }
+
+    #modalItemsExamen .items-detallados-cabecera span:nth-child(3),
+    #modalItemsExamen .items-detallados-cabecera span:nth-child(4) {
+        display: none;
+    }
+
+    #modalItemsExamen .item-unidad {
+        grid-column: 1;
+        font-size: 0.7rem;
+    }
+
+    #modalItemsExamen .item-referencia {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+.formulario-flotante .card {
+    margin: 0;
+}
+
+.formulario-flotante .card-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#formularioHeces { overflow: hidden; }
+#formularioHeces .card-header { font-size: 1.1rem; }
+#formularioHeces .form-label { margin-bottom: 4px; }
+#formularioHeces .form-control,
+#formularioHeces .form-select { border-radius: 6px; }
+
+/* En móvil separa las columnas del formulario de heces */
+@media (max-width: 768px) {
+    .formulario-flotante {
+        width: calc(100vw - 1rem);
+        max-height: calc(100vh - 1rem);
+    }
+
+    .formulario-flotante .card-body {
+        padding: 0.8rem !important;
+    }
+
+    .paneles-principales {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #formularioHeces .row.g-3 > [class*="col-"] {
+        margin-bottom: 10px;
+    }
+}
+
+/* ============================================================
+   FORMULARIO DE URÓLISIS (vista Orden)
+   ============================================================ */
+
+#formularioUroanalisis { overflow: hidden; }
+#formularioUroanalisis .card-header { font-size: 1.1rem; }
+#formularioUroanalisis .form-label { margin-bottom: 4px; }
+#formularioUroanalisis .form-control,
+#formularioUroanalisis .form-select { border-radius: 6px; }
+
+@media (max-width: 768px) {
+    #formularioUroanalisis .row.g-3 > [class*="col-"] {
+        margin-bottom: 10px;
+    }
+}
+
+/* ============================================================
+    ÓRDENES ANTERIORES (vista Orden)
+    ============================================================ */
+.orden-anterior-card .card-header {
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+}
+.orden-anterior-card .card-header strong {
+    color: #0d6efd;
+}
+#collapseOrdenesAnteriores .card-header {
+    cursor: pointer;
+}
+
+/* ============================================================
+    VISTAS / CAMBIO DE PANTALLA (patrón SPA)
+    ============================================================ */
+
+/* ============================================================
+   FOOTER DEL DESARROLLADOR (solo pantalla)
+   ============================================================ */
+
+/* Pie de página con degradado morado que muestra datos del desarrollador */
+.footer-developer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 0;
+    margin-top: 40px;
+    border-top: 3px solid #0d6efd;
+}
+
+/* Tarjeta semitransparente dentro del footer */
+.footer-developer .developer-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px 15px;
+    backdrop-filter: blur(10px);
+}
+
+.footer-developer .footer-title {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.footer-developer .footer-name {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.85rem;
+}
+
+.footer-developer .footer-email {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.78rem;
+    text-decoration: none;
+}
+
+.footer-developer .footer-email:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.footer-developer .developer-info {
+    font-size: 0.9rem;
+}
+
+/* ============================================================
+   MODAL DE PERFILES Y EXPANSION DE EXAMENES
+   ============================================================ */
+.perfil-examen-card { border-left: 3px solid #0d6efd; transition: all 0.2s; }
+.perfil-examen-card:hover { border-left-color: #0b5ed7; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.perfil-items-contenedor { animation: slideDown 0.3s ease-in-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.examen-items-row { background-color: #f8f9fa; }
+.examen-items-row td { padding: 0 !important; }
+.perfil-item-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+.tabla-item-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+
+/* ============================================================
+   BADGE DE PERFIL EN LA TABLA DE EXÁMENES (vista Orden)
+   ============================================================ */
+.badge-perfil {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px 3px 0 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #087999;
+    background: #e7f4f9;
+    border: 1px solid #a7e0f0;
+    border-radius: 3px;
+}

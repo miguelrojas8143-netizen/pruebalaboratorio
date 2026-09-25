@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiroLab Systems</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: transparent;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        
+        .splash-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .logo-container {
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .logo-container img {
+            max-width: 300px;
+            height: auto;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+        }
+        
+        .app-name {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .tagline {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            background: white;
+            border-radius: 2px;
+            animation: loading 2s ease-in-out infinite;
+        }
+        
+        .version {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes loading {
+            0% { width: 0%; margin-left: 0; }
+            50% { width: 70%; margin-left: 15%; }
+            100% { width: 0%; margin-left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="logo-container">
+            <!-- Reemplaza esta ruta con la ubicación real de tu logo -->
+            <img src="logo-mirolab.png" alt="MiroLab Systems">
+        </div>
+        <h1 class="app-name">MiroLab Systems</h1>
+        <p class="tagline">Tus resultados médicos a la medida</p>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+        <p class="version">Versión 1.0.0 - Demo</p>
+    </div>
+</body>
+</html>

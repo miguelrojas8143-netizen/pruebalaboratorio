@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Exámenes</title>
+
+    <!-- Bootstrap CSS local -->
+    <link href="../public/lib/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons local -->
+    <link href="../public/lib/bootstrap-icons.css" rel="stylesheet">
+    <!-- Select2 CSS local -->
+    <link href="../public/lib/select2.min.css" rel="stylesheet">
+    <!-- Select2 Theme Bootstrap 5 local -->
+    <link href="../public/lib/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+
+    <link href="../public/css/styles.css" rel="stylesheet">
+    <link href="../public/css/catalogo.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">
+            <img src="../public/imagen/portada.png" alt="Logo" class="logo-navbar me-2">
+            MiroLab Sistems
+            <span class="navbar-text">-Demo Version 1</span>
+        </span>
+       
+            <div class="d-flex align-items-center">
+          <!--   
+            <button class="btn btn-outline-light btn-sm me-2" onclick="borrarTodosLosDatos()" title="Borrar todos los datos">
+                <i class="bi bi-trash3"></i>
+            </button>
+            <button class="btn btn-outline-light btn-sm me-2" onclick="mostrarEstadisticas()" title="Estadísticas">
+                <i class="bi bi-bar-chart-line"></i>
+            </button>
+             -->
+
+            <span class="text-white small no-imprimir"><i class="bi bi-calendar3 me-1"></i> <span id="fechaHoy"></span></span>
+        </div>
+    </div>
+
+</nav>
+
+
+    <div class="container mb-5">
+        <div class="mb-3 no-imprimir">
+            <button class="btn btn-volver" onclick="window.location.href='../index.html'">
+                <i class="bi bi-arrow-left me-1"></i> Volver a Recepción
+            </button>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-journal-medical me-2"></i> Catálogo de Exámenes</span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleAllCatalogoSections(false)">
+                        <i class="bi bi-arrows-collapse me-1"></i> Colapsar Todo
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleAllCatalogoSections(true)">
+                        <i class="bi bi-arrows-expand me-1"></i> Expandir Todo
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="restablecerCatalogo()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Restablecer
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="guardarCatalogo()">
+                        <i class="bi bi-save me-1"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="catalogoAcordeones">
+                    <div class="text-center text-muted py-4">Cargando catálogo...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-collection-play me-2"></i> Perfiles / Paneles
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="30%">Nombre del Perfil</th>
+                                <th width="60%">Exámenes Incluidos</th>
+                                <th width="10%" class="text-center">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCatalogoPerfiles">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">Cargando perfiles...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+<footer class="footer-developer">
+    <div class="container">
+        <div class="developer-card">
+            <div class="row align-items-center">
+                <div class="col-12 text-center">
+                    <h5 class="footer-title mb-1"><i class="bi bi-code-slash me-2"></i>Mirolab-Systems</h5>
+                    <p class="footer-name mb-1"><i class="bi bi-person-badge me-1"></i>Ing. Miguel Antonio Rojas</p>
+                    <a class="footer-email" href="mailto:miguelrojas8143@gmail.com">
+                        <i class="bi bi-envelope me-1"></i>miguelrojas8143@gmail.com
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+<div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
+<script src="../public/lib/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap JS local -->
+<script src="../public/lib/bootstrap.bundle.min.js"></script>
+<script src="../public/js/catalogo-base.js"></script>
+    <script src="../public/js/perfiles.js"></script>
+    <script src="../public/js/utils.js"></script>
+    <script src="../public/js/db.js"></script>
+    <script src="../public/js/storage.js"></script>
+    <script src="../public/js/orden.js"></script>
+    <script src="../public/js/catalogo-admin.js"></script>
+    <script src="../public/js/app.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.onStorageReady) {
+            window.onStorageReady(function() { initCatalogo(); });
+        } else {
+            initCatalogo();
+        }
+    });
+</script>
+</body>
+</html>

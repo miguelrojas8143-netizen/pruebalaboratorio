@@ -1,0 +1,544 @@
+/* ============================================================
+   PDF.CSS - Estilos de impresión y reporte PDF
+   Corregido: superposición de header/footer + saltos de página
+   ============================================================ */
+
+/* ============================================================
+   1. CONFIGURACIÓN DE PÁGINA
+   ============================================================ */
+@page {
+    /*ize: A4 portrait;*/
+     size: A4 portrait;
+      margin: 1.2cm 1.5cm 1.5cm 1.5cm; /* Margen superior para el encabezado repetitivo */
+    
+
+}
+/* ============================================================
+    2. REGLAS DE SALTO DE PÁGINA PARA LA VISTA HTML IMPRIMIBLE
+    (Se conservan para window.print() y la vista previa.)
+   ============================================================ */
+
+/* Bloques de contenido: áreas de exámenes */
+.pdf-bloque {
+    page-break-inside: auto;
+    break-inside: auto;
+}
+
+/* Los bloques largos pueden continuar en la página siguiente. */
+.pdf-especial {
+    page-break-inside: auto;
+    break-inside: auto;
+}
+
+/* El Uroanálisis comienza en una hoja nueva para no dejar su título aislado. */
+.pdf-uroanalisis {
+    page-break-before: always;
+    break-before: page;
+}
+
+/* Mantiene el título unido al primer grupo que presenta sus resultados. */
+.pdf-titulo-contenido {
+    display: table;
+    width: 100%;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+/* Filas en "tablas" de div: nunca se parten */
+.pdf-bloque [style*="display: table-row"],
+.pdf-especial [style*="display: table-row"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+/* Títulos dentro de bloques: van con su contenido */
+.pdf-bloque h3,
+.pdf-bloque h4,
+.pdf-especial h3,
+.pdf-especial h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+/* ============================================================
+   2. ESTILOS BASE DEL REPORTE (pantalla + impresión)
+   ============================================================ */
+
+.reporte-container {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 10.5pt;
+    color: #000;
+}
+
+.reporte-tabla-maestra {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reporte-tabla-maestra > thead {
+    display: table-header-group;
+}
+
+.reporte-tabla-maestra > thead td,
+.reporte-tabla-maestra > tbody td {
+    padding: 0;
+    vertical-align: top;
+}
+
+.reporte-seccion-titulo {
+    color: #000;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin: 18px 0 10px;
+}
+
+.reporte-area-titulo {
+    color: #000;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-align: center;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin: 12px 0 6px;
+}
+
+.reporte-subarea-titulo {
+    color: #000;
+    font-weight: 600;
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.reporte-area-grupo {
+    margin-bottom: 1rem;
+}
+
+.reporte-tabla {
+    margin-bottom: 10px;
+}
+
+.reporte-tabla table {
+    font-size: 0.75rem;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reporte-tabla thead {
+    background-color: #e9e9e9 !important;
+    color: #000;
+}
+
+.reporte-tabla th:nth-child(2) {
+    width: 120px;
+}
+
+.reporte-tabla td:nth-child(2) {
+    min-width: 120px;
+    max-width: 150px;
+    word-wrap: break-word;
+}
+
+.resultado-alto-texto {
+    color: #000;
+    font-weight: bold;
+}
+
+.resultado-bajo-texto {
+    color: #000;
+    font-weight: bold;
+}
+
+.resultado-normal-texto {
+    color: #000;
+}
+
+#bloqueHeces {
+    margin-bottom: 10px;
+}
+
+#bloqueHeces table {
+    font-size: 0.75rem;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#bloqueHeces th {
+    font-weight: 700;
+    padding: 3px 6px;
+    border: 1px solid #000;
+    color: #000;
+    background-color: #e9e9e9 !important;
+}
+
+#bloqueHeces td {
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    color: #000;
+}
+
+#bloqueUroanalisis {
+    margin-bottom: 10px;
+}
+
+#bloqueUroanalisis table {
+    font-size: 0.75rem;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#bloqueUroanalisis th {
+    font-weight: 700;
+    padding: 3px 6px;
+    border: 1px solid #000;
+    color: #000;
+    background-color: #e9e9e9 !important;
+}
+
+#bloqueUroanalisis td {
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    color: #000;
+}
+
+.reporte-firma {
+    margin-top: 30px;
+    text-align: center;
+    color: #000;
+}
+
+.firma-linea {
+    border-top: 1px solid #000;
+    width: 280px;
+    margin: 40px auto 6px;
+    padding-top: 6px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #000;
+}
+
+.firma-profesional {
+    text-align: center;
+    color: #000;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.firma-print { display: none; }
+.solo-imprimir { display: none; }
+.reporte-firma-impresion { display: none; }
+
+.reporte-firma-primera {
+    display: none;
+}
+
+.pdf-firma-primera {
+    display: none;
+}
+
+.pdf-firma-fija {
+    display: block !important;
+    position: fixed !important;
+    left: 0;
+    right: 0;
+    bottom: 5mm;
+    z-index: 10;
+    background: #fff;
+    padding: 1mm 0;
+    text-align: center;
+}
+
+.pdf-firma-fija .firma-linea {
+    width: 48mm;
+    margin: 1mm auto 1mm;
+    padding-top: 1mm;
+    border-top: 1px solid #000;
+    font-size: 8pt;
+    font-weight: 700;
+}
+
+.pdf-firma-fija .firma-profesional {
+    font-size: 6.5pt;
+    line-height: 1.1;
+}
+
+
+.sin-resultados {
+    text-align: center;
+    padding: 60px 20px;
+    color: #000;
+}
+
+.sin-resultados i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+
+
+sup {
+    font-size: 7.5pt;
+    line-height: 0;
+    vertical-align: super;
+}
+
+.ref-adaptadas-badge {
+    grid-column: 1 / -1;
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #000;
+    background-color: #e9e9e9;
+    border: 1px solid #000;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 4px;
+    text-align: left;
+}
+
+/* ============================================================
+   3. @MEDIA PRINT
+   ============================================================ */
+@media print {
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: auto;
+    }
+
+    body {
+        background: white;
+        font-size: 10pt;
+        line-height: 1.3;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .no-imprimir { display: none !important; }
+    .footer-developer { display: none !important; }
+    .solo-imprimir { display: block !important; }
+
+    /* La firma se repite como pie fijo en cada página impresa. */
+    .reporte-firma-primera {
+        display: none !important;
+    }
+
+    .reporte-firma-impresion {
+        display: block !important;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 5mm;
+        z-index: 10;
+        background: #fff;
+        padding: 1mm 0;
+        text-align: center;
+    }
+
+    .reporte-firma-impresion .firma-linea {
+        width: 48mm;
+        margin: 1mm auto 1mm;
+        padding-top: 1mm;
+        border-top: 1px solid #000;
+        font-size: 8pt;
+        font-weight: 700;
+    }
+
+    .reporte-firma-impresion .firma-profesional {
+        font-size: 6.5pt;
+        line-height: 1.1;
+    }
+
+    .reporte-container {
+        max-width: none;
+        padding: 0;
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .reporte-tabla-maestra {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .reporte-tabla-maestra thead {
+        display: table-header-group;
+    }
+
+    .reporte-tabla-maestra tr,
+    .reporte-tabla-maestra td {
+        page-break-inside: auto;
+        break-inside: auto;
+    }
+
+    .reporte-tabla-maestra .reporte-encabezado-impresion {
+        display: block !important;
+    }
+
+    /* El encabezado se repite mediante el thead de la tabla maestra. */
+    .reporte-encabeo-impresion {
+        background: white;
+        width: 100%;
+        padding: 5mm 0 0;
+        border-bottom: 2px solid #000;
+        box-sizing: border-box;
+        position: relative;
+    }
+
+    .reporte-encabezado-impresion .encabezado-superior {
+        display: flex;
+       
+        justify-content: space-between;
+        align-items: center;
+        gap: 3mm;
+    }
+
+    .reporte-encabezado-impresion .encabezado-logo {
+        order: 1;
+        flex: 0 0 28mm;
+        width: 28mm;
+        margin-left: 0;
+        align-self: center;
+    }
+
+    .reporte-encabezado-impresion .encabezado-logo img {
+        display: block;
+        width: 28mm;
+        height: 28mm;
+        max-height: none;
+        max-width: none;
+        margin: 0;
+        object-fit: contain;
+    }
+
+    .reporte-encabezado-impresion .encabezado-lab {
+        order: 2;
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+        padding: 0 3mm;
+    }
+
+    .reporte-encabezado-impresion .encabezado-nombre {
+        font-size: 13px;
+        font-weight: bold;
+        color: #000;
+        text-transform: uppercase;
+        line-height: 1.15;
+        letter-spacing: 0.3px;
+        overflow-wrap: anywhere;
+    }
+
+    .reporte-encabezado-impresion .encabezado-direccion {
+        font-size: 8px;
+        color: #222;
+        line-height: 1.35;
+        margin-top: 3px;
+        white-space: normal;
+    }
+
+    .reporte-encabezado-impresion .encabezado-fecha {
+        order: 3;
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 38mm;
+        font-size: 7px;
+        color: #000;
+        text-align: right;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .reporte-encabezado-impresion .encabezado-paciente {
+        display: grid;
+        grid-template-columns: 2.2fr 2fr 1fr;
+        gap: 4px 8px;
+        margin-top: 8px;
+        padding: 5px 4mm 5px;
+        border-top: 1px solid #ccc;
+        border-bottom: 2px solid #000;
+        font-size: 8px;
+        color: #000;
+    }
+
+    .reporte-encabezado-impresion .encabezado-paciente > div {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .reporte-encabezado-impresion .info-label {
+        font-weight: 700;
+        color: #000;
+    }
+
+    #reportePerfil {
+        font-weight: 700;
+        color: #000;
+        margin-top: 2px;
+    }
+
+    .reporte-area-grupo,
+    .pdf-bloque,
+    .pdf-especial {
+        page-break-inside: auto;
+        break-inside: auto;
+        margin-bottom: 8px;
+    }
+
+    .reporte-tabla tr,
+    #bloqueHeces tr,
+    #bloqueUroanalisis tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    .pdf-bloque h3,
+    .pdf-bloque h4,
+    .pdf-especial h3,
+    .pdf-especial h4 {
+        page-break-after: avoid;
+        break-after: avoid;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .pdf-titulo-contenido {
+        display: table;
+        width: 100%;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    #bloqueHeces {
+        page-break-before: always;
+        break-before: page;
+    }
+
+    #bloqueUroanalisis {
+        page-break-before: always;
+        break-before: page;
+    }
+
+
+
+}

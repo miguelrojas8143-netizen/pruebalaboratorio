@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<link href="public/lib/bootstrap.min.css" rel="stylesheet">
+<link href="public/lib/bootstrap-icons.css" rel="stylesheet">
+<link href="public/lib/select2.min.css" rel="stylesheet">
+<link href="public/lib/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+<link href="public/css/styles.css" rel="stylesheet">
+</head>
+<body class="index-recepcion">
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-0 no-imprimir">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">
+            <img src="public/imagen/portada.png" alt="Logo" class="logo-navbar me-2">
+            MiroLab Systems
+            <span class="navbar-text">-Demo Version 1</span>
+        </span>
+
+        <div class="d-flex align-items-center">
+            <span class="text-white small no-imprimir"><i class="bi bi-calendar3 me-1"></i> <span id="fechaHoy"></span></span>
+        </div>
+    </div>
+</nav>
+    <div class="dashboard-shell">
+        <aside class="dashboard-sidebar">
+            <nav class="sidebar-nav" aria-label="Navegación principal">
+                <a class="sidebar-link" href="vistas/info.html"><i class="bi bi-info-circle"></i>info</a>
+                <a class="sidebar-link active" href="index.html"><i class="bi bi-house-door-fill"></i> Recepción</a>
+                <a class="sidebar-link" href="vistas/catalogo.html"><i class="bi bi-journal-medical"></i> Catálogo</a>
+                <a class="sidebar-link" href="vistas/historial.html"><i class="bi bi-file-earmark-text"></i> Historial</a>
+               <!--<a class="sidebar-link" href="vistas/orden.html"><i class="bi bi-clipboard-plus"></i> Orden</a> --> 
+                <a class="sidebar-link" href="vistas/reporte.html"><i class="bi bi-file-bar-graph"></i> Reporte</a>
+                <a class="sidebar-link" onclick="mostrarEstadisticas()" title="Estadísticas">
+                <i class="bi bi-bar-chart-line"></i>
+            </a>
+            <a class="sidebar-link text-danger" onclick="abrirGestionPacientes()" title="Eliminar Pacientes">
+                <i class="bi bi-trash"></i>
+            </a>
+
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="container mb-4">
+                <div class="card shadow-sm mb-3">
+            <div class="card-body p-2 p-md-3">
+                <div class="input-group buscador-paciente">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="buscadorGlobal" class="form-control border-start-0 ps-0" placeholder="Buscar por Nombre, Cédula o Número de Orden...">
+                </div>
+                <div id="resultadosBusqueda" class="mt-3" style="display: none;">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush" id="listaResultadosBusqueda">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-lg-7 order-lg-2">
+<!--
+                                <div class="row g-3 mb-3" id="seccionMetricas" style="display:none;">
+                    <div class="col-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body p-2">
+                                <h6 class="card-title mb-1 fw-semibold"><i class="bi bi-clipboard-data me-1"></i>Órdenes Hoy</h6>
+                                <h3 class="mb-0 text-primary" id="metricaOrdenesHoy">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body p-2">
+                                <h6 class="card-title mb-1 fw-semibold"><i class="bi bi-hourglass-text me-1"></i>Pendientes</h6>
+                                <h3 class="mb-0 text-warning" id="metricaPendientes">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body p-2">
+                                <h6 class="card-title mb-1 fw-semibold"><i class="bi bi-check-circle me-1"></i>Completadas</h6>
+                                <h3 class="mb-0 text-success" id="metricaCompletadas">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            -->
+                <div class="card shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-list-ol me-2"></i> Cola de Pacientes (Órdenes de Hoy)</span>
+                        <span class="badge bg-light text-primary" id="totalPacientes">0 pacientes</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="9%">Orden</th>
+                                        <th width="38%">Nombre</th>
+                                        <th width="18%">Cédula</th>
+                                        <th width="12%" class="text-center">Estado</th>
+                                        <th width="23%" class="text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaCola">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">No hay pacientes registrados hoy.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">
+                        <i class="bi bi-person-plus-fill me-2"></i> Registro de Nuevo Paciente
+                    </div>
+                    <div class="card-body p-3">
+                        <form id="formRegistro">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold">Nombre y Apellido <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nombre" required placeholder="Ej: Juan Pérez García">
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Sexo <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="sexo" required>
+                                        <option value="" selected disabled>Seleccione</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Cédula</label>
+                                    <input type="text" class="form-control" id="cedula" placeholder="Opcional">
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Fecha Nacimiento</label>
+                                    <input type="text" class="form-control" id="fechaNac" placeholder="DD/MM/AAAA" maxlength="10" onkeyup="formatearFecha(this); mostrarEdad(this)">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Edad</label>
+                                    <input type="text" class="form-control" id="edad" placeholder="Auto" readonly>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold">Teléfono</label>
+                                <input type="text" class="form-control" id="telefono" placeholder="Opcional">
+                            </div>
+                            <div class="d-flex justify-content-center mt-4">
+                               <button type="submit" class="btn btn-primary btn-sm btn-save-compact">
+                                 <i class="bi bi-save me-1"></i> Guardar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- **MODAL NUEVO: Estadísticas del Laboratorio** -->
+    <div class="modal fade" id="modalEstadisticas" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="bi bi-bar-chart-line me-2"></i> Estadísticas del Laboratorio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="bi bi-person-badge me-1"></i> Total Pacientes Únicos</h6>
+                                    <h2 id="totalPacientesUnicos" class="mb-0">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="bi bi-arrow-repeat me-1"></i> Total Visitas</h6>
+                                    <h2 id="totalVisitas" class="mb-0">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <h6>Pacientes con más visitas:</h6>
+                    <div id="topPacientesVisitas" class="mt-3">
+                        <p class="text-muted">Cargando...</p>
+                    </div>
+                </div>
+               
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Paciente Ya Registrado -->
+    <div class="modal fade" id="modalDuplicado" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i> Paciente Ya Registrado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>El paciente <strong id="pacienteExistenteNombre"></strong> ya está registrado.</p>
+                    <p class="mb-1"><small class="text-muted">Cédula: </small><strong id="cedulaDuplicada"></strong></p>
+                    <p class="mb-1"><small class="text-muted">Orden actual: </small><strong>#<span id="pacienteExistenteOrden"></span></strong></p>
+                    <p class="mb-1"><small class="text-muted">Visitas anteriores: </small><strong id="pacienteVisitas"></strong></p>
+                    <p class="mb-1"><small class="text-muted">Fecha de registro: </small><span id="pacienteExistenteFecha"></span></p>
+                    <p class="mb-0"><small class="text-muted">Edad: </small><strong id="pacienteExistenteEdad"></strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnIrOrdenExistente" href="#" class="btn btn-primary" target="_blank"><i class="bi bi-arrow-right-circle me-1"></i> Ir a su Orden</a>
+                    <button type="button" class="btn btn-success" id="btnNuevaOrden"><i class="bi bi-plus-circle me-1"></i> Nueva Orden</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Registro Exitoso -->
+    <div class="modal fade" id="modalExito" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i> Registro Exitoso</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Paciente registrado correctamente.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gestión de Pacientes (Eliminar) -->
+    <div class="modal fade" id="modalGestionPacientes" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-trash me-2"></i> Gestión de Pacientes</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-semibold mb-0">Pacientes Registrados</h6>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="eliminarTodosPacientes()">
+                            <i class="bi bi-trash me-1"></i> Eliminar Todos
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre</th>
+                                    <th>Cédula</th>
+                                    <th>Orden</th>
+                                    <th class="text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaGestionPacientes">
+                                <tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-developer" style="display:none;">
+    <div class="container">
+        <div class="developer-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1"><i class="bi bi-code-slash me-2"></i> Desarrollador del Sistema</h5>
+                    <p class="mb-0">ING: Miguel Antonio Rojas - Sistema de Gestión de Exámenes Médicos</p>
+                     <small><i class="bi bi-envelope me-1"></i> miguelrojas8143@gmail.com</small>
+                      </div>
+
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="public/lib/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap JS local -->
+<script src="public/lib/bootstrap.bundle.min.js"></script>
+<script src="public/js/catalogo-base.js"></script>
+    <script src="public/js/utils.js"></script>
+    <script src="public/js/db.js"></script>
+    <script src="public/js/storage.js"></script>
+    <script src="public/js/recepcion.js"></script>
+    <script src="public/js/orden.js"></script>
+    <script src="public/js/catalogo-admin.js"></script>
+    <script src="public/js/app.js"></script>
+</body>
+</html>
+
