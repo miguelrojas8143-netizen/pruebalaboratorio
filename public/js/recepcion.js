@@ -73,37 +73,10 @@
         document.getElementById('btnNuevaOrden').addEventListener('click', function() {
             var modal = bootstrap.Modal.getInstance(document.getElementById('modalDuplicado'));
             modal.hide();
-            var pacientes = window.obtenerPacientes();
             var refer = window.obtenerPacienteExistenteRefer();
             var datos = refer ? JSON.parse(refer) : null;
             if (!datos || !datos.cedula) return;
-            var index = pacientes.findIndex(function(p) { return p.cedula === datos.cedula; });
-            if (index === -1) return;
-            if (!pacientes[index].visitas) {
-                pacientes[index].visitas = 0;
-            }
-            pacientes[index].visitas++;
-            if (!pacientes[index].ordenesPrevias) pacientes[index].ordenesPrevias = [];
-            window.archivarOrdenAnterior(pacientes[index]);
-            var nuevoOrden = window.obtenerOrdenDiaria();
-            pacientes[index].orden = String(nuevoOrden).padStart(3, '0');
-            pacientes[index].fechaRegistro = new Date().toLocaleDateString('es-ES');
-            if (datos.nombre) pacientes[index].nombre = datos.nombre;
-            if (datos.sexo) pacientes[index].sexo = datos.sexo;
-            if (datos.fechaNac) pacientes[index].fechaNac = datos.fechaNac;
-            if (datos.telefono) pacientes[index].telefono = datos.telefono;
-            if (datos.edad) pacientes[index].edad = datos.edad;
-            pacientes[index].examenes = [];
-            window.guardarPacientes(pacientes).catch(function(e) {
-                console.error('[guardarPacientes] Error:', e);
-            });
-            window.guardarUltimaOrdenCreada(pacientes[index].orden);
-            window.guardarPacienteExistenteRefer(null);
-            document.getElementById('formRegistro').reset();
-            document.getElementById('edad').value = '';
-            renderizarCola();
-            renderizarMetricas();
-            window.location.href = 'vistas/orden.html?orden=' + pacientes[index].orden;
+            window.crearNuevaVisita(null, { actualizarPaciente: true, navegar: true, limpiarBuscador: true });
         });
         window.buscarPaciente = function(termino) {
             var resultadosDiv = document.getElementById('resultadosBusqueda');
@@ -136,31 +109,7 @@
             resultadosDiv.style.display = 'block';
         };
         window.crearNuevaOrden = function(pacienteId) {
-            var pacientes = window.obtenerPacientes();
-            var index = pacientes.findIndex(function(p) { return p.id === pacienteId; });
-            if (index === -1) {
-                alert('Paciente no encontrado.');
-                return;
-            }
-            if (!pacientes[index].visitas) {
-                pacientes[index].visitas = 0;
-            }
-            pacientes[index].visitas++;
-            if (!pacientes[index].ordenesPrevias) pacientes[index].ordenesPrevias = [];
-            window.archivarOrdenAnterior(pacientes[index]);
-            var nuevoOrden = window.obtenerOrdenDiaria();
-            pacientes[index].orden = String(nuevoOrden).padStart(3, '0');
-            pacientes[index].fechaRegistro = new Date().toLocaleDateString('es-ES');
-            pacientes[index].examenes = [];
-            window.guardarPacientes(pacientes).catch(function(e) {
-                console.error('[guardarPacientes] Error:', e);
-            });
-            window.guardarUltimaOrdenCreada(pacientes[index].orden);
-            var resultadosDiv = document.getElementById('resultadosBusqueda');
-            if (resultadosDiv) resultadosDiv.style.display = 'none';
-            var buscador = document.getElementById('buscadorGlobal');
-            if (buscador) buscador.value = '';
-            window.location.href = 'vistas/orden.html?orden=' + pacientes[index].orden;
+            window.crearNuevaVisita(pacienteId, { actualizarPaciente: false, navegar: true, limpiarBuscador: true });
         };
     }
 
@@ -277,5 +226,7 @@
     };
 
     window.initRecepcion = initRecepcion;
+    window.renderizarCola = renderizarCola;
+    window.renderizarMetricas = renderizarMetricas;
 
 })();
