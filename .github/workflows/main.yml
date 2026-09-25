@@ -1,0 +1,28 @@
+name: Mirolab Instalador EXE
+
+on:
+  workflow_dispatch: # Permite iniciar la compilación con un clic
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Obtener código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar librerías
+        run: npm install
+
+      - name: Compilar archivo .exe
+        run: npm run build
+
+      - name: Guardar el .exe para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirolab-systems-Installer
+          path: dist/*.exe
