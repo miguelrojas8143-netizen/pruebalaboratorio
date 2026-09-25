@@ -84,24 +84,36 @@
         }
     }
 
+    function calcularProximaOrden() {
+        var pacientes = window.obtenerPacientes ? window.obtenerPacientes() : [];
+        var maxOrden = 0;
+        function considerar(n) {
+            var v = parseInt(n, 10);
+            if (!isNaN(v) && v > maxOrden) {
+                maxOrden = v;
+            }
+        }
+        considerar(_cache.ultimoOrdenLab);
+        pacientes.forEach(function(p) {
+            considerar(p.orden);
+            (p.ordenesPrevias || []).forEach(function(o) {
+                considerar(o.orden);
+            });
+        });
+        return String(maxOrden + 1).padStart(3, '0');
+    }
+
     function obtenerOrdenDiaria() {
         try {
-            var pacientes = window.obtenerPacientes ? window.obtenerPacientes() : [];
-            var maxOrden = 0;
-            pacientes.forEach(function(p) {
-                var num = parseInt(p.orden, 10);
-                if (!isNaN(num) && num > maxOrden) {
-                    maxOrden = num;
-                }
-            });
-            var nuevoOrden = maxOrden + 1;
+            var nuevoOrdenStr = calcularProximaOrden();
+            var nuevoOrden = parseInt(nuevoOrdenStr, 10);
             _cache.ultimoOrdenLab = nuevoOrden;
             if (_cache.listo && window.DB) {
                 window.DB.guardarSetting('ultimoOrdenLab', String(nuevoOrden)).catch(function(e) {
                     console.error('[storage] Error guardando ultimoOrdenLab:', e);
                 });
             }
-            return String(nuevoOrden).padStart(3, '0');
+            return nuevoOrdenStr;
         } catch (e) {
             console.error('[obtenerOrdenDiaria] Error:', e);
             return String(Date.now() % 1000).padStart(3, '0');
@@ -205,24 +217,27 @@
         }
     }
 
+    function tieneResultadosEnExamenes(examenes) {
+        if (!examenes || examenes.length === 0) return false;
+        return examenes.some(function(e) {
+            if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
+                try {
+                    var datos = JSON.parse(e.resultado || '{}');
+                    return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
+                } catch (err) { return false; }
+            }
+            return String(e.resultado || '').trim() !== '';
+        });
+    }
+
     function archivarOrdenAnterior(paciente) {
         if (!paciente) return;
-        var tieneExamenes = paciente.examenes && paciente.examenes.length > 0;
-        var tieneHistorialResultados = false;
-        if (paciente.examenes && paciente.examenes.length > 0) {
-            tieneHistorialResultados = paciente.examenes.some(function(e) {
-                if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
-                    try {
-                        var datos = JSON.parse(e.resultado || '{}');
-                        return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
-                    } catch (err) { return false; }
-                }
-                return String(e.resultado || '').trim() !== '';
-            });
-        }
-        if (!tieneExamenes && !tieneHistorialResultados) return;
         if (!paciente.ordenesPrevias) {
             paciente.ordenesPrevias = [];
+        }
+        if (paciente.ordenesPrevias.length > 0 &&
+            paciente.ordenesPrevias[paciente.ordenesPrevias.length - 1].orden === String(paciente.orden || '').padStart(3, '0')) {
+            return;
         }
         paciente.ordenesPrevias.push({
             orden: String(paciente.orden || '').padStart(3, '0'),
@@ -230,7 +245,120 @@
             examenes: JSON.parse(JSON.stringify(paciente.examenes || [])),
             refAdaptadas: !!paciente.refAdaptadas,
             perfiles: paciente.perfiles ? paciente.perfiles.slice() : [],
-            historial: paciente.historial ? JSON.parse(JSON.stringify(paciente.historial || [])) : []
+            historial: paciente.historial ? JSON.parse(JSON.stringify(paciente.historial || [])) : [],
+            estado: 'archivada'
+        });
+    }
+
+    function crearNuevaVisita(pacienteId, opciones) {
+        return new Promise(function(resolve) {
+            opciones = opciones || {};
+            var pacientes = window.obtenerPacientes();
+            var index = -1;
+
+            for (var i = 0; i < pacientes.length; i++) {
+                if (String(pacientes[i].id) === String(pacienteId)) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index === -1 && opciones.actualizarPaciente) {
+                var refer = window.obtenerPacienteExistenteRefer();
+                var datos = refer ? JSON.parse(refer) : null;
+                if (datos && datos.cedula) {
+                    index = pacientes.findIndex(function(p) { return p.cedula === datos.cedula; });
+                }
+            }
+
+            if (index === -1) {
+                alert('Paciente no encontrado.');
+                resolve(null);
+                return;
+            }
+
+            var paciente = pacientes[index];
+            var ordenAnterior = String(paciente.orden || '').padStart(3, '0');
+
+            if (window.tieneResultadosEnExamenes(paciente.examenes)) {
+                var examenesConResultados = (paciente.examenes || []).filter(function(e) {
+                    return window.tieneResultadosEnExamenes([e]);
+                });
+                var nuevoTemp = calcularProximaOrden();
+                var msg = 'La orden #' + ordenAnterior + ' tiene ' + examenesConResultados.length +
+                    ' examen(es) con resultados.\n\n' +
+                    'Al continuar pasará al Historial del paciente y se generará una nueva orden #' + nuevoTemp + '.\n\n' +
+                    '¿Desea continuar?';
+                if (!confirm(msg)) {
+                    resolve(null);
+                    return;
+                }
+            }
+
+            var backup = JSON.parse(JSON.stringify(paciente));
+
+            window.archivarOrdenAnterior(paciente);
+            paciente.orden = window.obtenerOrdenDiaria();
+            paciente.examenes = [];
+            paciente.perfiles = [];
+            paciente.refAdaptadas = false;
+            paciente.visitas = (paciente.visitas || 1) + 1;
+            paciente.fechaRegistro = new Date().toLocaleDateString('es-ES');
+
+            if (opciones.actualizarPaciente) {
+                var refDatos = window.obtenerPacienteExistenteRefer();
+                var datosActualizar = refDatos ? JSON.parse(refDatos) : null;
+                if (datosActualizar) {
+                    if (datosActualizar.nombre) paciente.nombre = datosActualizar.nombre;
+                    if (datosActualizar.sexo) paciente.sexo = datosActualizar.sexo;
+                    if (datosActualizar.cedula) paciente.cedula = datosActualizar.cedula;
+                    if (datosActualizar.fechaNac) paciente.fechaNac = datosActualizar.fechaNac;
+                    if (datosActualizar.telefono) paciente.telefono = datosActualizar.telefono;
+                    if (datosActualizar.edad) paciente.edad = datosActualizar.edad;
+                }
+            }
+
+            window.guardarPacientes(pacientes).then(function() {
+                window.guardarUltimaOrdenCreada(paciente.orden);
+
+                if (typeof window.renderizarCola === 'function') {
+                    window.renderizarCola();
+                }
+                if (typeof window.renderizarMetricas === 'function') {
+                    window.renderizarMetricas();
+                }
+
+                if (opciones.actualizarPaciente) {
+                    window.guardarPacienteExistenteRefer(null);
+                }
+
+                if (opciones.limpiarBuscador) {
+                    var b = document.getElementById('buscadorGlobal');
+                    if (b) b.value = '';
+                    var r = document.getElementById('resultadosBusqueda');
+                    if (r) r.style.display = 'none';
+                    var l = document.getElementById('listaResultadosBusqueda');
+                    if (l) l.innerHTML = '';
+                }
+
+                if (opciones.navegar) {
+                    var enVistas = window.location.pathname.indexOf('/vistas/') !== -1;
+                    var prefijo = enVistas ? '' : 'vistas/';
+                    window.location.href = prefijo + 'orden.html?orden=' + paciente.orden;
+                }
+
+                resolve(paciente.orden);
+            }).catch(function(e) {
+                console.error('[crearNuevaVisita] Error guardando pacientes:', e);
+                pacientes[index] = backup;
+                window.guardarPacientes(pacientes).then(function() {
+                    alert('No se pudo crear la nueva orden. Intente nuevamente.');
+                    resolve(null);
+                }).catch(function() {
+                    alert('No se pudo crear la nueva orden. Intente nuevamente.');
+                    resolve(null);
+                });
+            });
         });
     }
 
@@ -244,6 +372,8 @@
     window.obtenerUltimaOrden = obtenerUltimaOrden;
     window.guardarUltimaOrden = guardarUltimaOrden;
     window.archivarOrdenAnterior = archivarOrdenAnterior;
+    window.tieneResultadosEnExamenes = tieneResultadosEnExamenes;
+    window.crearNuevaVisita = crearNuevaVisita;
     window.obtenerCatalogoCustom = obtenerCatalogoCustom;
     window.guardarCatalogoCustom = guardarCatalogoCustom;
     window.obtenerPacienteExistenteRefer = obtenerPacienteExistenteRefer;
