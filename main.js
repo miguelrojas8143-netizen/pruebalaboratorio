@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const ICONO_APP = path.join(__dirname, 'logo-mirolab.png');
 
 // Algunos equipos presentan bloqueos visuales del renderer al usar la GPU.
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-renderer-backgrounding');
+//app.disableHardwareAcceleration();
+//app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 // --- CONFIGURACIÓN DE LA DEMO ---
 const DIAS_DEMO = 10;
@@ -159,15 +159,16 @@ app.whenReady().then(() => {
     mainWindow = crearVentana(rutaArchivo, opcionesVentana);
     mainWindow.hide();
 
-    //Abrir DevTools DESPUÉS de crear la ventana
-     mainWindow.webContents.openDevTools();
-
     // 5. Mostrar cuando la página esté lista
     
     mainWindow.once('ready-to-show', () => {
         if (!splash.isDestroyed()) splash.close();
         mainWindow.show();
         mainWindow.focus();
+
+     //Abrir DevTools DESPUÉS de crear la ventana
+     mainWindow.webContents.openDevTools();
+
     });
 
     splash.on('closed', () => {

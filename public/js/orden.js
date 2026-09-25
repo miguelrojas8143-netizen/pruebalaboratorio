@@ -261,7 +261,7 @@
                         }
                     }
                 } catch(e) {}
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenHtml + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenHtml + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipoFormulario === 'uroanalisis') {
                 var resumenUro = '';
                 try {
@@ -282,7 +282,7 @@
                         }
                     }
                 } catch(e) {}
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioUroanalisis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenUro + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioUroanalisis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenUro + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipoFormulario === 'antibiograma') {
                 var resumenAb = '';
                 try {
@@ -295,12 +295,12 @@
                         resumenAb = '<br><small class="text-success">' + antibiotics.length + ' antibióticos configurados</small>';
                     }
                 } catch(e) {}
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioAntibiograma(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenAb + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioAntibiograma(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenAb + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'texto') {
                 var refTexto = examen.refTexto ||
                     ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
                         ? examen.refMin + ' - ' + examen.refMax : '-');
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'tipo_sanguineo' || examen.tipo === 'tipo_sanguineo_completo') {
                 var nombreTipoSanguineo = tieneTipoSanguineoCompleto ? 'Grupo Sanguíneo' : examen.nombre;
                 var eliminarTipoSanguineo = tieneTipoSanguineoCompleto ? 'window.eliminarTipoSanguineo(this)' : 'window.eliminarExamen(this)';
@@ -308,14 +308,14 @@
             } else if (examen.tipo === 'seleccion_unica') {
                 var opcionesHtml2 = (examen.opciones || []).map(function(opt) { return '<option value="' + opt + '" ' + (examen.resultado === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('');
                 if (window.esSecrecionVaginal(examen)) {
-                    fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                    fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
                 } else {
-                    fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><select class="form-select resultado-input" onchange="window.actualizarResultado(this)"><option value="">Seleccionar...</option>' + opcionesHtml2 + '</select></td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                    fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><select class="form-select resultado-input" onchange="window.actualizarResultado(this)"><option value="">Seleccionar...</option>' + opcionesHtml2 + '</select></td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
                 }
             } else if (examen.tipo === 'perfil' && window.App.examenesDetallados[examen.id]) {
                 var detalle = window.App.examenesDetallados[examen.id];
                 var btnExpandir = (detalle && detalle.items && detalle.items.length > 0) ? '<button type="button" class="btn btn-sm btn-outline-primary" id="btnToggleItems_' + examen.id + '" onclick="window.toggleItemsExamenTabla(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i> Cargar resultados</button>' : '';
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3">' + btnExpandir + '</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3">' + btnExpandir + '</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'multiselect_cantidad') {
                 var resumenFrotis = '';
                 try {
@@ -327,9 +327,9 @@
                         }).join('; ') + '</small>';
                     }
                 } catch(e) {}
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirFormularioFrotis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i> Configurar</button>' + resumenFrotis + '</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirFormularioFrotis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i> Configurar</button>' + resumenFrotis + '</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else {
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)"><i class="bi bi-trash"></i></button></td>';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             }
             tbody.appendChild(fila);
         });
