@@ -37,7 +37,9 @@
             })
             .then(function() {
                 return Promise.all([
-                    window.DB.obtenerPacientes(),
+                    window.DB.obtenerPacientes(1000, 0).then(function(r) {
+                        return (r && r.pacientes) ? r.pacientes : (r || []);
+                    }),
                     window.DB.obtenerCatalogoCustom(),
                     window.DB.obtenerSetting('ultimoOrdenLab'),
                     window.DB.obtenerSetting('ultimaOrdenCreada'),
@@ -45,7 +47,7 @@
                 ]);
             })
             .then(function(results) {
-                _cache.pacientes = (results[0] && results[0].datos) ? results[0].datos : (results[0] || []);
+                _cache.pacientes = results[0] || [];
                 _cache.catalogoCustom = results[1] || [];
                 if (results[2] !== null && results[2] !== undefined) {
                     _cache.ultimoOrdenLab = parseInt(results[2]) || 0;
