@@ -1,8 +1,8 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const ICONO_APP = path.join(__dirname, 'logo-mirolab.png');
+const ICONO_APP = path.join(__dirname, 'icono.ico');
 
 // Algunos equipos presentan bloqueos visuales del renderer al usar la GPU.
 //app.disableHardwareAcceleration();
@@ -100,7 +100,8 @@ function crearVentana(rutaArchivo, opciones = {}) {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            backgroundThrottling: false
+            backgroundThrottling: false,
+            preload: path.join(__dirname, 'public/js/preload.js')
         },
         autoHideMenuBar: true,
         title: `${NOMBRE_APP} - Demo`
@@ -141,9 +142,19 @@ function crearVentana(rutaArchivo, opciones = {}) {
 
 let mainWindow;
 
+ipcMain.handle('getDemoInfo', async () => {
+    const resultadoDemo = verificarDemo();
+    return {
+        diasRestantes: resultadoDemo.diasRestantes,
+        esValida: resultadoDemo.esValida
+    };
+});
+
 app.whenReady().then(() => {
     // 1. Mostrar Splash Screen
     const splash = crearSplashScreen();
+    const tiempoInicioSplash = Date.now();
+    const TIEMPO_MINIMO_SPLASH = 5000;
 
     // 2. Verificar estado de la demo
     const resultadoDemo = verificarDemo();
@@ -159,12 +170,23 @@ app.whenReady().then(() => {
     mainWindow = crearVentana(rutaArchivo, opcionesVentana);
     mainWindow.hide();
 
-    // 5. Mostrar cuando la página esté lista
+    // 5. Mostrar cuando la página esté lista, con un mínimo de 5 segundos de splash
     
     mainWindow.once('ready-to-show', () => {
-        if (!splash.isDestroyed()) splash.close();
-        mainWindow.show();
-        mainWindow.focus();
+        const tiempoTranscurrido = Date.now() - tiempoInicioSplash;
+        const tiempoRestante = TIEMPO_MINIMO_SPLASH - tiempoTranscurrido;
+
+        if (tiempoRestante > 0) {
+            setTimeout(() => {
+                if (!splash.isDestroyed()) splash.close();
+                mainWindow.show();
+                mainWindow.focus();
+            }, tiempoRestante);
+        } else {
+            if (!splash.isDestroyed()) splash.close();
+            mainWindow.show();
+            mainWindow.focus();
+        }
 
      //Abrir DevTools DESPUÉS de crear la ventana
     // mainWindow.webContents.openDevTools();
