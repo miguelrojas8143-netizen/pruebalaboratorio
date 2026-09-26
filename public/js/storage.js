@@ -37,7 +37,9 @@
             })
             .then(function() {
                 return Promise.all([
-                    window.DB.obtenerPacientes(),
+                    window.DB.obtenerPacientes(1000, 0).then(function(r) {
+                        return (r && r.pacientes) ? r.pacientes : (r || []);
+                    }),
                     window.DB.obtenerCatalogoCustom(),
                     window.DB.obtenerSetting('ultimoOrdenLab'),
                     window.DB.obtenerSetting('ultimaOrdenCreada'),

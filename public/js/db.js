@@ -203,17 +203,50 @@
     // FUNCIONES ESPECÍFICAS (Originales - mantener)
     // ============================================
 
-    function obtenerPacientes() {
+    function obtenerPacientes(limite, cursorActual) {
+        var defaultLimit = limite || 10;
+        var limitNum = parseInt(defaultLimit, 10) || 10;
+        var offset = parseInt(cursorActual, 10) || 0;
+
         return requireDB().then(function(database) {
             return new Promise(function(resolve, reject) {
-                var tx = database.transaction(['pacientes'], 'readonly');
-                var store = tx.objectStore('pacientes');
-                var request = store.getAll();
-                request.onsuccess = function() { resolve(request.result || []); };
-                request.onerror = function() {
-                    console.error('[obtenerPacientes] Error:', request.error);
-                    reject(request.error);
-                };
+                try {
+                    var tx = database.transaction(['pacientes'], 'readonly');
+                    var store = tx.objectStore('pacientes');
+                    var pacientes = [];
+                    var contador = 0;
+                    var request = store.openCursor();
+
+                    request.onsuccess = function(event) {
+                        var result = event.target.result;
+
+                        if (offset > 0 && result) {
+                            offset = 0;
+                            result.advance(parseInt(cursorActual, 10) || 0);
+                            return;
+                        }
+
+                        if (result && contador < limitNum) {
+                            pacientes.push(result.value);
+                            contador++;
+                            result.continue();
+                        } else {
+                            resolve({
+                                pacientes: pacientes,
+                                hayMas: result !== null,
+                                nuevoCursor: (parseInt(cursorActual, 10) || 0) + pacientes.length
+                            });
+                        }
+                    };
+
+                    request.onerror = function() {
+                        console.error('[obtenerPacientes] Error en cursor:', request.error);
+                        reject(request.error);
+                    };
+                } catch (e) {
+                    console.error('[obtenerPacientes] Error:', e);
+                    reject(e);
+                }
             });
         });
     }

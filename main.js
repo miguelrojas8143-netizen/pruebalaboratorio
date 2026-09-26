@@ -167,7 +167,7 @@ app.whenReady().then(() => {
         mainWindow.focus();
 
      //Abrir DevTools DESPUÉS de crear la ventana
-     mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     });
 
