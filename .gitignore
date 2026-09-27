@@ -1,0 +1,13 @@
+node_modules/
+pnpm-lock.yaml
+bun.lock
+yarn.lock
+agent-manager.json
+.kilo
+# Archivos de bases de datos locales de SQLite (para que no subas datos reales de pacientes)
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+# Archivos de logs de errores
+npm-debug.log*
