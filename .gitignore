@@ -12,3 +12,4 @@ agent-manager.json
 *.db3
 # Archivos de logs de errores
 npm-debug.log*
+dist

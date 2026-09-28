@@ -113,11 +113,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         window.mostrarFechaHoy();
-        if (window.onStorageReady) {
-            window.onStorageReady(function() { window.initHistorial(); });
-        } else {
-            window.initHistorial();
-        }
+        // Migrado: initHistorial usa SQLite IPC (async), no necesita IndexedDB
+        window.initHistorial();
     });
 </script>
 </body>

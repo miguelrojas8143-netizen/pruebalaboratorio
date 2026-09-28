@@ -224,4 +224,42 @@
         return entradasCompletas ? { grupo: grupo, factorRh: factorRh } : null;
     };
 
+    // LÍNEA ~227: Diálogo de confirmación personalizado con botones "No" / "Sí"
+    // Uso: window.confirmar('¿Desea...?').then(function(resultado) { if (resultado) { ... } })
+    function confirmar(mensaje) {
+        return new Promise(function(resolve) {
+            var modalId = 'modal-confirm-' + Date.now();
+            var html =
+                '<div class="modal fade" id="' + modalId + '" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">' +
+                '<div class="modal-dialog modal-dialog-centered">' +
+                '<div class="modal-content">' +
+                '<div class="modal-header"><h5 class="modal-title">Confirmación</h5></div>' +
+                '<div class="modal-body"><p class="mb-0">' + mensaje.replace(/\n/g, '<br>') + '</p></div>' +
+                '<div class="modal-footer">' +
+                '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>' +
+                '<button type="button" class="btn btn-success">Sí</button>' +
+                '</div></div></div></div>';
+            var div = document.createElement('div');
+            div.innerHTML = html;
+            document.body.appendChild(div);
+            var modalEl = div.querySelector('.modal');
+            var bsModal = new bootstrap.Modal(modalEl);
+            var btnSi = div.querySelector('.btn-success');
+            btnSi.onclick = function() {
+                bsModal.hide();
+                setTimeout(function() {
+                    document.body.removeChild(div);
+                    resolve(true);
+                }, 300);
+            };
+            modalEl.addEventListener('hidden.bs.modal', function() {
+                document.body.removeChild(div);
+                resolve(false);
+            });
+            bsModal.show();
+        });
+    }
+
+    window.confirmar = confirmar;
+
 })();

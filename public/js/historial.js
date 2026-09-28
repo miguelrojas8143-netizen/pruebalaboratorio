@@ -204,9 +204,14 @@
         contenedor.innerHTML = html;
     }
 
+    // MIGRADO A SQLITE: línea ~207 — usa window.api.obtenerPacientesCompletos()
+    // en lugar de window.obtenerPacientes() (IndexedDB)
     window.imprimirOrdenPaciente = async function(pacienteId, ordenIndex) {
-        var pacientes = window.obtenerPacientes();
-        var paciente = pacientes.find(function(p) { return p.id === pacienteId; });
+        var resp = await window.api.obtenerPacientesCompletos();
+        var pacientes = resp.success ? resp.pacientes : [];
+        var paciente = pacientes.find(function(p) {
+            return String(p.id) === String(pacienteId);
+        });
         if (!paciente) {
             alert('Paciente no encontrado.');
             return;
@@ -226,11 +231,14 @@
                 perfiles: paciente.perfiles || []
             };
         } else {
-            if (!paciente.ordenesPrevias || !paciente.ordenesPrevias[ordenIndex]) {
+            // LÍNEA ~229: Migrado — ordenes previas desde SQLite tabla ordenes_archivadas
+            var respArch = await window.api.obtenerOrdenesArchivadas({ pacienteId: pacienteId });
+            var ordenesPrevias = respArch.success ? respArch.ordenes : [];
+            if (!ordenesPrevias[ordenIndex]) {
                 alert('Orden no encontrada.');
                 return;
             }
-            var ordenAnterior = paciente.ordenesPrevias[ordenIndex];
+            var ordenAnterior = ordenesPrevias[ordenIndex];
             pacienteModificado = {
                 nombre: paciente.nombre,
                 cedula: paciente.cedula,
@@ -261,12 +269,29 @@
 
     window.imprimirOrdenAnterior = window.imprimirOrdenPaciente;
 
-    window.initHistorial = function() {
-        var pacientes = window.obtenerPacientes();
+    // MIGRADO A SQLITE: línea ~264 — usa window.api.obtenerPacientesCompletos()
+    // Carga órdenes archivadas desde SQLite tabla ordenes_archivadas
+    window.initHistorial = async function() {
         var params = new URLSearchParams(window.location.search);
 
         var idParam = params.get('id');
         var forzarTodos = !!idParam;
+
+        var resp = await window.api.obtenerPacientesCompletos();
+        var pacientes = resp.success ? resp.pacientes : [];
+
+        // Enriquecer cada paciente con sus órdenes archivadas
+        pacientes = await Promise.all(pacientes.map(async function(p) {
+            if (idParam && String(p.id) !== idParam) return p;
+            var respArch = await window.api.obtenerOrdenesArchivadas({ pacienteId: p.id });
+            if (respArch.success && respArch.ordenes.length > 0) {
+                p.ordenesPrevias = respArch.ordenes;
+            } else {
+                p.ordenesPrevias = [];
+            }
+            return p;
+        }));
+
         if (idParam) {
             pacientes = pacientes.filter(function(p) {
                 return String(p.id) === idParam;

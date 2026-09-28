@@ -86,6 +86,33 @@ function initDatabase() {
         )
     `);
 
+    // Tabla para órdenes archivadas (cuando un paciente crea una nueva visita)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS ordenes_archivadas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            paciente_id INTEGER,
+            orden TEXT,
+            fecha TEXT,
+            examenes TEXT,
+            refAdaptadas INTEGER,
+            perfiles TEXT,
+            historial TEXT,
+            estado TEXT DEFAULT 'archivada',
+            FOREIGN KEY(paciente_id) REFERENCES pacientes(id)
+        )
+    `);
+
+    // Prepared statements para órdenes archivadas
+    const insertOrdenArchivadaStmt = db.prepare(
+        'INSERT INTO ordenes_archivadas (paciente_id, orden, fecha, examenes, refAdaptadas, perfiles, historial, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    const selectOrdenesArchivadasStmt = db.prepare(
+        'SELECT * FROM ordenes_archivadas WHERE paciente_id = ? ORDER BY id DESC'
+    );
+    const selectMaxOrdenStmt = db.prepare(
+        'SELECT MAX(CAST(orden AS INTEGER)) as maxOrden FROM (SELECT orden FROM pacientes UNION ALL SELECT orden FROM ordenes_archivadas)'
+    );
+
     insertPacienteStmt = db.prepare(
         'INSERT OR REPLACE INTO pacientes (orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
@@ -325,6 +352,123 @@ function initDatabase() {
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
+        }
+     });
+
+    // IPC: Obtener el próximo número de orden disponible
+    ipcMain.handle('obtener-proxima-orden', () => {
+        try {
+            var row = selectMaxOrdenStmt.get();
+            var maxOrden = row ? parseInt(row.maxOrden || 0, 10) : 0;
+            return { success: true, orden: String(maxOrden + 1).padStart(3, '0') };
+        } catch (err) {
+            return { success: false, error: err.message, orden: '001' };
+        }
+    });
+
+    // IPC: Crear nueva visita para paciente existente (archiva orden anterior)
+    // Parámetros: { pacienteId } o { cedula }
+    ipcMain.handle('crear-nueva-visita', (event, data) => {
+        try {
+            var paciente;
+            if (data.pacienteId !== undefined) {
+                paciente = db.prepare('SELECT * FROM pacientes WHERE id = ?').get(data.pacienteId);
+            } else if (data.cedula) {
+                paciente = db.prepare('SELECT * FROM pacientes WHERE cedula = ? ORDER BY id DESC LIMIT 1').get(data.cedula);
+            }
+
+            if (!paciente) {
+                return { success: false, error: 'Paciente no encontrado', nuevaOrden: null };
+            }
+
+            // Archivar órden anterior con sus exámenes
+            var ordenAnterior = String(paciente.orden || '').padStart(3, '0');
+            var examenes = selectExamenesStmt.all(ordenAnterior);
+            var historial = selectHistorialStmt.all(ordenAnterior);
+
+            const insertT = db.transaction(() => {
+                // Insertar orden archivada
+                insertOrdenArchivadaStmt.run(
+                    paciente.id,
+                    ordenAnterior,
+                    paciente.fechaRegistro || '',
+                    JSON.stringify(examenes.map(function(e) {
+                        return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+                    })),
+                    paciente.refAdaptadas || 0,
+                    paciente.perfiles || '[]',
+                    paciente.historial || '[]',
+                    'archivada'
+                );
+
+                // Calcular nuevo número de orden
+                var row = selectMaxOrdenStmt.get();
+                var maxOrden = row ? parseInt(row.maxOrden || 0, 10) : 0;
+                var nuevaOrden = String(maxOrden + 1).padStart(3, '0');
+
+                // Actualizar paciente: nuevo orden, incrementar visitas, nueva fecha
+                db.prepare(
+                    'UPDATE pacientes SET orden = ?, visitas = visitas + 1, fechaRegistro = ?'
+                ).run(nuevaOrden, new Date().toLocaleDateString('es-ES'));
+
+                // Limpiar exámenes de la nueva orden (no deben existir aún)
+                db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(nuevaOrden);
+                // Limpiar historial de exámenes para la nueva orden
+                db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(nuevaOrden);
+
+                return nuevaOrden;
+            });
+
+            var nuevaOrden = insertT();
+
+            // Limpiar refAdaptadas y perfiles para la nueva orden
+            db.prepare('UPDATE pacientes SET refAdaptadas = 0, perfiles = ? WHERE orden = ?')
+                .run('[]', nuevaOrden);
+
+            return {
+                success: true,
+                nuevaOrden: nuevaOrden,
+                paciente: {
+                    id: paciente.id,
+                    orden: nuevaOrden,
+                    nombre: paciente.nombre,
+                    cedula: paciente.cedula,
+                    edad: paciente.edad,
+                    sexo: paciente.sexo,
+                    fechaNac: paciente.fechaNac,
+                    telefono: paciente.telefono,
+                    visitas: (paciente.visitas || 1) + 1
+                }
+            };
+        } catch (err) {
+            return { success: false, error: err.message, nuevaOrden: null };
+        }
+    });
+
+    // IPC: Obtener órdenes archivadas de un paciente
+    ipcMain.handle('obtener-ordenes-archivadas', (event, { pacienteId, cedula, id }) => {
+        try {
+            var pid = pacienteId || id;
+            var ordenes = [];
+            if (pid !== undefined) {
+                ordenes = selectOrdenesArchivadasStmt.all(pid);
+            } else if (cedula) {
+                var rows = db.prepare('SELECT * FROM ordenes_archivadas WHERE paciente_id IN (SELECT id FROM pacientes WHERE cedula = ?) ORDER BY id DESC').all(cedula);
+                ordenes = rows;
+            }
+
+            // Parsear JSON fields
+            ordenes = ordenes.map(function(o) {
+                return Object.assign({}, o, {
+                    examenes: o.examenes ? JSON.parse(o.examenes) : [],
+                    refAdaptadas: !!o.refAdaptadas,
+                    perfiles: o.perfiles ? JSON.parse(o.perfiles) : [],
+                    historial: o.historial ? JSON.parse(o.historial) : []
+                });
+            });
+            return { success: true, ordenes: ordenes };
+        } catch (err) {
+            return { success: false, error: err.message, ordenes: [] };
         }
     });
 

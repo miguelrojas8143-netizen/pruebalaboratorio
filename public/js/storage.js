@@ -252,111 +252,116 @@
         });
     }
 
+    // MIGRADO A SQLITE: crearNuevaVisita usa window.api.crearNuevaVisita() IPC
+    // Línea ~255 (antes): window.obtenerPacientes() + window.guardarPacientes() — IndexedDB
+    // Ahora: window.api.crearNuevaVisita() — SQLite (archiva orden + crea nueva)
     function crearNuevaVisita(pacienteId, opciones) {
         return new Promise(function(resolve) {
             opciones = opciones || {};
-            var pacientes = window.obtenerPacientes();
-            var index = -1;
 
-            for (var i = 0; i < pacientes.length; i++) {
-                if (String(pacientes[i].id) === String(pacienteId)) {
-                    index = i;
-                    break;
-                }
-            }
+            // Buscar el paciente en la caché local (para mostrar confirmación)
+            var pacientesCache = window.obtenerPacientes ? window.obtenerPacientes() : [];
+            var pacienteCache = pacientesCache.find(function(p) {
+                return String(p.id) === String(pacienteId);
+            });
 
-            if (index === -1 && opciones.actualizarPaciente) {
+            // Si no está en caché pero actualizarPaciente está activo, buscar por cédula
+            if (!pacienteCache && opciones.actualizarPaciente) {
                 var refer = window.obtenerPacienteExistenteRefer();
                 var datos = refer ? JSON.parse(refer) : null;
                 if (datos && datos.cedula) {
-                    index = pacientes.findIndex(function(p) { return p.cedula === datos.cedula; });
+                    pacienteCache = pacientesCache.find(function(p) { return p.cedula === datos.cedula; });
                 }
             }
 
-            if (index === -1) {
-                alert('Paciente no encontrado.');
-                resolve(null);
-                return;
-            }
+            // LÍNEA ~278: Confirmación obligatoria — ¿asignar nueva orden a este paciente?
+            var nombrePac = pacienteCache ? pacienteCache.nombre : 'este paciente';
+            var ordenActual = pacienteCache ? String(pacienteCache.orden || '').padStart(3, '0') : '?';
+            var msgConfirmacion = '¿Desea asignar una nueva orden a ' + nombrePac + '?\n' +
+                'La orden actual #' + ordenActual + ' será archivada y pasará al historial del paciente.\n\n' +
+                '¿Continuar? (No / Sí)';
 
-            var paciente = pacientes[index];
-            var ordenAnterior = String(paciente.orden || '').padStart(3, '0');
+            // Usar confirmación personalizada con botones "No" / "Sí"
+            var confirmPromise = window.confirmar ?
+                window.confirmar(msgConfirmacion) :
+                Promise.resolve(confirm(msgConfirmacion));
 
-            if (window.tieneResultadosEnExamenes(paciente.examenes)) {
-                var examenesConResultados = (paciente.examenes || []).filter(function(e) {
-                    return window.tieneResultadosEnExamenes([e]);
-                });
-                var nuevoTemp = calcularProximaOrden();
-                var msg = 'La orden #' + ordenAnterior + ' tiene ' + examenesConResultados.length +
-                    ' examen(es) con resultados.\n\n' +
-                    'Al continuar pasará al Historial del paciente y se generará una nueva orden #' + nuevoTemp + '.\n\n' +
-                    '¿Desea continuar?';
-                if (!confirm(msg)) {
+            confirmPromise.then(function(proceed) {
+                if (!proceed) {
                     resolve(null);
                     return;
                 }
-            }
 
-            var backup = JSON.parse(JSON.stringify(paciente));
-
-            window.archivarOrdenAnterior(paciente);
-            paciente.orden = window.obtenerOrdenDiaria();
-            paciente.examenes = [];
-            paciente.perfiles = [];
-            paciente.refAdaptadas = false;
-            paciente.visitas = (paciente.visitas || 1) + 1;
-            paciente.fechaRegistro = new Date().toLocaleDateString('es-ES');
-
-            if (opciones.actualizarPaciente) {
-                var refDatos = window.obtenerPacienteExistenteRefer();
-                var datosActualizar = refDatos ? JSON.parse(refDatos) : null;
-                if (datosActualizar) {
-                    if (datosActualizar.nombre) paciente.nombre = datosActualizar.nombre;
-                    if (datosActualizar.sexo) paciente.sexo = datosActualizar.sexo;
-                    if (datosActualizar.cedula) paciente.cedula = datosActualizar.cedula;
-                    if (datosActualizar.fechaNac) paciente.fechaNac = datosActualizar.fechaNac;
-                    if (datosActualizar.telefono) paciente.telefono = datosActualizar.telefono;
-                    if (datosActualizar.edad) paciente.edad = datosActualizar.edad;
-                }
-            }
-
-            window.guardarPacientes(pacientes).then(function() {
-                window.guardarUltimaOrdenCreada(paciente.orden);
-
-                if (typeof window.renderizarCola === 'function') {
-                    window.renderizarCola();
-                }
-                if (typeof window.renderizarMetricas === 'function') {
-                    window.renderizarMetricas();
+                // Confirmar si el paciente tiene resultados (confirmación adicional)
+                if (pacienteCache && window.tieneResultadosEnExamenes(pacienteCache.examenes)) {
+                    var ordenAnterior = String(pacienteCache.orden || '').padStart(3, '0');
+                    var examenesConResultados = (pacienteCache.examenes || []).filter(function(e) {
+                        return window.tieneResultadosEnExamenes([e]);
+                    });
+                    var nuevoTemp = calcularProximaOrden();
+                    var msg = 'La orden #' + ordenAnterior + ' tiene ' + examenesConResultados.length +
+                        ' examen(es) con resultados.\n\n' +
+                        'Al continuar pasará al Historial del paciente y se generará una nueva orden #' + nuevoTemp + '.\n\n' +
+                        '¿Desea continuar?';
+                    if (!confirm(msg)) {
+                        resolve(null);
+                        return;
+                    }
                 }
 
-                if (opciones.actualizarPaciente) {
-                    window.guardarPacienteExistenteRefer(null);
+                // Llamar al handler SQLite IPC que archiva la orden y crea la nueva
+                var data = { pacienteId: pacienteId };
+                if (!pacienteCache && opciones.actualizarPaciente) {
+                    var refDatos = window.obtenerPacienteExistenteRefer();
+                    var datosActualizar = refDatos ? JSON.parse(refDatos) : null;
+                    if (datosActualizar && datosActualizar.cedula) {
+                        data = { cedula: datosActualizar.cedula };
+                    }
                 }
 
-                if (opciones.limpiarBuscador) {
-                    var b = document.getElementById('buscadorGlobal');
-                    if (b) b.value = '';
-                    var r = document.getElementById('resultadosBusqueda');
-                    if (r) r.style.display = 'none';
-                    var l = document.getElementById('listaResultadosBusqueda');
-                    if (l) l.innerHTML = '';
-                }
+                window.api.crearNuevaVisita(data).then(function(result) {
+                    if (!result.success) {
+                        alert('Error al crear nueva orden: ' + result.error);
+                        resolve(null);
+                        return;
+                    }
 
-                if (opciones.navegar) {
-                    var enVistas = window.location.pathname.indexOf('/vistas/') !== -1;
-                    var prefijo = enVistas ? '' : 'vistas/';
-                    window.location.href = prefijo + 'orden.html?orden=' + paciente.orden;
-                }
+                    var nuevaOrden = result.nuevaOrden;
+                    var pacienteNuevo = result.paciente;
 
-                resolve(paciente.orden);
-            }).catch(function(e) {
-                console.error('[crearNuevaVisita] Error guardando pacientes:', e);
-                pacientes[index] = backup;
-                window.guardarPacientes(pacientes).then(function() {
-                    alert('No se pudo crear la nueva orden. Intente nuevamente.');
-                    resolve(null);
-                }).catch(function() {
+                    // Actualizar referencias locales
+                    window.guardarUltimaOrdenCreada(nuevaOrden);
+
+                    // Refrescar UI si las funciones están disponibles
+                    if (typeof window.renderizarCola === 'function') {
+                        window.renderizarCola();
+                    }
+                    if (typeof window.renderizarMetricas === 'function') {
+                        window.renderizarMetricas();
+                    }
+
+                    if (opciones.actualizarPaciente) {
+                        window.guardarPacienteExistenteRefer(null);
+                    }
+
+                    if (opciones.limpiarBuscador) {
+                        var b = document.getElementById('buscadorGlobal');
+                        if (b) b.value = '';
+                        var r = document.getElementById('resultadosBusqueda');
+                        if (r) r.style.display = 'none';
+                        var l = document.getElementById('listaResultadosBusqueda');
+                        if (l) l.innerHTML = '';
+                    }
+
+                    if (opciones.navegar) {
+                        var enVistas = window.location.pathname.indexOf('/vistas/') !== -1;
+                        var prefijo = enVistas ? '' : 'vistas/';
+                        window.location.href = prefijo + 'orden.html?orden=' + nuevaOrden;
+                    }
+
+                    resolve(nuevaOrden);
+                }).catch(function(e) {
+                    console.error('[crearNuevaVisita] Error:', e);
                     alert('No se pudo crear la nueva orden. Intente nuevamente.');
                     resolve(null);
                 });
