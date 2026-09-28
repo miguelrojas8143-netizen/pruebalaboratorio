@@ -122,11 +122,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         window.mostrarFechaHoy();
-        if (window.onStorageReady) {
-            window.onStorageReady(function() { window.initModificar(); });
-        } else {
-            window.initModificar();
-        }
+        // Migrado: initModificador usa SQLite IPC, no necesita IndexedDB
+        window.initModificador();
     });
 </script>
 

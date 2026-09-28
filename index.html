@@ -181,6 +181,7 @@
                     </div>
                 </div>
             </div>
+
                 </div>
             </div>
         </main>
@@ -240,30 +241,53 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a id="btnIrOrdenExistente" href="#" class="btn btn-primary" target="_blank"><i class="bi bi-arrow-right-circle me-1"></i> Ir a su Orden</a>
+                    <button type="button" class="btn btn-primary" id="btnIrOrdenExistente" onclick="window.location.href='vistas/orden.html?orden='+window.obtenerOrdenNavegar()"><i class="bi bi-arrow-right-circle me-1"></i> Ir a su Orden</button>
                     <button type="button" class="btn btn-success" id="btnNuevaOrden"><i class="bi bi-plus-circle me-1"></i> Nueva Orden</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Registro Exitoso -->
-    <div class="modal fade" id="modalExito" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i> Registro Exitoso</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0">Paciente registrado correctamente.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+     <!-- Modal: Registro Exitoso -->
+     <div class="modal fade" id="modalExito" tabindex="-1">
+         <div class="modal-dialog modal-dialog-centered">
+             <div class="modal-content">
+                 <div class="modal-header bg-success text-white">
+                     <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i> Registro Exitoso</h5>
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Cerrar"></button>
+                 </div>
+                 <div class="modal-body">
+                     <p class="mb-0">Paciente registrado correctamente.</p>
+                 </div>
+                 <div class="modal-footer">
+                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Cerrar</button>
+                 </div>
+             </div>
+         </div>
+     </div>
+
+     <!-- Modal: Orden Asignada -->
+     <div class="modal fade" id="modal-orden" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+         <div class="modal-dialog modal-dialog-centered">
+             <div class="modal-content">
+                 <div class="modal-header bg-primary text-white">
+                     <h5 class="modal-title"><i class="bi bi-receipt-cutoff me-2"></i> Orden Asignada</h5>
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Cerrar"></button>
+                 </div>
+                 <div class="modal-body text-center py-4">
+                     <p class="mb-3">Se registró el paciente con la siguiente orden:</p>
+                     <h1 class="display-4 fw-bold mb-0" id="numeroOrden">001</h1>
+                 </div>
+                 <div class="modal-footer">
+                      <button type="button" class="btn btn-success" id="btnIrOrden" onclick="window.location.href='vistas/orden.html?orden='+window.obtenerOrdenNavegar()"><i class="bi bi-arrow-right-circle me-1"></i> Ir a la orden</button>
+                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Cerrar</button>
+                 </div>
+             </div>
+         </div>
+     </div>
+
+     <!-- Contenedor de notificaciones (toasts) -->
+     <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 2000;"></div>
 
     <!-- Modal: Gestión de Pacientes (Eliminar) -->
     <div class="modal fade" id="modalGestionPacientes" tabindex="-1">

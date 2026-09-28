@@ -461,13 +461,29 @@
     /* ---------- Acciones ---------- */
     async function generarPDF(accion) {
         var orden = new URLSearchParams(window.location.search).get('orden') || '';
-        var paciente = window.obtenerPacientes().find(function(p) { return p.orden === orden; });
-        if (!paciente) {
+        var ordenNormalizado = String(orden || '').padStart(3, '0');
+        var result = await window.api.obtenerPacientePorOrden(ordenNormalizado);
+        if (!result.success || !result.paciente) {
             alert('Paciente no encontrado.');
             return;
         }
 
-        if (!window.jspdf || !window.jspdf.jsPDF) {
+         var paciente = result.paciente;
+         paciente.examenes = (result.examenes || []).map(function(e) {
+             return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+         });
+         // Enriquecer exámenes con datos del catálogo (area, tipo, unidad, referencias)
+         paciente.examenes = window.enriquecerExamenesDesdeCatalogo
+             ? window.enriquecerExamenesDesdeCatalogo(paciente.examenes)
+             : paciente.examenes;
+         paciente.id = paciente.id || null;
+         paciente.visitas = paciente.visitas || 1;
+         paciente.refAdaptadas = paciente.refAdaptadas || false;
+         paciente.historial = paciente.historial || [];
+         paciente.perfiles = paciente.perfiles || [];
+         paciente.telefono = paciente.telefono || '';
+
+         if (!window.jspdf || !window.jspdf.jsPDF) {
             alert('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
             return;
         }

@@ -32,17 +32,23 @@
         cargarPaginaActual();
     }
 
+    function cargarPacientes() {
+        return window.api.obtenerPacientesCompletos().then(function(r) {
+            return (r && r.pacientes) ? r.pacientes : [];
+        }).catch(function(e) {
+            console.error('[cargarPacientes] Error:', e);
+            return [];
+        });
+    }
+
     function paginaSiguiente() {
-        window.DB.obtenerPacientes(_paginacion.limit, _paginacion.cursorActual).then(function(result) {
-            if (!result) {
-                result = { pacientes: [], hayMas: false, nuevoCursor: 0 };
-            }
-            var pacientes = result.pacientes || [];
+        cargarPacientes().then(function(todos) {
             _paginacion.cursorStack.push({ cursorActual: _paginacion.cursorActual, pagina: _paginacion.pagina });
-            _paginacion.cursorActual = result.nuevoCursor || 0;
-            _paginacion.hayMas = result.hayMas || false;
+            _paginacion.cursorActual = _paginacion.cursorActual + _paginacion.limit;
+            _paginacion.hayMas = todos.length > _paginacion.cursorActual;
             _paginacion.pagina = _paginacion.cursorStack.length;
-            actualizarEstadoPaginacion(pacientes);
+            var page = todos.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
+            actualizarEstadoPaginacion(page);
         }).catch(function(e) {
             console.error('[paginaSiguiente] Error:', e);
             actualizarEstadoPaginacion([]);
@@ -59,12 +65,10 @@
             var estado = _paginacion.cursorStack[_paginacion.cursorStack.length - 1];
             _paginacion.cursorActual = estado.cursorActual;
             _paginacion.pagina = estado.pagina;
-            window.DB.obtenerPacientes(_paginacion.limit, _paginacion.cursorActual).then(function(result) {
-                if (!result) {
-                    result = { pacientes: [], hayMas: false, nuevoCursor: 0 };
-                }
-                _paginacion.hayMas = result.hayMas || false;
-                actualizarEstadoPaginacion(result.pacientes || []);
+            cargarPacientes().then(function(todos) {
+                _paginacion.hayMas = todos.length > _paginacion.cursorActual;
+                var page = todos.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
+                actualizarEstadoPaginacion(page);
             }).catch(function(e) {
                 console.error('[paginaAnterior] Error:', e);
                 actualizarEstadoPaginacion([]);
@@ -73,14 +77,10 @@
     }
 
     function cargarPaginaActual() {
-        window.DB.obtenerPacientes(_paginacion.limit, _paginacion.cursorActual).then(function(result) {
-            if (!result) {
-                result = { pacientes: [], hayMas: false, nuevoCursor: 0 };
-            }
-            var pacientes = result.pacientes || [];
-            _paginacion.cursorActual = result.nuevoCursor || 0;
-            _paginacion.hayMas = result.hayMas || false;
-            actualizarEstadoPaginacion(pacientes);
+        cargarPacientes().then(function(todos) {
+            _paginacion.hayMas = todos.length > _paginacion.cursorActual + _paginacion.limit;
+            var page = todos.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
+            actualizarEstadoPaginacion(page);
         }).catch(function(e) {
             console.error('[cargarPaginaActual] Error:', e);
             actualizarEstadoPaginacion([]);
@@ -105,75 +105,91 @@
         cargarPaginaActual();
     }
 
+    function mostrarNotificacion(mensaje, tipo) {
+        tipo = tipo || 'info';
+        var container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '2000';
+            document.body.appendChild(container);
+        }
+        var toastEl = document.createElement('div');
+        toastEl.className = 'toast align-items-center text-white bg-' + (tipo === 'danger' ? 'danger' : tipo === 'success' ? 'success' : 'info') + ' border-0';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        toastEl.innerHTML =
+            '<div class="d-flex"><div class="toast-body">' + mensaje + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+        container.appendChild(toastEl);
+        var bsToast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        bsToast.show();
+        toastEl.addEventListener('hidden.bs.toast', function() {
+            if (toastEl.parentNode) toastEl.parentNode.removeChild(toastEl);
+        });
+    }
+
     window.initRecepcion = initRecepcion;
+    window.obtenerOrdenNavegar = function() { return _ordenNavegar; };
+    var _ordenNavegar = null;
 
     function initRecepcion() {
         inicializarPaginacion();
         renderizarMetricas();
         inicializarSelect2();
-        document.getElementById('formRegistro').addEventListener('submit', function(e) {
+        document.getElementById('formRegistro').addEventListener('submit', async function(e) {
             e.preventDefault();
             var self = this;
+
             var nombre = document.getElementById('nombre').value.trim();
             var sexo = document.getElementById('sexo').value;
             var cedula = document.getElementById('cedula').value.trim();
-            var telefono = document.getElementById('telefono').value.trim();
             var fechaNac = document.getElementById('fechaNac').value.trim();
-            var edad = window.calcularEdad(fechaNac);
+            var edadVal = document.getElementById('edad').value.trim();
+            var telefono = document.getElementById('telefono').value.trim();
+
             if (!nombre || !sexo) {
-                alert('Nombre y sexo son obligatorios.');
+                mostrarNotificacion('Nombre y sexo son obligatorios.', 'danger');
                 return;
             }
 
-            window.DB.obtenerPacientes(1000, null).then(function(r) {
-                var pacientes = (r && r.pacientes) ? r.pacientes : (r || []);
-                if (cedula && pacientes.some(function(p) { return p.cedula === cedula; })) {
-                    var pacienteExistente = pacientes.find(function(p) { return p.cedula === cedula; });
-                    document.getElementById('pacienteExistenteNombre').textContent = pacienteExistente.nombre;
-                    document.getElementById('cedulaDuplicada').textContent = pacienteExistente.cedula || 'N/A';
-                    document.getElementById('pacienteExistenteOrden').textContent = pacienteExistente.orden;
-                    document.getElementById('pacienteExistenteFecha').textContent = pacienteExistente.fechaRegistro || 'N/A';
-                    document.getElementById('pacienteVisitas').textContent = pacienteExistente.visitas || 1;
-                    document.getElementById('pacienteExistenteEdad').textContent = pacienteExistente.edad ? pacienteExistente.edad + ' años' : 'N/A';
-                    document.getElementById('btnIrOrdenExistente').href = 'vistas/orden.html?orden=' + pacienteExistente.orden;
-                    window.guardarPacienteExistenteRefer({
-                        nombre: nombre,
-                        sexo: sexo,
-                        cedula: cedula,
-                        fechaNac: fechaNac,
-                        telefono: telefono,
-                        edad: edad
-                    });
-                    var modal = new bootstrap.Modal(document.getElementById('modalDuplicado'));
-                    modal.show();
-                    return;
-                }
-                var nuevoOrden = window.obtenerOrdenDiaria();
-                var nuevoPaciente = {
-                    id: Date.now(),
-                    orden: String(nuevoOrden).padStart(3, '0'),
-                    nombre: nombre,
-                    sexo: sexo,
-                    cedula: cedula || null,
-                    fechaNac: fechaNac || null,
-                    telefono: telefono || null,
-                    edad: edad,
-                    fechaRegistro: new Date().toLocaleDateString('es-ES'),
-                    examenes: [],
-                    historial: [],
-                    visitas: 1
-                };
-                pacientes.push(nuevoPaciente);
-                window.guardarPacientes(pacientes).then(function() {
+            var edad = parseInt(edadVal, 10);
+            if (!edad || isNaN(edad)) {
+                edad = window.calcularEdad(fechaNac);
+            }
+
+            var nuevoOrden = window.obtenerOrdenDiaria();
+            var nuevoPaciente = {
+                orden: String(nuevoOrden).padStart(3, '0'),
+                nombre: nombre,
+                cedula: cedula || '',
+                edad: edad,
+                sexo: sexo,
+                fechaNac: fechaNac || '',
+                telefono: telefono || '',
+                fechaRegistro: new Date().toLocaleDateString('es-ES')
+            };
+
+            try {
+                const result = await window.api.guardarPaciente(nuevoPaciente);
+                if (result.success) {
+                    var numeroOrdenEl = document.getElementById('numeroOrden');
+                    if (numeroOrdenEl) numeroOrdenEl.textContent = nuevoPaciente.orden;
+                    _ordenNavegar = nuevoPaciente.orden;
+
                     window.guardarUltimaOrdenCreada(nuevoPaciente.orden);
-                    self.reset();
                     refrescarPaginaActual();
                     renderizarMetricas();
-                    new bootstrap.Modal(document.getElementById('modalExito')).show();
-                }).catch(function(err) {
-                    console.error('[guardarPacientes] Error:', err);
-                });
-            });
+                    new bootstrap.Modal(document.getElementById('modal-orden')).show();
+                    self.reset();
+                } else {
+                    mostrarNotificacion('Error al guardar el paciente: ' + result.error, 'danger');
+                }
+            } catch (err) {
+                mostrarNotificacion('Error inesperado: ' + err.message, 'danger');
+            }
         });
         document.getElementById('buscadorGlobal').addEventListener('input', function() {
             renderizarCola(this.value);
@@ -184,7 +200,8 @@
             modal.hide();
             var refer = window.obtenerPacienteExistenteRefer();
             var datos = refer ? JSON.parse(refer) : null;
-            if (!datos || !datos.cedula) return;
+            if (!datos || !datos.orden) return;
+            _ordenNavegar = datos.orden;
             window.crearNuevaVisita(null, { actualizarPaciente: true, navegar: true, limpiarBuscador: true });
         });
         window.buscarPaciente = function(termino) {
@@ -196,8 +213,7 @@
                 listaDiv.innerHTML = '';
                 return;
             }
-            window.DB.obtenerPacientes(1000, null).then(function(r) {
-                var pacientes = (r && r.pacientes) ? r.pacientes : (r || []);
+            cargarPacientes().then(function(pacientes) {
                 var t = termino.toLowerCase();
                 var encontrados = pacientes.filter(function(p) {
                     return (p.nombre && p.nombre.toLowerCase().includes(t)) ||
@@ -213,7 +229,7 @@
                 encontrados.slice(0, 5).forEach(function(p) {
                     var estado = window.calcularEstadoPaciente(p);
                     var badge = window.textoEstado(estado);
-                    html += '<div class="list-group-item d-flex justify-content-between align-items-center"><div><strong>' + p.nombre + '</strong><small class="text-muted d-block">Cédula: ' + (p.cedula || 'N/A') + ' | Orden: #' + p.orden + ' | Visitas: ' + (p.visitas || 1) + '</small></div><div class="d-flex gap-2"><a href="vistas/orden.html?orden=' + p.orden + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-right-circle"></i> Ir a Orden</a><a href="vistas/historial.html?id=' + p.id + '" class="btn btn-sm btn-outline-info"><i class="bi bi-clock-history"></i> Historial</a><button class="btn btn-sm btn-success" onclick="window.crearNuevaOrden(' + p.id + ')"><i class="bi bi-plus-circle"></i> Nueva Orden</button></div></div>';
+                    html += '<div class="list-group-item d-flex justify-content-between align-items-center"><div><strong>' + p.nombre + '</strong><small class="text-muted d-block">Cédula: ' + (p.cedula || 'N/A') + ' | Orden: #' + p.orden + ' | Visitas: ' + (p.visitas || 1) + '</small></div><div class="d-flex gap-2"><button class="btn btn-sm btn-outline-primary" onclick="window.location.href=\'vistas/orden.html?orden=' + p.orden + '\'"><i class="bi bi-arrow-right-circle"></i> Ir a Orden</button><a href="vistas/historial.html?id=' + p.id + '" class="btn btn-sm btn-outline-info"><i class="bi bi-clock-history"></i> Historial</a><button class="btn btn-sm btn-success" onclick="window.crearNuevaOrden(' + p.id + ')"><i class="bi bi-plus-circle"></i> Nueva Orden</button></div></div>';
                 });
                 listaDiv.innerHTML = html;
                 resultadosDiv.style.display = 'block';
@@ -250,14 +266,13 @@
             var estado = window.calcularEstadoPaciente(p);
             var badgeEstado = window.textoEstado(estado);
             var fila = document.createElement('tr');
-            fila.innerHTML = '<td><span class="badge bg-primary badge-orden">#' + p.orden + '</span></td><td class="fw-semibold">' + p.nombre + '</td><td>' + (p.cedula ? p.cedula : '<span class="text-muted">N/A</span>') + '</td><td class="text-center"><span class="badge ' + badgeEstado.clase + '">' + badgeEstado.texto + '</span></td><td class="text-center"><a href="vistas/orden.html?orden=' + p.orden + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-right-circle me-1"></i> Cargar Exámenes</a></td>';
+            fila.innerHTML = '<td><span class="badge bg-primary badge-orden">#' + p.orden + '</span></td><td class="fw-semibold">' + p.nombre + '</td><td>' + (p.cedula ? p.cedula : '<span class="text-muted">N/A</span>') + '</td><td class="text-center"><span class="badge ' + badgeEstado.clase + '">' + badgeEstado.texto + '</span></td><td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="window.location.href=\'vistas/orden.html?orden=' + p.orden + '\'"><i class="bi bi-arrow-right-circle me-1"></i> Cargar Exámenes</button></td>';
             tbody.appendChild(fila);
         });
     }
 
     function renderizarMetricas() {
-        window.DB.obtenerPacientes(1000, null).then(function(r) {
-            var pacientes = (r && r.pacientes) ? r.pacientes : (r || []);
+        cargarPacientes().then(function(pacientes) {
             var hoy = new Date().toLocaleDateString('es-ES');
             var hoyPacientes = pacientes.filter(function(p) {
                 return p.fechaRegistro === hoy;
@@ -293,8 +308,7 @@
     function renderizarListaPacientesModal() {
         var tbody = document.getElementById('tablaGestionPacientes');
         if (!tbody) return;
-        window.DB.obtenerPacientes(1000, null).then(function(r) {
-            var pacientes = (r && r.pacientes) ? r.pacientes : (r || []);
+        cargarPacientes().then(function(pacientes) {
             if (pacientes.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No hay pacientes registrados.</td></tr>';
                 return;
@@ -310,31 +324,32 @@
 
     window.eliminarPacienteIndividual = function(pacienteId) {
         if (!confirm('¿Está seguro de eliminar este paciente?')) return;
-        window.DB.obtenerPacientes(1000, null).then(function(r) {
-            var pacientes = (r && r.pacientes) ? r.pacientes : (r || []);
-            var index = pacientes.findIndex(function(p) { return p.id === pacienteId; });
-            if (index === -1) {
-                alert('Paciente no encontrado.');
-                return;
-            }
-            pacientes.splice(index, 1);
-            window.guardarPacientes(pacientes).then(function() {
+        window.api.eliminarPaciente(pacienteId).then(function(r) {
+            if (r && r.success) {
                 renderizarListaPacientesModal();
                 refrescarPaginaActual();
                 renderizarMetricas();
-            }).catch(function(e) {
-                console.error('[eliminarPacienteIndividual] Error:', e);
-                alert('Error al eliminar el paciente.');
-            });
+            } else {
+                console.error('[eliminarPacienteIndividual] Error:', r ? r.error : 'Unknown error');
+                alert('Error al eliminar el paciente: ' + (r ? r.error : 'Unknown error'));
+            }
+        }).catch(function(e) {
+            console.error('[eliminarPacienteIndividual] Error:', e);
+            alert('Error al eliminar el paciente.');
         });
     };
 
     window.eliminarTodosPacientes = function() {
         if (!confirm('¿Está seguro de eliminar TODOS los pacientes?\nEsta acción no se puede deshacer.')) return;
-        window.guardarPacientes([]).then(function() {
-            renderizarListaPacientesModal();
-            refrescarPaginaActual();
-            renderizarMetricas();
+        window.api.eliminarTodosPacientes().then(function(r) {
+            if (r && r.success) {
+                renderizarListaPacientesModal();
+                refrescarPaginaActual();
+                renderizarMetricas();
+            } else {
+                console.error('[eliminarTodosPacientes] Error:', r ? r.error : 'Unknown error');
+                alert('Error al eliminar los pacientes: ' + (r ? r.error : 'Unknown error'));
+            }
         }).catch(function(e) {
             console.error('[eliminarTodosPacientes] Error:', e);
             alert('Error al eliminar los pacientes.');

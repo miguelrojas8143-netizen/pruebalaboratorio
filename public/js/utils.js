@@ -13,6 +13,29 @@
         }
         return examen;
     }
+
+    function enriquecerExamenDesdeCatalogo(examen) {
+        if (!examen || !window.obtenerCatalogo) return examen;
+        var catalogo = window.obtenerCatalogo();
+        var cat = catalogo.find(function(c) { return c.id === examen.id; });
+        if (!cat) return examen;
+        if (cat.area && !examen.area) examen.area = cat.area;
+        if (cat.tipo && !examen.tipo) examen.tipo = cat.tipo;
+        if (cat.tipoFormulario && !examen.tipoFormulario) examen.tipoFormulario = cat.tipoFormulario;
+        if (cat.unidad !== undefined && !examen.unidad) examen.unidad = cat.unidad;
+        if (cat.refMin !== undefined && examen.refMin === undefined) examen.refMin = cat.refMin;
+        if (cat.refMax !== undefined && examen.refMax === undefined) examen.refMax = cat.refMax;
+        if (cat.refTexto !== undefined && !examen.refTexto) examen.refTexto = cat.refTexto;
+        if (cat.opciones && !examen.opciones) examen.opciones = cat.opciones;
+        if (cat.grupo !== undefined && examen.grupo === undefined) examen.grupo = cat.grupo;
+        if (cat.valorDefecto !== undefined && examen.valorDefecto === undefined) examen.valorDefecto = cat.valorDefecto;
+        return examen;
+    }
+
+    function enriquecerExamenesDesdeCatalogo(examenes) {
+        if (!examenes) return [];
+        return examenes.map(function(e) { return enriquecerExamenDesdeCatalogo(JSON.parse(JSON.stringify(e))); });
+    }
    // Función para calcular el estado del paciente según sus exámenes
     function calcularEstadoPaciente(paciente) {
         var examenes = (paciente.examenes || []).map(normalizarExamen);
@@ -138,8 +161,9 @@
         return isNaN(valor) ? NaN : valor;
     }
 
-   // window.normalizarExamen = normalizarExamen;
-   window.normalizarExamen=normalizarExamen;
+    window.normalizarExamen = normalizarExamen;
+    window.enriquecerExamenDesdeCatalogo = enriquecerExamenDesdeCatalogo;
+    window.enriquecerExamenesDesdeCatalogo = enriquecerExamenesDesdeCatalogo;
     window.calcularEstadoPaciente = calcularEstadoPaciente;
     window.textoEstado = textoEstado;
     window.calcularEdad = calcularEdad;
