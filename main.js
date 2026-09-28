@@ -110,6 +110,30 @@ function initDatabase() {
         }
     });
 
+    // IPC: Actualizar datos de un paciente existente (preserva refAdaptadas, perfiles, historial, visitas)
+    const updatePacienteStmt = db.prepare(
+        'UPDATE pacientes SET nombre = ?, cedula = ?, edad = ?, sexo = ?, fechaNac = ?, telefono = ? WHERE orden = ?'
+    );
+    ipcMain.handle('actualizar-paciente', (event, paciente) => {
+        try {
+            const info = updatePacienteStmt.run(
+                paciente.nombre,
+                paciente.cedula || null,
+                paciente.edad || null,
+                paciente.sexo || null,
+                paciente.fechaNac || null,
+                paciente.telefono || null,
+                paciente.orden
+            );
+            if (info.changes === 0) {
+                return { success: false, error: 'Paciente no encontrado con orden: ' + paciente.orden };
+            }
+            return { success: true, changes: info.changes };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
     ipcMain.handle('obtener-pacientes', () => {
         try {
             const pacientes = selectPacientesStmt.all();

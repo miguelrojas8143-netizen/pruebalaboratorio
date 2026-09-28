@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
     obtenerPacientes: () => ipcRenderer.invoke('obtener-pacientes'),
     obtenerPacientesCompletos: () => ipcRenderer.invoke('obtener-pacientes-completos'),
     obtenerPacientePorOrden: (orden) => ipcRenderer.invoke('obtener-paciente-por-orden', { orden }),
+    actualizarPaciente: (paciente) => ipcRenderer.invoke('actualizar-paciente', paciente),
     guardarExamenesPaciente: (orden, examenes) => ipcRenderer.invoke('guardar-examenes-paciente', { orden, examenes }),
     obtenerExamenesPaciente: (orden) => ipcRenderer.invoke('obtener-examenes-paciente', { orden }),
     guardarPacienteExamenes: (orden, examenes) => ipcRenderer.invoke('guardar-paciente-examenes', { orden, examenes }),
