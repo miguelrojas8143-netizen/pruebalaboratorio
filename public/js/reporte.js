@@ -6,16 +6,36 @@
        de resultados y la clasificación quedan centralizadas en PdfReport
        (pdf.js), que es la única fuente sobre qué exámenes/resultados se cargan
        en el PDF antes de imprimir o descargar. */
-    function initReporte(orden) {
+    async function initReporte(orden) {
         var ordenNormalizado = String(orden || '').padStart(3, '0');
-        var pacientes = window.obtenerPacientes();
-        var paciente = pacientes.find(function(p) { return p.orden === ordenNormalizado; });
-        if (!paciente) {
-            var ordenesDisponibles = pacientes.map(function(p) { return '# ' + p.orden + ' - ' + p.nombre; }).join('\n');
+        var result = await window.api.obtenerPacientePorOrden(ordenNormalizado);
+        if (!result.success || !result.paciente) {
+            var ordenesDisponibles = 'Ninguna';
+            try {
+                var res = await window.api.obtenerPacientesCompletos();
+                if (res.success) {
+                    ordenesDisponibles = res.pacientes.map(function(p) { return '# ' + p.orden + ' - ' + p.nombre; }).join('\n');
+                }
+            } catch(e) {}
             alert('Paciente no encontrado para la orden: ' + ordenNormalizado + '\n\nÓrdenes disponibles:\n' + (ordenesDisponibles || 'Ninguna'));
             window.location.href = '../index.html';
             return;
         }
+
+        var paciente = result.paciente;
+        paciente.examenes = (result.examenes || []).map(function(e) {
+            return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+        });
+        // Enriquecer exámenes con datos del catálogo (area, tipo, unidad, referencias)
+        paciente.examenes = window.enriquecerExamenesDesdeCatalogo
+            ? window.enriquecerExamenesDesdeCatalogo(paciente.examenes)
+            : paciente.examenes;
+        paciente.id = paciente.id || null;
+        paciente.visitas = paciente.visitas || 1;
+        paciente.refAdaptadas = paciente.refAdaptadas || false;
+        paciente.historial = paciente.historial || [];
+        paciente.perfiles = paciente.perfiles || [];
+        paciente.telefono = paciente.telefono || '';
 
         var payload = window.PdfReport.buildPayload(paciente);
 

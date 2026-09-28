@@ -38,10 +38,22 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         window.mostrarFechaHoy();
-        if (window.onStorageReady) {
-            window.onStorageReady(ejecutarInit);
-        } else {
+        var yaInicializado = false;
+        var ejecutarInitSafe = function() {
+            if (yaInicializado) return;
+            yaInicializado = true;
             ejecutarInit();
+        };
+        if (window.onStorageReady) {
+            window.onStorageReady(ejecutarInitSafe);
+            setTimeout(function() {
+                if (window.esStorageListo && !window.esStorageListo()) {
+                    console.warn('[app] Storage no listo, inicializando de todos modos');
+                    ejecutarInitSafe();
+                }
+            }, 3000);
+        } else {
+            ejecutarInitSafe();
         }
     });
 

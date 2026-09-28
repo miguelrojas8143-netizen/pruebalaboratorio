@@ -50,69 +50,80 @@
 
         if (migrado) {
             try {
-                var pacientes = window.obtenerPacientes();
-                var index = pacientes.findIndex(function(p) { return p.id === window.pacienteActivo && window.pacienteActivo.id === p.id; });
-                if (index === -1) {
-                    var ordenActual = window.getOrden ? window.getOrden() : '';
-                    index = pacientes.findIndex(function(p) { return String(p.orden || '').padStart(3, '0') === ordenActual; });
-                }
-                if (index !== -1) {
-                    pacientes[index].examenes = examenes;
-                    window.guardarPacientes(pacientes).catch(function(e) {
-                        console.error('[guardarPacientes] Error:', e);
-                    });
-                    window.pacienteActivo = pacientes[index];
+                var ordenActual = window.getOrden ? window.getOrden() : '';
+                if (window.pacienteActivo && window.pacienteActivo.orden === ordenActual) {
+                    window.pacienteActivo.examenes = examenes;
+                    if (window.api && window.api.guardarPacienteExamenes) {
+                        window.api.guardarPacienteExamenes(ordenActual, examenes).catch(function(e) {
+                            console.error('[migrarExamenesOrina] Error:', e);
+                        });
+                    }
                 }
             } catch(e) {}
         }
         return migrado;
     };
 
-    function initOrden(orden) {
-        var ordenNormalizado = String(orden || '').padStart(3, '0');
-        var pacientes = window.obtenerPacientes();
-        var paciente = pacientes.find(function(p) { return p.orden === ordenNormalizado; });
-        if (!paciente) {
-            alert('Paciente no encontrado para la orden: ' + ordenNormalizado);
-            window.location.href = '../index.html';
-            return;
-        }
-        document.getElementById('pacienteNombre').textContent = paciente.nombre;
-        document.getElementById('pacienteCedula').textContent = paciente.cedula;
-        document.getElementById('pacienteFechaNac').textContent = paciente.fechaNac || 'N/A';
-        document.getElementById('pacienteEdad').textContent = paciente.edad ? paciente.edad + ' años' : 'N/A';
-        document.getElementById('pacienteTelefono').textContent = paciente.telefono || 'N/A';
-        document.getElementById('pacienteOrden').textContent = paciente.orden;
-        document.getElementById('pacienteVisitas').textContent = paciente.visitas || 1;
-        window.pacienteActivo = paciente;
-        window.examenesOrden = paciente.examenes || [];
-        var catalogoActual = window.obtenerCatalogo();
-        window.examenesOrden.forEach(function(examen) {
-            var catalogoExamen = catalogoActual.find(function(item) { return item.id === examen.id; });
-            if (!catalogoExamen || catalogoExamen.area !== 'Bacteriología') return;
-            if (!examen.unidad || examen.unidad === 'N/A') examen.unidad = catalogoExamen.unidad;
-            if (!examen.refTexto || examen.refTexto === 'Según criterio del bioquímico') {
-                examen.refTexto = catalogoExamen.refTexto;
+    async function initOrden(orden) {
+        var ordenActual = String(orden || '').padStart(3, '0');
+        try {
+            var result = await window.api.obtenerPacientePorOrden(ordenActual);
+            if (!result.success || !result.paciente) {
+                alert('Paciente no encontrado para la orden: ' + ordenActual);
+                window.location.href = '../index.html';
+                return;
             }
-        });
-        window.migrarExamenesOrina(window.examenesOrden);
-        var chkRef = document.getElementById('refAdaptadas');
-        if (chkRef) {
-            chkRef.checked = !!paciente.refAdaptadas;
-            if (paciente.refAdaptadas) {
-                setTimeout(function() {
-                    var inputs = document.querySelectorAll('#tablaExamenes .resultado-input');
-                    inputs.forEach(function(input) { window.validarResultado(input); });
-                }, 100);
+            var paciente = result.paciente;
+            paciente.examenes = (result.examenes || []).map(function(e) {
+                return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+            });
+            paciente.id = paciente.id || null;
+            paciente.visitas = paciente.visitas || 1;
+            paciente.refAdaptadas = paciente.refAdaptadas || false;
+            paciente.historial = paciente.historial || [];
+            paciente.perfiles = paciente.perfiles || [];
+            paciente.telefono = paciente.telefono || '';
+            document.getElementById('pacienteNombre').textContent = paciente.nombre;
+            document.getElementById('pacienteCedula').textContent = paciente.cedula || 'N/A';
+            document.getElementById('pacienteFechaNac').textContent = paciente.fechaNac || 'N/A';
+            document.getElementById('pacienteEdad').textContent = paciente.edad ? paciente.edad + ' años' : 'N/A';
+            document.getElementById('pacienteTelefono').textContent = paciente.telefono || 'N/A';
+            document.getElementById('pacienteOrden').textContent = paciente.orden;
+            document.getElementById('pacienteVisitas').textContent = paciente.visitas;
+            window.pacienteActivo = paciente;
+            window.examenesOrden = paciente.examenes || [];
+            var catalogoActual = window.obtenerCatalogo();
+            window.examenesOrden.forEach(function(examen) {
+                var catalogoExamen = catalogoActual.find(function(item) { return item.id === examen.id; });
+                if (!catalogoExamen || catalogoExamen.area !== 'Bacteriología') return;
+                if (!examen.unidad || examen.unidad === 'N/A') examen.unidad = catalogoExamen.unidad;
+                if (!examen.refTexto || examen.refTexto === 'Según criterio del bioquímico') {
+                    examen.refTexto = catalogoExamen.refTexto;
+                }
+            });
+            window.migrarExamenesOrina(window.examenesOrden);
+            var chkRef = document.getElementById('refAdaptadas');
+            if (chkRef) {
+                chkRef.checked = !!paciente.refAdaptadas;
+                if (paciente.refAdaptadas) {
+                    setTimeout(function() {
+                        var inputs = document.querySelectorAll('#tablaExamenes .resultado-input');
+                        inputs.forEach(function(input) { window.validarResultado(input); });
+                    }, 100);
+                }
             }
-        }
-        window.refrescarSelect2Catalogos();
-        renderizarTablaExamenes();
-        renderizarHistorial();
+            window.refrescarSelect2Catalogos();
+            renderizarTablaExamenes();
+            renderizarHistorial();
 
-        var alertaSinGuardar = document.getElementById('alertSinGuardar');
-        if (alertaSinGuardar) {
-            alertaSinGuardar.style.display = (window.pacienteActivoTieneCambiosSinGuardar() ? 'block' : 'none');
+            var alertaSinGuardar = document.getElementById('alertSinGuardar');
+            if (alertaSinGuardar) {
+                alertaSinGuardar.style.display = (window.pacienteActivoTieneCambiosSinGuardar() ? 'block' : 'none');
+            }
+        } catch (err) {
+            console.error('[initOrden] Error:', err);
+            alert('Error cargando la orden: ' + err.message);
+            window.location.href = '../index.html';
         }
     }
 
@@ -606,20 +617,19 @@
         renderizarTablaExamenes();
     };
 
-    window.borrarTodosLosDatos = function() {
+    window.borrarTodosLosDatos = async function() {
         if (!confirm('¿Eliminar TODOS los datos del laboratorio?\nEsta acción no se puede deshacer.')) return;
         var localStorageKeys = ['pacientesLab', 'ultimoOrdenLab', 'ordenesDiariasLab', 'pacienteExistenteRefer', 'ultimaOrdenCreada', 'catalogoCustom', 'dbMigrado'];
         localStorageKeys.forEach(function(k) { localStorage.removeItem(k); });
         window.examenesOrden = [];
         window.pacienteActivo = null;
-        if (window.DB && typeof window.DB.limpiarDB === 'function') {
-            window.DB.limpiarDB().then(function() {
-                window.location.reload();
-            }).catch(function(e) {
-                console.error('[borrarTodosLosDatos] Error limpiando IndexedDB:', e);
-                window.location.reload();
-            });
-        } else {
+        try {
+            if (window.api && typeof window.api.eliminarTodosPacientes === 'function') {
+                await window.api.eliminarTodosPacientes();
+            }
+            window.location.reload();
+        } catch (e) {
+            console.error('[borrarTodosLosDatos] Error:', e);
             window.location.reload();
         }
     };
@@ -651,7 +661,7 @@
         contenedor.innerHTML = html;
     }
 
-    window.guardarResultados = function() {
+    window.guardarResultados = async function() {
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
             alert('No hay exámenes en la orden para guardar.');
             return;
@@ -667,72 +677,79 @@
             }
             return String(e.resultado || '').trim() !== '';
         });
-        var pacientes = window.obtenerPacientes();
-        var index = pacientes.findIndex(function(p) { return p.id === window.pacienteActivo.id; });
-        if (index === -1) {
-            alert('Error: Paciente no encontrado.');
+        var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
+        if (!orden) {
+            alert('Error: No se pudo determinar la orden.');
             return;
         }
-        pacientes[index].examenes = JSON.parse(JSON.stringify(window.examenesOrden));
-        pacientes[index].refAdaptadas = window.pacienteActivo.refAdaptadas || false;
-        if (!pacientes[index].historial) {
-            pacientes[index].historial = [];
-        }
-        var fechaHoy = new Date().toLocaleDateString('es-ES');
-        examenesConResultado.forEach(function(examen) {
-            pacientes[index].historial.push({
-                fecha: fechaHoy,
-                examen: examen.nombre,
-                resultado: examen.resultado,
-                unidad: examen.unidad
+        try {
+            if (window.examenesOrden && window.examenesOrden.length > 0) {
+                await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+            }
+            await window.api.guardarRefAdaptadas(orden, window.pacienteActivo.refAdaptadas || false);
+            var historialExistente = window.pacienteActivo.historial || [];
+            var fechaHoy = new Date().toLocaleDateString('es-ES');
+            var nuevasEntradas = examenesConResultado.map(function(examen) {
+                return {
+                    fecha: fechaHoy,
+                    examen: examen.nombre,
+                    resultado: examen.resultado,
+                    unidad: examen.unidad || ''
+                };
             });
-        });
-        window.guardarPacientes(pacientes).catch(function(e) {
-            console.error('[guardarPacientes] Error:', e);
-        });
-        window.pacienteActivo = pacientes[index];
-        if (examenesConResultado.length === 0) {
-            alert('Orden guardada sin resultados ingresados.');
-        } else {
-            alert('Resultados guardados exitosamente.');
+            var historialCombinado = historialExistente.concat(nuevasEntradas);
+            window.pacienteActivo.historial = historialCombinado;
+            await window.api.guardarHistorialPaciente(orden, historialCombinado);
+            if (examenesConResultado.length === 0) {
+                alert('Orden guardada sin resultados ingresados.');
+            } else {
+                alert('Resultados guardados exitosamente.');
+            }
+        } catch (err) {
+            console.error('[guardarResultados] Error:', err);
+            alert('Error al guardar los resultados: ' + err.message);
         }
     };
 
-    window.guardarSolicitud = function() {
+    window.guardarSolicitud = async function() {
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
             alert('Debe agregar al menos un examen a la orden antes de guardar la solicitud.');
             return;
         }
-        var pacientes = window.obtenerPacientes();
-        var index = pacientes.findIndex(function(p) { return p.id === window.pacienteActivo.id; });
-        if (index === -1) {
-            alert('Error: Paciente no encontrado.');
+        var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
+        if (!orden) {
+            alert('Error: No se pudo determinar la orden.');
             return;
         }
-        pacientes[index].examenes = JSON.parse(JSON.stringify(window.examenesOrden));
-        pacientes[index].refAdaptadas = window.pacienteActivo.refAdaptadas || false;
-        window.guardarPacientes(pacientes).catch(function(e) {
-            console.error('[guardarPacientes] Error:', e);
-        });
-        window.pacienteActivo = pacientes[index];
-        alert('Solicitud guardada. En espera de resultados.');
-        window.location.href = '../index.html';
+        try {
+            await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+            await window.api.guardarRefAdaptadas(orden, window.pacienteActivo.refAdaptadas || false);
+            if (window.pacienteActivo) {
+                window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
+                window.pacienteActivo.refAdaptadas = window.pacienteActivo.refAdaptadas || false;
+            }
+            alert('Solicitud guardada. En espera de resultados.');
+            window.location.href = '../index.html';
+        } catch (err) {
+            console.error('[guardarSolicitud] Error:', err);
+            alert('Error al guardar la solicitud: ' + err.message);
+        }
     };
 
-    window.irAImpresion = function() {
-        var pacientes = window.obtenerPacientes();
-        var index = pacientes.findIndex(function(p) { return p.id === window.pacienteActivo.id; });
-        var refAdaptadasGuardada = window.pacienteActivo.refAdaptadas || false;
-        if (index !== -1) {
-            window.pacienteActivo = pacientes[index];
-        }
-        if (index !== -1 && window.examenesOrden && window.examenesOrden.length > 0) {
-            pacientes[index].examenes = JSON.parse(JSON.stringify(window.examenesOrden));
-            pacientes[index].refAdaptadas = refAdaptadasGuardada;
-            window.guardarPacientes(pacientes).catch(function(e) {
-                console.error('[guardarPacientes] Error:', e);
-            });
-            window.pacienteActivo = pacientes[index];
+    window.irAImpresion = async function() {
+        var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
+        var refAdaptadasGuardada = window.pacienteActivo ? window.pacienteActivo.refAdaptadas || false : false;
+        try {
+            if (window.examenesOrden && window.examenesOrden.length > 0) {
+                await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+                await window.api.guardarRefAdaptadas(orden, refAdaptadasGuardada);
+                if (window.pacienteActivo) {
+                    window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
+                    window.pacienteActivo.refAdaptadas = refAdaptadasGuardada;
+                }
+            }
+        } catch (err) {
+            console.error('[irAImpresion] Error:', err);
         }
         var examenesConResultados = (window.pacienteActivo.examenes || []).filter(function(e) {
             if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
@@ -746,10 +763,10 @@
             return String(e.resultado || '').trim() !== '';
         });
         if (examenesConResultados.length === 0) {
-            window.location.href = 'reporte.html?orden=' + window.pacienteActivo.orden + '&vacio=1';
+            window.location.href = 'reporte.html?orden=' + orden + '&vacio=1';
             return;
         }
-        window.location.href = 'reporte.html?orden=' + window.pacienteActivo.orden;
+        window.location.href = 'reporte.html?orden=' + orden;
     };
 
     window.getOrden = function() {
