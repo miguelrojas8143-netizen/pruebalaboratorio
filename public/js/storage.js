@@ -26,43 +26,30 @@
     }
 
     function _initDBAsync() {
-        if (!window.DB || typeof window.DB.init !== 'function') {
-            console.warn('[storage] DB no disponible, usando caché vacía');
+        if (!window.api || typeof window.api.obtenerPacientesCompletos !== 'function') {
+            console.warn('[storage] SQLite API no disponible, usando caché vacía');
+            _marcarListo();
             return Promise.resolve();
         }
 
-        return window.DB.init()
-            .then(function() {
-                return window.DB.migrarDesdeLocalStorage();
-            })
-            .then(function() {
-                return Promise.all([
-                    window.DB.obtenerPacientes(1000, 0).then(function(r) {
-                        return (r && r.pacientes) ? r.pacientes : (r || []);
-                    }),
-                    window.DB.obtenerCatalogoCustom(),
-                    window.DB.obtenerSetting('ultimoOrdenLab'),
-                    window.DB.obtenerSetting('ultimaOrdenCreada'),
-                    window.DB.obtenerSetting('pacienteExistenteRefer')
-                ]);
-            })
-            .then(function(results) {
-                _cache.pacientes = results[0] || [];
-                _cache.catalogoCustom = results[1] || [];
-                if (results[2] !== null && results[2] !== undefined) {
-                    _cache.ultimoOrdenLab = parseInt(results[2]) || 0;
+        return window.api.obtenerPacientesCompletos()
+            .then(function(r) {
+                if (r && r.success) {
+                    _cache.pacientes = r.pacientes || [];
                 }
-                _cache.ultimaOrdenCreada = results[3];
-                _cache.pacienteExistenteRefer = results[4];
+                _cache.catalogoCustom = [];
+                _cache.ultimoOrdenLab = 0;
+                _cache.ultimaOrdenCreada = null;
+                _cache.pacienteExistenteRefer = null;
                 _marcarListo();
             })
             .catch(function(e) {
-                console.error('[storage] Error inicializando IndexedDB:', e);
-                _cache.listo = false;
+                console.error('[storage] Error inicializando SQLite:', e);
+                _marcarListo();
             });
     }
 
-    if (window.DB && typeof window.DB.init === 'function') {
+    if (window.api && typeof window.api.obtenerPacientesCompletos === 'function') {
         initStorage();
     }
 
@@ -110,11 +97,6 @@
             var nuevoOrdenStr = calcularProximaOrden();
             var nuevoOrden = parseInt(nuevoOrdenStr, 10);
             _cache.ultimoOrdenLab = nuevoOrden;
-            if (_cache.listo && window.DB) {
-                window.DB.guardarSetting('ultimoOrdenLab', String(nuevoOrden)).catch(function(e) {
-                    console.error('[storage] Error guardando ultimoOrdenLab:', e);
-                });
-            }
             return nuevoOrdenStr;
         } catch (e) {
             console.error('[obtenerOrdenDiaria] Error:', e);
@@ -156,12 +138,6 @@
 
     function guardarPacientes(pacientes) {
         _cache.pacientes = pacientes.slice();
-        if (_cache.listo && window.DB) {
-            return window.DB.guardarPacientes(pacientes).catch(function(e) {
-                console.error('[storage] Error guardando pacientes:', e);
-                throw e;
-            });
-        }
         return Promise.resolve();
     }
 
@@ -171,11 +147,6 @@
 
     function guardarUltimaOrden(numero) {
         _cache.ultimoOrdenLab = parseInt(numero) || 0;
-        if (_cache.listo && window.DB) {
-            window.DB.guardarSetting('ultimoOrdenLab', String(numero)).catch(function(e) {
-                console.error('[storage] Error guardando ultimaOrdenLab:', e);
-            });
-        }
     }
 
     function obtenerCatalogoCustom() {
@@ -184,12 +155,8 @@
 
     function guardarCatalogoCustom(custom) {
         _cache.catalogoCustom = custom.slice();
-        if (_cache.listo && window.DB) {
-            window.DB.guardarCatalogoCustom(custom).catch(function(e) {
-                console.error('[storage] Error guardando catalogoCustom:', e);
-            });
-        }
         _emitirCambioCatalogo();
+        return Promise.resolve();
     }
 
     function obtenerPacienteExistenteRefer() {
@@ -199,11 +166,6 @@
     function guardarPacienteExistenteRefer(data) {
         var json = data !== null ? JSON.stringify(data) : null;
         _cache.pacienteExistenteRefer = json;
-        if (_cache.listo && window.DB) {
-            window.DB.guardarSetting('pacienteExistenteRefer', json).catch(function(e) {
-                console.error('[storage] Error guardando pacienteExistenteRefer:', e);
-            });
-        }
     }
 
     function obtenerUltimaOrdenCreada() {
@@ -212,11 +174,6 @@
 
     function guardarUltimaOrdenCreada(orden) {
         _cache.ultimaOrdenCreada = orden;
-        if (_cache.listo && window.DB) {
-            window.DB.guardarSetting('ultimaOrdenCreada', orden).catch(function(e) {
-                console.error('[storage] Error guardando ultimaOrdenCreada:', e);
-            });
-        }
     }
 
     function tieneResultadosEnExamenes(examenes) {
@@ -252,20 +209,15 @@
         });
     }
 
-    // MIGRADO A SQLITE: crearNuevaVisita usa window.api.crearNuevaVisita() IPC
-    // Línea ~255 (antes): window.obtenerPacientes() + window.guardarPacientes() — IndexedDB
-    // Ahora: window.api.crearNuevaVisita() — SQLite (archiva orden + crea nueva)
     function crearNuevaVisita(pacienteId, opciones) {
         return new Promise(function(resolve) {
             opciones = opciones || {};
 
-            // Buscar el paciente en la caché local (para mostrar confirmación)
             var pacientesCache = window.obtenerPacientes ? window.obtenerPacientes() : [];
             var pacienteCache = pacientesCache.find(function(p) {
                 return String(p.id) === String(pacienteId);
             });
 
-            // Si no está en caché pero actualizarPaciente está activo, buscar por cédula
             if (!pacienteCache && opciones.actualizarPaciente) {
                 var refer = window.obtenerPacienteExistenteRefer();
                 var datos = refer ? JSON.parse(refer) : null;
@@ -274,14 +226,12 @@
                 }
             }
 
-            // LÍNEA ~278: Confirmación obligatoria — ¿asignar nueva orden a este paciente?
             var nombrePac = pacienteCache ? pacienteCache.nombre : 'este paciente';
             var ordenActual = pacienteCache ? String(pacienteCache.orden || '').padStart(3, '0') : '?';
             var msgConfirmacion = '¿Desea asignar una nueva orden a ' + nombrePac + '?\n' +
                 'La orden actual #' + ordenActual + ' será archivada y pasará al historial del paciente.\n\n' +
                 '¿Continuar? (No / Sí)';
 
-            // Usar confirmación personalizada con botones "No" / "Sí"
             var confirmPromise = window.confirmar ?
                 window.confirmar(msgConfirmacion) :
                 Promise.resolve(confirm(msgConfirmacion));
@@ -292,7 +242,6 @@
                     return;
                 }
 
-                // Confirmar si el paciente tiene resultados (confirmación adicional)
                 if (pacienteCache && window.tieneResultadosEnExamenes(pacienteCache.examenes)) {
                     var ordenAnterior = String(pacienteCache.orden || '').padStart(3, '0');
                     var examenesConResultados = (pacienteCache.examenes || []).filter(function(e) {
@@ -309,7 +258,6 @@
                     }
                 }
 
-                // Llamar al handler SQLite IPC que archiva la orden y crea la nueva
                 var data = { pacienteId: pacienteId };
                 if (!pacienteCache && opciones.actualizarPaciente) {
                     var refDatos = window.obtenerPacienteExistenteRefer();
@@ -327,12 +275,9 @@
                     }
 
                     var nuevaOrden = result.nuevaOrden;
-                    var pacienteNuevo = result.paciente;
 
-                    // Actualizar referencias locales
                     window.guardarUltimaOrdenCreada(nuevaOrden);
 
-                    // Refrescar UI si las funciones están disponibles
                     if (typeof window.renderizarCola === 'function') {
                         window.renderizarCola();
                     }

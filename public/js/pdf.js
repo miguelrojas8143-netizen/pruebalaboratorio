@@ -85,18 +85,53 @@
     function expandirExamenesDetallados(examenes) {
         var resultado = [];
         examenes.forEach(function(examen) {
-            var detalle = window.App && window.App.examenesDetallados
-                ? window.App.examenesDetallados[examen.id]
-                : null;
-            if (examen.tipo !== 'perfil' || !detalle || !detalle.items || !detalle.items.length) {
+            var detalles = window.App && window.App.examenesDetallados
+                ? window.App.examenesDetallados
+                : {};
+            var detalleId = examen.id;
+            var detalle = detalles[detalleId];
+            var valores = {};
+            try {
+                valores = typeof examen.resultado === 'string'
+                    ? JSON.parse(examen.resultado || '{}')
+                    : (examen.resultado || {});
+            } catch (e) {}
+
+            if (!detalle && examen.nombre) {
+                detalleId = Object.keys(detalles).find(function(id) {
+                    return detalles[id].nombre && detalles[id].nombre.toLowerCase() === String(examen.nombre).toLowerCase();
+                });
+                detalle = detalleId ? detalles[detalleId] : null;
+            }
+
+            if (!detalle && detalles.hematologia_completa && valores && typeof valores === 'object') {
+                var coincidenciasPorId = detalles.hematologia_completa.items.filter(function(item) {
+                    return Object.prototype.hasOwnProperty.call(valores, item.id);
+                }).length;
+                if (coincidenciasPorId >= 2) {
+                    detalleId = 'hematologia_completa';
+                    detalle = detalles.hematologia_completa;
+                }
+            }
+
+            var coincidenciasHematologia = detalleId === 'hematologia_completa' && detalle && detalle.items
+                ? detalle.items.filter(function(item) {
+                    return Object.prototype.hasOwnProperty.call(valores, item.id);
+                }).length
+                : 0;
+            var resultadoHematologia = detalleId === 'hematologia_completa' && coincidenciasHematologia >= 2;
+
+            if (!detalle || !detalle.items || !detalle.items.length ||
+                (examen.tipo !== 'perfil' && !resultadoHematologia)) {
                 resultado.push(examen);
                 return;
             }
 
-            var valores = {};
-            try {
-                valores = JSON.parse(examen.resultado || '{}');
-            } catch (e) {}
+            if (detalleId === 'hematologia_completa') {
+                examen.id = detalleId;
+                examen.nombre = detalle.nombre;
+                examen.area = 'Hematología';
+            }
             var referenciasGuardadas = valores.__referencias || {};
 
             detalle.items.forEach(function(item) {

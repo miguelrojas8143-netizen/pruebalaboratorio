@@ -652,13 +652,24 @@
         var html = '';
         Object.keys(historialPorExamen).forEach(function(examen) {
             var registros = historialPorExamen[examen].slice(-3);
-            html += '<div class="mb-3"><strong class="text-primary">' + examen + '</strong><div class="ms-3 mt-1">';
+            html += '<div class="mb-3"><strong class="text-primary">' + escaparHtmlHistorial(examen) + '</strong><div class="ms-3 mt-1">';
             registros.forEach(function(reg) {
-                html += '<div class="historial-item small"><span class="text-muted">' + reg.fecha + '</span>: <strong>' + reg.resultado + ' ' + reg.unidad + '</strong></div>';
+                var referencia = reg.referencia || ((reg.refMin != null && reg.refMax != null) ? reg.refMin + ' - ' + reg.refMax : '');
+                html += '<div class="historial-item small"><span class="text-muted">' + escaparHtmlHistorial(reg.fecha) + '</span>: <strong>' + escaparHtmlHistorial(reg.resultado) + ' ' + escaparHtmlHistorial(reg.unidad) + '</strong>';
+                if (referencia) html += ' <span class="text-muted">(Ref: ' + escaparHtmlHistorial(referencia) + ')</span>';
+                html += '</div>';
             });
             html += '</div></div>';
         });
         contenedor.innerHTML = html;
+    }
+
+    function escaparHtmlHistorial(valor) {
+        return String(valor == null ? '' : valor)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     window.guardarResultados = async function() {

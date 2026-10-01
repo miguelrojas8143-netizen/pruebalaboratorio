@@ -3,14 +3,23 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
+const { inicializarCatalogoExamenes, guardarHistorialPaciente } = require('./database/examenes');
 
 let db = null;
 let insertPacienteStmt = null;
 
 function initDatabase() {
-    const dbPath = path.join(__dirname, 'datos.db');
+    // Usar la carpeta de datos del usuario (funciona en desarrollo y producción)
+    const userDataPath = app.getPath('userData');
+    const dbPath = path.join(userDataPath, 'datos.db');
+    
+    console.log('📁 Ruta de la base de datos:', dbPath);
+    
     db = new Database(dbPath);
-
+    
+    // Habilitar WAL mode para mejor rendimiento
+    db.pragma('journal_mode = WAL');
+    
     db.exec(`
         CREATE TABLE IF NOT EXISTS pacientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +37,7 @@ function initDatabase() {
             visitas      INTEGER DEFAULT 1
         )
     `);
-
+    
     // Migración: agregar columnas si la tabla ya existía sin ellas
     const columnas = db.prepare('PRAGMA table_info(pacientes)').all();
     const tieneFecha = columnas.some(function(c) { return c.name === 'fechaRegistro'; });
@@ -63,7 +72,7 @@ function initDatabase() {
     if (!tieneVisitas) {
         db.exec('ALTER TABLE pacientes ADD COLUMN visitas INTEGER DEFAULT 1');
     }
-
+    
     db.exec(`
         CREATE TABLE IF NOT EXISTS paciente_examenes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +82,7 @@ function initDatabase() {
             FOREIGN KEY(orden_paciente) REFERENCES pacientes(orden)
         )
     `);
-
+    
     db.exec(`
         CREATE TABLE IF NOT EXISTS historial_examenes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +95,8 @@ function initDatabase() {
         )
     `);
 
+    inicializarCatalogoExamenes(db);
+    
     // Tabla para órdenes archivadas (cuando un paciente crea una nueva visita)
     db.exec(`
         CREATE TABLE IF NOT EXISTS ordenes_archivadas (
@@ -101,7 +112,7 @@ function initDatabase() {
             FOREIGN KEY(paciente_id) REFERENCES pacientes(id)
         )
     `);
-
+    
     // Prepared statements para órdenes archivadas
     const insertOrdenArchivadaStmt = db.prepare(
         'INSERT INTO ordenes_archivadas (paciente_id, orden, fecha, examenes, refAdaptadas, perfiles, historial, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -112,13 +123,12 @@ function initDatabase() {
     const selectMaxOrdenStmt = db.prepare(
         'SELECT MAX(CAST(orden AS INTEGER)) as maxOrden FROM (SELECT orden FROM pacientes UNION ALL SELECT orden FROM ordenes_archivadas)'
     );
-
+    
     insertPacienteStmt = db.prepare(
         'INSERT OR REPLACE INTO pacientes (orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
-
     const selectPacientesStmt = db.prepare('SELECT id, orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro FROM pacientes ORDER BY CAST(orden AS INTEGER)');
-
+    
     ipcMain.handle('guardar-paciente', (event, paciente) => {
         try {
             insertPacienteStmt.run(
@@ -136,7 +146,7 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     // IPC: Actualizar datos de un paciente existente (preserva refAdaptadas, perfiles, historial, visitas)
     const updatePacienteStmt = db.prepare(
         'UPDATE pacientes SET nombre = ?, cedula = ?, edad = ?, sexo = ?, fechaNac = ?, telefono = ? WHERE orden = ?'
@@ -160,7 +170,7 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     ipcMain.handle('obtener-pacientes', () => {
         try {
             const pacientes = selectPacientesStmt.all();
@@ -169,15 +179,13 @@ function initDatabase() {
             return { success: false, error: err.message, pacientes: [] };
         }
     });
-
+    
     const selectPacientePorOrdenStmt = db.prepare(
         'SELECT id, orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro, refAdaptadas, perfiles, historial, visitas FROM pacientes WHERE orden = ?'
     );
-
     const selectExamenesPorOrdenStmt = db.prepare(
         'SELECT id, nombre_examen, resultado FROM paciente_examenes WHERE orden_paciente = ?'
     );
-
     const insertExamenStmt = db.prepare(
         'INSERT INTO paciente_examenes (orden_paciente, nombre_examen, resultado) VALUES (?, ?, ?)'
     );
@@ -187,7 +195,7 @@ function initDatabase() {
     const deleteExamenesStmt = db.prepare(
         'DELETE FROM paciente_examenes WHERE orden_paciente = ?'
     );
-
+    
     ipcMain.handle('guardar-examenes-paciente', (event, data) => {
         try {
             const t = db.transaction((examenes) => {
@@ -202,7 +210,7 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     ipcMain.handle('obtener-examenes-paciente', (event, { orden }) => {
         try {
             const examenes = selectExamenesStmt.all(orden);
@@ -211,19 +219,28 @@ function initDatabase() {
             return { success: false, error: err.message, examenes: [] };
         }
     });
-
+    
     // Actualizar selectPacientesStmt para incluir las nuevas columnas
     const selectPacientesCompletosStmt = db.prepare(
         'SELECT id, orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro, refAdaptadas, perfiles, historial, visitas FROM pacientes ORDER BY CAST(orden AS INTEGER)'
     );
-
-    const insertHistorialStmt = db.prepare(
-        'INSERT INTO historial_examenes (orden_paciente, fecha, examen, resultado, unidad) VALUES (?, ?, ?, ?, ?)'
-    );
     const selectHistorialStmt = db.prepare(
-        'SELECT fecha, examen, resultado, unidad FROM historial_examenes WHERE orden_paciente = ? ORDER BY fecha DESC'
+        `SELECT h.fecha,
+                COALESCE(e.nombre, h.examen) AS examen,
+                h.examen AS examen_completo,
+                h.resultado,
+                COALESCE(e.unidad, h.unidad, '') AS unidad,
+                h.idresultado,
+                COALESCE(h.referencia, e.refTexto, '') AS referencia,
+                e.refMin,
+                e.refMax,
+                e.grupo
+         FROM historial_examenes h
+         LEFT JOIN examenes e ON e.id = h.idresultado
+         WHERE h.orden_paciente = ?
+         ORDER BY h.fecha DESC, h.id DESC`
     );
-
+    
     // IPC: Obtener pacientes con exámenes (para renderizado de cola)
     ipcMain.handle('obtener-pacientes-completos', () => {
         try {
@@ -244,7 +261,7 @@ function initDatabase() {
             return { success: false, error: err.message, pacientes: [] };
         }
     });
-
+    
     // IPC: Obtener paciente por orden con exámenes y historial
     ipcMain.handle('obtener-paciente-por-orden', (event, { orden }) => {
         try {
@@ -272,7 +289,7 @@ function initDatabase() {
             return { success: false, error: err.message, paciente: null, examenes: [] };
         }
     });
-
+    
     // IPC: Eliminar paciente por id o orden
     ipcMain.handle('eliminar-paciente', (event, { id, orden }) => {
         try {
@@ -291,7 +308,7 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     // IPC: Eliminar todos los pacientes
     ipcMain.handle('eliminar-todos-pacientes', () => {
         try {
@@ -303,7 +320,7 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     // IPC: Guardar exámenes de un paciente (formato orden.js)
     ipcMain.handle('guardar-paciente-examenes', (event, data) => {
         try {
@@ -323,7 +340,7 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     // IPC: Guardar refAdaptadas de un paciente
     ipcMain.handle('guardar-ref-adaptadas', (event, { orden, refAdaptadas }) => {
         try {
@@ -333,28 +350,17 @@ function initDatabase() {
             return { success: false, error: err.message };
         }
     });
-
+    
     // IPC: Guardar historial de exámenes
     ipcMain.handle('guardar-historial-paciente', (event, data) => {
         try {
-            const orden = data.orden;
-            const historial = data.historial || [];
-            // Limpiar historial existente y reinsertar
-            db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(orden);
-            const t = db.transaction(() => {
-                for (const entry of historial) {
-                    insertHistorialStmt.run(orden, entry.fecha, entry.examen, entry.resultado || '', entry.unidad || '');
-                }
-            });
-            t();
-            // Also store in pacientes table as JSON for backward compatibility
-            db.prepare('UPDATE pacientes SET historial = ? WHERE orden = ?').run(JSON.stringify(historial), orden);
+            guardarHistorialPaciente(db, data.orden, data.historial || []);
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
         }
-     });
-
+    });
+    
     // IPC: Obtener el próximo número de orden disponible
     ipcMain.handle('obtener-proxima-orden', () => {
         try {
@@ -365,7 +371,7 @@ function initDatabase() {
             return { success: false, error: err.message, orden: '001' };
         }
     });
-
+    
     // IPC: Crear nueva visita para paciente existente (archiva orden anterior)
     // Parámetros: { pacienteId } o { cedula }
     ipcMain.handle('crear-nueva-visita', (event, data) => {
@@ -376,16 +382,13 @@ function initDatabase() {
             } else if (data.cedula) {
                 paciente = db.prepare('SELECT * FROM pacientes WHERE cedula = ? ORDER BY id DESC LIMIT 1').get(data.cedula);
             }
-
             if (!paciente) {
                 return { success: false, error: 'Paciente no encontrado', nuevaOrden: null };
             }
-
             // Archivar órden anterior con sus exámenes
             var ordenAnterior = String(paciente.orden || '').padStart(3, '0');
             var examenes = selectExamenesStmt.all(ordenAnterior);
             var historial = selectHistorialStmt.all(ordenAnterior);
-
             const insertT = db.transaction(() => {
                 // Insertar orden archivada
                 insertOrdenArchivadaStmt.run(
@@ -400,31 +403,24 @@ function initDatabase() {
                     paciente.historial || '[]',
                     'archivada'
                 );
-
                 // Calcular nuevo número de orden
                 var row = selectMaxOrdenStmt.get();
                 var maxOrden = row ? parseInt(row.maxOrden || 0, 10) : 0;
                 var nuevaOrden = String(maxOrden + 1).padStart(3, '0');
-
                 // Actualizar paciente: nuevo orden, incrementar visitas, nueva fecha
                 db.prepare(
                     'UPDATE pacientes SET orden = ?, visitas = visitas + 1, fechaRegistro = ?'
                 ).run(nuevaOrden, new Date().toLocaleDateString('es-ES'));
-
                 // Limpiar exámenes de la nueva orden (no deben existir aún)
                 db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(nuevaOrden);
                 // Limpiar historial de exámenes para la nueva orden
                 db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(nuevaOrden);
-
                 return nuevaOrden;
             });
-
             var nuevaOrden = insertT();
-
             // Limpiar refAdaptadas y perfiles para la nueva orden
             db.prepare('UPDATE pacientes SET refAdaptadas = 0, perfiles = ? WHERE orden = ?')
                 .run('[]', nuevaOrden);
-
             return {
                 success: true,
                 nuevaOrden: nuevaOrden,
@@ -444,7 +440,7 @@ function initDatabase() {
             return { success: false, error: err.message, nuevaOrden: null };
         }
     });
-
+    
     // IPC: Obtener órdenes archivadas de un paciente
     ipcMain.handle('obtener-ordenes-archivadas', (event, { pacienteId, cedula, id }) => {
         try {
@@ -456,7 +452,6 @@ function initDatabase() {
                 var rows = db.prepare('SELECT * FROM ordenes_archivadas WHERE paciente_id IN (SELECT id FROM pacientes WHERE cedula = ?) ORDER BY id DESC').all(cedula);
                 ordenes = rows;
             }
-
             // Parsear JSON fields
             ordenes = ordenes.map(function(o) {
                 return Object.assign({}, o, {
@@ -471,7 +466,7 @@ function initDatabase() {
             return { success: false, error: err.message, ordenes: [] };
         }
     });
-
+    
     console.log('✅ Base de datos SQLite inicializada:', dbPath);
 }
 
@@ -482,8 +477,8 @@ app.on('before-quit', () => {
 const ICONO_APP = path.join(__dirname, 'logo-mirolab.png');
 
 // Algunos equipos presentan bloqueos visuales del renderer al usar la GPU.
-//app.disableHardwareAcceleration();
-//app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 // --- CONFIGURACIÓN DE LA DEMO ---
 const DIAS_DEMO = 10;
@@ -495,19 +490,18 @@ function verificarDemo() {
     const appDataPath = path.join(userDataPath, 'demo_config.json');
     const backupPath = path.join(userDataPath, 'demo_config.bak');
     const markerPath = path.join(userDataPath, 'demo_initialized');
-
+    
     const firmar = (fecha) => {
         return crypto.createHmac('sha256', CLAVE_SECRETA)
             .update(String(fecha))
             .digest('hex');
     };
-
+    
     const leerConfig = (archivo) => {
         try {
             if (!fs.existsSync(archivo)) return null;
             const contenido = fs.readFileSync(archivo, 'utf8');
             const dato = JSON.parse(contenido);
-            
             if (dato && Number.isFinite(dato.fechaInicio) && dato.firma === firmar(dato.fechaInicio)) {
                 return dato;
             }
@@ -517,18 +511,16 @@ function verificarDemo() {
             return null;
         }
     };
-
+    
     let config = leerConfig(appDataPath) || leerConfig(backupPath);
-
+    
     if (!config) {
         if (fs.existsSync(markerPath)) {
             return { esValida: false, diasRestantes: 0, motivo: 'manipulacion' };
         }
-
         config = { fechaInicio: Date.now() };
         config.firma = firmar(config.fechaInicio);
         const contenido = JSON.stringify(config);
-
         try {
             fs.writeFileSync(appDataPath, contenido, { mode: 0o444 });
             fs.writeFileSync(backupPath, contenido, { mode: 0o444 });
@@ -538,14 +530,13 @@ function verificarDemo() {
             return { esValida: false, diasRestantes: 0, motivo: 'error_escritura' };
         }
     }
-
+    
     const ahora = Date.now();
     const milisegundosPorDia = 1000 * 60 * 60 * 24;
     const diasPasados = (ahora - config.fechaInicio) / milisegundosPorDia;
-    
     const esValida = diasPasados >= -0.01 && diasPasados <= DIAS_DEMO; 
     const diasRestantes = Math.max(0, Math.ceil(DIAS_DEMO - diasPasados));
-
+    
     return { esValida, diasRestantes };
 }
 
@@ -564,7 +555,6 @@ function crearSplashScreen() {
             contextIsolation: true
         }
     });
-    
     splash.loadFile(path.join(__dirname, 'splash.html'));
     return splash;
 }
@@ -583,36 +573,36 @@ function crearVentana(rutaArchivo, opciones = {}) {
         autoHideMenuBar: true,
         title: `${NOMBRE_APP} - Demo`
     });
-
+    
     if (opciones.diasRestantes !== undefined) {
         const textoDias = opciones.diasRestantes === 1 ? 'día' : 'días';
         win.setTitle(`${NOMBRE_APP} - Demo (${opciones.diasRestantes} ${textoDias} restantes)`);
     } else if (!opciones.esValida) {
         win.setTitle(`${NOMBRE_APP} - Demo Expirada`);
     }
-
+    
     win.webContents.on('unresponsive', () => {
         console.error(`[renderer] Ventana no responsiva: ${rutaArchivo}`);
     });
-
+    
     win.webContents.on('responsive', () => {
         console.info(`[renderer] Ventana responsiva nuevamente: ${rutaArchivo}`);
     });
-
+    
     win.webContents.on('render-process-gone', (_event, detalles) => {
         console.error('[renderer] Proceso terminado:', detalles.reason, detalles.exitCode);
     });
-
+    
     win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
         console.error('[renderer] Fallo de carga:', errorCode, errorDescription, validatedURL);
     });
-
+    
     win.webContents.on('console-message', (_event, nivel, mensaje, linea, origen) => {
         if (nivel >= 2) {
             console.error(`[renderer] ${origen}:${linea} ${mensaje}`);
         }
     });
-
+    
     win.loadFile(path.join(__dirname, rutaArchivo));
     return win;
 }
@@ -622,10 +612,10 @@ let mainWindow;
 app.whenReady().then(() => {
     // 0. Inicializar base de datos SQLite
     initDatabase();
-
+    
     // 1. Mostrar Splash Screen
     const splash = crearSplashScreen();
-
+    
     // 2. Verificar estado de la demo
     const resultadoDemo = verificarDemo();
     
@@ -635,23 +625,20 @@ app.whenReady().then(() => {
         esValida: resultadoDemo.esValida,
         diasRestantes: resultadoDemo.diasRestantes
     };
-
+    
     // 4. Crear ventana principal (oculta inicialmente)
     mainWindow = crearVentana(rutaArchivo, opcionesVentana);
     mainWindow.hide();
-
-    // 5. Mostrar cuando la página esté lista
     
+    // 5. Mostrar cuando la página esté lista
     mainWindow.once('ready-to-show', () => {
         if (!splash.isDestroyed()) splash.close();
         mainWindow.show();
         mainWindow.focus();
-
-     //Abrir DevTools DESPUÉS de crear la ventana
-     mainWindow.webContents.openDevTools();
-
+        // Abrir DevTools DESPUÉS de crear la ventana
+        mainWindow.webContents.openDevTools();
     });
-
+    
     splash.on('closed', () => {
         // Limpieza si fuera necesaria
     });

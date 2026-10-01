@@ -36,7 +36,8 @@
         if (!examenes) return [];
         return examenes.map(function(e) { return enriquecerExamenDesdeCatalogo(JSON.parse(JSON.stringify(e))); });
     }
-   // Función para calcular el estado del paciente según sus exámenes
+    
+    // Función para calcular el estado del paciente según sus exámenes
     function calcularEstadoPaciente(paciente) {
         var examenes = (paciente.examenes || []).map(normalizarExamen);
         if (examenes.length === 0) return 'en_espera';
@@ -56,7 +57,7 @@
         return 'completo';
     }
 
-// Función para obtener el texto y la clase CSS correspondiente al estado del paciente
+    // Función para obtener el texto y la clase CSS correspondiente al estado del paciente
     function textoEstado(estado) {
         switch (estado) {
             case 'completo': return { texto: 'Completo', clase: 'bg-success' };
@@ -110,7 +111,8 @@
         var el = document.getElementById('fechaHoy');
         if (el) el.textContent = hoy.charAt(0).toUpperCase() + hoy.slice(1);
     };
-     // Interpretar resultado de sustancias reductoras  
+    
+    // Interpretar resultado de sustancias reductoras  
     function interpretarSustanciasReductoras(valor) {
         var num = parseFloat(valor);
         if (isNaN(num)) {
@@ -124,7 +126,8 @@
             return { texto: 'POSITIVO', clase: 'text-danger fw-bold' };
         }
     }
-   // Funciones para verificar si un examen tiene datos válidos
+    
+    // Funciones para verificar si un examen tiene datos válidos
     function tieneDatosHeces(examen) {
         try {
             var datos = JSON.parse(examen.resultado || '{}');
@@ -133,7 +136,8 @@
             return false;
         }
     }
-// Función para verificar si un examen de uroanálisis tiene datos válidos
+
+    // Función para verificar si un examen de uroanálisis tiene datos válidos
     function tieneDatosUroanalisis(examen) {
         try {
             var datos = JSON.parse(examen.resultado || '{}');
@@ -142,6 +146,7 @@
             return false;
         }
     }
+    
     function tieneDatosAntibiograma(examen) {
         try {
             var datos = JSON.parse(examen.resultado || '{}');
@@ -153,7 +158,8 @@
             return false;
         }
     }
-// Función para obtener el valor numérico de un examen por su ID
+    
+    // Función para obtener el valor numérico de un examen por su ID
     function obtenerValor(examenesOrden, examenId) {
         var examen = examenesOrden.find(function(e) { return e.id === examenId; });
         if (!examen || !examen.resultado) return NaN;
@@ -239,23 +245,33 @@
                 '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>' +
                 '<button type="button" class="btn btn-success">Sí</button>' +
                 '</div></div></div></div>';
+            
             var div = document.createElement('div');
             div.innerHTML = html;
             document.body.appendChild(div);
+            
             var modalEl = div.querySelector('.modal');
             var bsModal = new bootstrap.Modal(modalEl);
             var btnSi = div.querySelector('.btn-success');
+            
+            var confirmado = false; // Bandera para saber qué botón se pulsó
+
+            // Acción del botón "Sí"
             btnSi.onclick = function() {
-                bsModal.hide();
-                setTimeout(function() {
-                    document.body.removeChild(div);
-                    resolve(true);
-                }, 300);
+                confirmado = true;
+                bsModal.hide(); // Esto activará el evento hidden.bs.modal abajo
             };
+
+            // Evento que se dispara al terminar de ocultarse el modal (ya sea por el botón "Sí" o el botón "No")
             modalEl.addEventListener('hidden.bs.modal', function() {
-                document.body.removeChild(div);
-                resolve(false);
+                // Validación para eliminar de forma segura el nodo
+                if (document.body.contains(div)) {
+                    document.body.removeChild(div);
+                }
+                // Resuelve la promesa (true si fue Sí, false si fue No u otro botón)
+                resolve(confirmado);
             });
+            
             bsModal.show();
         });
     }

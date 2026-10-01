@@ -17,5 +17,6 @@ contextBridge.exposeInMainWorld('api', {
     eliminarPaciente: (id) => ipcRenderer.invoke('eliminar-paciente', { id }),
     eliminarPacientePorOrden: (orden) => ipcRenderer.invoke('eliminar-paciente', { orden }),
     eliminarTodosPacientes: () => ipcRenderer.invoke('eliminar-todos-pacientes'),
+    dbStatus: () => ipcRenderer.invoke('db-status'),
 });
 
