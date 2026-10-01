@@ -34,6 +34,21 @@ window.tieneDatosUroanalisis = function(examen) {
         return false;
     }
 };
+window.tieneDatosHeces = function(examen) {
+    try {
+        const valores = JSON.parse(examen.resultado || '{}');
+        return Object.values(valores).some(function(valor) { return String(valor).trim() !== ''; });
+    } catch (error) {
+        return false;
+    }
+};
+window.interpretarSustanciasReductoras = function(valor) {
+    const resultado = parseFloat(valor);
+    return {
+        texto: resultado >= 0.25 && resultado <= 0.50 ? 'INDETERMINADO' : 'NEGATIVO',
+        clase: ''
+    };
+};
 window.agruparUroanalisisPorGrupo = function(examenes) {
     return examenes.reduce(function(grupos, examen) {
         const grupo = examen.grupo || 'General';
@@ -111,4 +126,94 @@ assert.ok(elementosDom.bloqueUroanalisis.innerHTML.includes('4.5 - 8.0'));
 assert.ok(elementosDom.bloqueUroanalisis.innerHTML.includes('cpo/campo'));
 assert.ok(!elementosDom.bloqueUroanalisis.innerHTML.includes('"ur_aspecto"'));
 
-console.log('OK: el PDF expande JSON de Hematología y Uroanálisis genérico en tablas estructuradas.');
+const datosHeces = {
+    mocoFecal: 'Escaso',
+    phHeces: '6.5',
+    glucosaHeces: 'Negativa',
+    leucocitosPMN: '<observado>',
+    leucocitosMononucleados: 'Ausentes',
+    sustanciasReductoras: '0.30',
+    consistencia: 'Blanda',
+    colorHeces: 'Marrón',
+    directoConcentracion: 'Sin parásitos',
+    entamoebaColi: 'Ausente',
+    restosAlimentos: 'Escasos',
+    floraBacteriana: 'Normal'
+};
+const payloadHeces = window.PdfReport.buildPayload({
+    nombre: 'Paciente de prueba',
+    orden: '003',
+    examenes: [{
+        id: 'examen_heces',
+        nombre: 'Examen Directo de Heces',
+        tipoFormulario: 'heces',
+        resultado: JSON.stringify(datosHeces)
+    }]
+});
+assert.strictEqual(payloadHeces.heces.ordenGrupos.length, 3);
+assert.strictEqual(payloadHeces.heces.grupos['Macroscópico'].length, 3);
+assert.strictEqual(payloadHeces.heces.grupos['Químico'].length, 3);
+assert.strictEqual(payloadHeces.heces.grupos['Microscópico y parasitológico'].length, 6);
+assert.strictEqual(payloadHeces.heces.grupos['Químico'][2].resultado, '0.30 (INDETERMINADO)');
+window.PdfReport.renderDom(payloadHeces, {});
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('<th>Parámetro</th><th>Resultado</th>'));
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('Microscópico y parasitológico'));
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('&lt;observado&gt;'));
+assert.ok(!elementosDom.bloqueHeces.innerHTML.includes('<observado>'));
+
+const textosPdf = [];
+const documentosPdf = [];
+class JsPDFPrueba {
+    constructor() {
+        this.paginas = 1;
+        documentosPdf.push(this);
+        this.internal = {
+            pageSize: {
+                getWidth: function() { return 210; },
+                getHeight: function() { return 297; }
+            }
+        };
+    }
+    addImage() {}
+    addPage() { this.paginas++; }
+    getNumberOfPages() { return this.paginas; }
+    setTextColor() {}
+    setFont() {}
+    setFontSize() {}
+    setFillColor() {}
+    setDrawColor() {}
+    setLineWidth() {}
+    rect() {}
+    line() {}
+    setProperties() {}
+    text(valor) {
+        textosPdf.push(Array.isArray(valor) ? valor.join(' ') : String(valor));
+    }
+    splitTextToSize(valor, ancho) {
+        const texto = String(valor);
+        const maxCaracteres = Math.max(1, Math.floor(ancho / 1.5));
+        if (texto.length <= maxCaracteres) return texto;
+        const lineas = [];
+        for (let inicio = 0; inicio < texto.length; inicio += maxCaracteres) {
+            lineas.push(texto.slice(inicio, inicio + maxCaracteres));
+        }
+        return lineas;
+    }
+}
+window.jspdf = { jsPDF: JsPDFPrueba };
+window.PdfReport.construirPDF(payloadHeces, null);
+assert.ok(textosPdf.includes('EXAMEN DE HECES'));
+assert.ok(textosPdf.includes('MACROSCÓPICO'));
+assert.ok(textosPdf.includes('QUÍMICO'));
+assert.ok(textosPdf.includes('MICROSCÓPICO Y PARASITOLÓGICO'));
+assert.ok(textosPdf.includes('0.30 (INDETERMINADO)'));
+assert.ok(textosPdf.includes('<observado>'));
+assert.ok(!textosPdf.includes(JSON.stringify(datosHeces)));
+
+const hecesLargas = JSON.parse(JSON.stringify(payloadHeces));
+hecesLargas.heces.grupos['Microscópico y parasitológico'][0].resultado = 'Hallazgo '.repeat(1000);
+window.PdfReport.construirPDF(hecesLargas, null);
+assert.ok(documentosPdf[1].paginas > 1);
+assert.ok(textosPdf.filter(function(texto) { return texto === 'PARÁMETRO'; }).length > 2);
+
+console.log('OK: el PDF estructura resultados de Hematología, Uroanálisis y Heces en tablas.');

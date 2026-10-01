@@ -74,9 +74,12 @@
                 return;
             }
             var paciente = result.paciente;
-            paciente.examenes = (result.examenes || []).map(function(e) {
+            var examenesGuardados = (result.examenes || []).map(function(e) {
                 return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
             });
+            paciente.examenes = window.enriquecerExamenesDesdeCatalogo
+                ? window.enriquecerExamenesDesdeCatalogo(examenesGuardados)
+                : examenesGuardados;
             paciente.id = paciente.id || null;
             paciente.visitas = paciente.visitas || 1;
             paciente.refAdaptadas = paciente.refAdaptadas || false;
@@ -507,7 +510,7 @@
         window.examenesOrden.push(crearExamenDesdeCatalogo(datos));
         $('#selectorExamenes').val(null).trigger('change');
         renderizarTablaExamenes();
-        if (examenId === 'feces') {
+        if (datos.tipo === 'heces' || examenId === 'feces') {
             window.abrirFormularioHeces(examenId);
         }
         if (examenId === 'uroanalisis' || examenId === 'examen_orina') {

@@ -18,10 +18,14 @@
         if (!examen || !window.obtenerCatalogo) return examen;
         var catalogo = window.obtenerCatalogo();
         var cat = catalogo.find(function(c) { return c.id === examen.id; });
+        if (!cat && examen.nombre) {
+            cat = catalogo.find(function(c) { return c.tipo === 'heces' && c.nombre === examen.nombre; });
+        }
         if (!cat) return examen;
         if (cat.area && !examen.area) examen.area = cat.area;
         if (cat.tipo && !examen.tipo) examen.tipo = cat.tipo;
         if (cat.tipoFormulario && !examen.tipoFormulario) examen.tipoFormulario = cat.tipoFormulario;
+        if (cat.tipo === 'heces' && !examen.tipoFormulario) examen.tipoFormulario = 'heces';
         if (cat.unidad !== undefined && !examen.unidad) examen.unidad = cat.unidad;
         if (cat.refMin !== undefined && examen.refMin === undefined) examen.refMin = cat.refMin;
         if (cat.refMax !== undefined && examen.refMax === undefined) examen.refMax = cat.refMax;

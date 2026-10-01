@@ -19,6 +19,43 @@
         if (el) el.textContent = value == null ? '' : value;
     }
 
+    var CAMPOS_HECES = [
+        { id: 'consistencia', nombre: 'Consistencia', grupo: 'Macroscópico' },
+        { id: 'colorHeces', nombre: 'Color de las heces', grupo: 'Macroscópico' },
+        { id: 'mocoFecal', nombre: 'Moco fecal', grupo: 'Macroscópico' },
+        { id: 'phHeces', nombre: 'pH', grupo: 'Químico' },
+        { id: 'glucosaHeces', nombre: 'Glucosa', grupo: 'Químico' },
+        { id: 'sustanciasReductoras', nombre: 'Sustancias reductoras', grupo: 'Químico' },
+        { id: 'leucocitosPMN', nombre: 'Leucocitos PMN', grupo: 'Microscópico y parasitológico' },
+        { id: 'leucocitosMononucleados', nombre: 'Leucocitos mononucleados', grupo: 'Microscópico y parasitológico' },
+        { id: 'directoConcentracion', nombre: 'Examen directo por concentración', grupo: 'Microscópico y parasitológico' },
+        { id: 'entamoebaColi', nombre: 'Entamoeba coli', grupo: 'Microscópico y parasitológico' },
+        { id: 'restosAlimentos', nombre: 'Restos de alimentos', grupo: 'Microscópico y parasitológico' },
+        { id: 'floraBacteriana', nombre: 'Flora bacteriana', grupo: 'Microscópico y parasitológico' }
+    ];
+    var ORDEN_GRUPOS_HECES = ['Macroscópico', 'Químico', 'Microscópico y parasitológico'];
+
+    function construirGruposHeces(datos) {
+        var grupos = {};
+        ORDEN_GRUPOS_HECES.forEach(function(grupo) {
+            grupos[grupo] = [];
+        });
+        CAMPOS_HECES.forEach(function(campo) {
+            var resultado = datos[campo.id];
+            if (campo.id === 'sustanciasReductoras' && resultado !== undefined &&
+                resultado !== null && String(resultado).trim() !== '') {
+                var interpretacion = window.interpretarSustanciasReductoras(resultado).texto;
+                if (interpretacion) resultado = resultado + ' (' + interpretacion + ')';
+            }
+            grupos[campo.grupo].push({
+                id: campo.id,
+                nombre: campo.nombre,
+                resultado: resultado == null || String(resultado).trim() === '' ? '-' : String(resultado)
+            });
+        });
+        return grupos;
+    }
+
     /* ---------- Clasificación de resultados ----------*/
     function clasificarResultado(examen) {
         var tieneResultado = String(examen.resultado ?? '').trim() !== '';
@@ -271,7 +308,12 @@
 
         var heces = null;
         if (examenesHeces && window.tieneDatosHeces(examenesHeces)) {
-            heces = { datos: JSON.parse(examenesHeces.resultado || '{}') };
+            var datosHeces = JSON.parse(examenesHeces.resultado || '{}');
+            heces = {
+                datos: datosHeces,
+                grupos: construirGruposHeces(datosHeces),
+                ordenGrupos: ORDEN_GRUPOS_HECES
+            };
         }
 
         var uro = null;
@@ -392,22 +434,17 @@
 
     function renderHecesDom(heces) {
         if (!heces) return '';
-        var d = heces.datos;
-        return '<h6 class="reporte-area-titulo">Examen de Heces</h6>' +
-            '<div class="table-responsive"><table class="table table-bordered table-sm"><tbody>' +
-            '<tr><td class="fw-semibold" width="40%">Moco Fecal</td><td>' + (d.mocoFecal || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">pH Heces</td><td>' + (d.phHeces || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Glucosa Heces</td><td>' + (d.glucosaHeces || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Leucocitos PMN</td><td>' + (d.leucocitosPMN || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Leucocitos Mononucleados</td><td>' + (d.leucocitosMononucleados || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Sustancias Reductoras</td><td>' + (d.sustanciasReductoras ? d.sustanciasReductoras + ' (' + window.interpretarSustanciasReductoras(d.sustanciasReductoras).texto + ')' : '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Consistencia</td><td>' + (d.consistencia || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Color Heces</td><td>' + (d.colorHeces || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Directo Concentración</td><td>' + (d.directoConcentracion || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Entamoeba coli</td><td>' + (d.entamoebaColi || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Restos Alimentos</td><td>' + (d.restosAlimentos || '-') + '</td></tr>' +
-            '<tr><td class="fw-semibold">Flora Bacteriana</td><td>' + (d.floraBacteriana || '-') + '</td></tr>' +
-            '</tbody></table></div>';
+        var html = '<h6 class="reporte-area-titulo">Examen de Heces</h6>' +
+            '<div class="table-responsive"><table class="table table-bordered table-sm">' +
+            '<thead><tr><th>Parámetro</th><th>Resultado</th></tr></thead><tbody>';
+        heces.ordenGrupos.forEach(function(grupo) {
+            html += '<tr class="table-light"><th colspan="2">' + escapeHtml(grupo) + '</th></tr>';
+            heces.grupos[grupo].forEach(function(campo) {
+                html += '<tr><td class="fw-semibold">' + escapeHtml(campo.nombre) +
+                    '</td><td>' + escapeHtml(campo.resultado) + '</td></tr>';
+            });
+        });
+        return html + '</tbody></table></div>';
     }
 
     function renderUroDom(uro) {
@@ -716,6 +753,88 @@
         return y + 2;
     }
 
+    function agregarHecesPDF(doc, heces, opciones) {
+        opciones = opciones || {};
+        var pageHeight = doc.internal.pageSize.getHeight();
+        var pageWidth = doc.internal.pageSize.getWidth();
+        var margenIzquierdo = 14;
+        var margenInferior = 30;
+        var ancho = pageWidth - 28;
+        var columnaResultadoX = margenIzquierdo + ancho * 0.58;
+        var y = opciones.y || 20;
+
+        function nuevaPagina() {
+            doc.addPage();
+            if (opciones.didDrawPage) {
+                opciones.didDrawPage({ pageNumber: doc.getNumberOfPages() });
+            }
+            y = opciones.startY || 56;
+            escribirEncabezados();
+        }
+
+        function escribirEncabezados() {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(25, 25, 25);
+            doc.setFillColor(233, 233, 233);
+            doc.rect(margenIzquierdo, y - 3, ancho, 6, 'F');
+            doc.text('PARÁMETRO', margenIzquierdo + 2, y);
+            doc.text('RESULTADO', columnaResultadoX + 2, y);
+            y += 5;
+        }
+
+        if (y + 12 > pageHeight - margenInferior) {
+            doc.addPage();
+            if (opciones.didDrawPage) {
+                opciones.didDrawPage({ pageNumber: doc.getNumberOfPages() });
+            }
+            y = opciones.startY || 56;
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(31, 78, 104);
+        doc.text('EXAMEN DE HECES', margenIzquierdo, y);
+        y += 6;
+        escribirEncabezados();
+
+        heces.ordenGrupos.forEach(function(grupo) {
+            if (y + 8 > pageHeight - margenInferior) nuevaPagina();
+            doc.setFillColor(230, 237, 243);
+            doc.rect(margenIzquierdo, y - 3, ancho, 5, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(31, 78, 104);
+            doc.text(textoPlano(grupo).toUpperCase(), margenIzquierdo + 2, y);
+            y += 5;
+
+            heces.grupos[grupo].forEach(function(campo) {
+                var nombre = doc.splitTextToSize(String(campo.nombre || ''), columnaResultadoX - margenIzquierdo - 6);
+                var resultado = doc.splitTextToSize(String(campo.resultado || '-'), ancho - (columnaResultadoX - margenIzquierdo) - 4);
+                var alto = Math.max(nombre.length, resultado.length) * 3.6 + 2.5;
+                if (y + alto > pageHeight - margenInferior) {
+                    nuevaPagina();
+                    doc.setFillColor(230, 237, 243);
+                    doc.rect(margenIzquierdo, y - 3, ancho, 5, 'F');
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(31, 78, 104);
+                    doc.text(textoPlano(grupo).toUpperCase(), margenIzquierdo + 2, y);
+                    y += 5;
+                }
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(25, 25, 25);
+                doc.text(nombre, margenIzquierdo + 2, y);
+                doc.text(resultado, columnaResultadoX + 2, y);
+                doc.setDrawColor(210, 215, 220);
+                doc.setLineWidth(0.2);
+                doc.line(margenIzquierdo, y + alto - 1.5, margenIzquierdo + ancho, y + alto - 1.5);
+                y += alto;
+            });
+        });
+        return y + 2;
+    }
+
     function construirPDF(payload, logoData) {
         if (!window.jspdf || !window.jspdf.jsPDF) return null;
         var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
@@ -855,25 +974,11 @@
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
             }
-            var d = payload.heces.datos;
-            y = agregarResultadosTexto(doc, 'EXAMEN DE HECES', [
-                { nombre: 'Moco Fecal', resultado: d.mocoFecal },
-                { nombre: 'pH Heces', resultado: d.phHeces },
-                { nombre: 'Glucosa Heces', resultado: d.glucosaHeces },
-                { nombre: 'Leucocitos PMN', resultado: d.leucocitosPMN },
-                { nombre: 'Leucocitos Mononucleados', resultado: d.leucocitosMononucleados },
-                { nombre: 'Sustancias Reductoras', resultado: d.sustanciasReductoras ? d.sustanciasReductoras + ' (' + window.interpretarSustanciasReductoras(d.sustanciasReductoras).texto + ')' : '-' },
-                { nombre: 'Consistencia', resultado: d.consistencia },
-                { nombre: 'Color Heces', resultado: d.colorHeces },
-                { nombre: 'Directo Concentración', resultado: d.directoConcentracion },
-                { nombre: 'Entamoeba coli', resultado: d.entamoebaColi },
-                { nombre: 'Restos Alimentos', resultado: d.restosAlimentos },
-                { nombre: 'Flora Bacteriana', resultado: d.floraBacteriana }
-            ].map(function(resultado) {
-                resultado.unidad = '-';
-                resultado.referencia = '-';
-                return resultado;
-            }), { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
+            y = agregarHecesPDF(doc, payload.heces, {
+                y: y,
+                didDrawPage: encabezadoPagina,
+                startY: yDespuesEncabezado
+            });
         }
         if (payload.uro) {
             if (payload.secciones.length > 0 || payload.antibiograma || payload.heces) {

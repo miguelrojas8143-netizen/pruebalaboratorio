@@ -36,9 +36,12 @@
 
 
     
-    window.guardarFormularioHeces = function() {
+    window.guardarFormularioHeces = async function() {
         var examenId = window._examenHecesEditando;
-        if (!examenId) return;
+        if (!examenId) {
+            alert('No se encontró el examen de heces que se va a guardar.');
+            return;
+        }
         var datos = {
             mocoFecal: document.getElementById('mocoFecal') ? document.getElementById('mocoFecal').value : '',
             phHeces: document.getElementById('phHeces') ? document.getElementById('phHeces').value : '',
@@ -56,9 +59,42 @@
 
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });
-        if (!examen) return;
+        if (!examen) {
+            alert('No se encontró el examen de heces en la orden.');
+            return;
+        }
 
-        examen.resultado = JSON.stringify(datos);
+        var orden = window.pacienteActivo ? window.pacienteActivo.orden : (window.getOrden ? window.getOrden() : '');
+        if (!orden) {
+            alert('Error: No se pudo determinar la orden.');
+            return;
+        }
+        if (!window.api || typeof window.api.guardarPacienteExamenes !== 'function') {
+            alert('Error: No está disponible el guardado en la base de datos.');
+            return;
+        }
+
+        var resultado = JSON.stringify(datos);
+        var examenesActualizados = examenes.map(function(item) {
+            return item.id === examenId ? Object.assign({}, item, { resultado: resultado }) : item;
+        });
+
+        var guardado;
+        try {
+            guardado = await window.api.guardarPacienteExamenes(orden, examenesActualizados);
+            if (!guardado || !guardado.success) {
+                throw new Error(guardado && guardado.error ? guardado.error : 'No se pudieron guardar los resultados.');
+            }
+        } catch (error) {
+            console.error('[guardarFormularioHeces] Error:', error);
+            alert('Error al guardar los resultados: ' + error.message);
+            return;
+        }
+
+        examen.resultado = resultado;
+        if (window.pacienteActivo) {
+            window.pacienteActivo.examenes = JSON.parse(JSON.stringify(examenes));
+        }
         window.renderizarTablaExamenes();
         window.cerrarFormularioHeces();
     };
