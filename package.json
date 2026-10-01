@@ -1,6 +1,6 @@
 {
   "name": "mirolab-systems",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Sistema de Laboratorio Clínico - Demo",
   "main": "main.js",
   "scripts": {

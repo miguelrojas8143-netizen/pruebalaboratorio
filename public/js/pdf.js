@@ -159,10 +159,25 @@
     function buildPayload(paciente) {
         var examenes = JSON.parse(JSON.stringify(paciente.examenes || []));
         var examenesHeces = examenes.find(function(e) { return e.tipoFormulario === 'heces'; });
-        var examenesUro = examenes.find(function(e) { return e.tipoFormulario === 'uroanalisis'; });
+        var examenesUro = examenes.find(function(e) {
+            return e.tipoFormulario === 'uroanalisis' || e.tipo === 'uroanalisis' || e.id === 'uroanalisis' || e.id === 'examen_orina';
+        });
+        if (!examenesUro) {
+            var idsUro = window.App && window.App.examenesDetallados && window.App.examenesDetallados.examen_orina
+                ? window.App.examenesDetallados.examen_orina.items.map(function(item) { return item.id; })
+                : [];
+            examenesUro = examenes.find(function(examen) {
+                var valores = {};
+                try {
+                    valores = typeof examen.resultado === 'string' ? JSON.parse(examen.resultado || '{}') : (examen.resultado || {});
+                } catch (error) {}
+                return valores && idsUro.some(function(id) { return Object.prototype.hasOwnProperty.call(valores, id); });
+            });
+        }
         var examenesAb = examenes.find(function(e) { return e.tipoFormulario === 'antibiograma'; });
         var examenesNormales = examenes.filter(function(e) {
-            return e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' && e.tipoFormulario !== 'antibiograma';
+            return e !== examenesHeces && e !== examenesUro && e !== examenesAb &&
+                e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' && e.tipoFormulario !== 'antibiograma';
         });
 
         if (!examenesUro) {
@@ -262,14 +277,21 @@
         var uro = null;
         if (examenesUro && window.tieneDatosUroanalisis(examenesUro)) {
             var datosUro = JSON.parse(examenesUro.resultado || '{}');
+            var detallesUro = window.App && window.App.examenesDetallados
+                ? window.App.examenesDetallados.examen_orina
+                : null;
+            var itemsCatalogoUro = detallesUro && detallesUro.items ? detallesUro.items : (window.UROANALYSIS_FIELDS || []);
             var gruposUro = {};
-            if (window.UROANALISIS_FIELDS) {
-                window.UROANALISIS_FIELDS.forEach(function(f) {
-                    var g = f.grupo || 'General';
-                    if (!gruposUro[g]) gruposUro[g] = [];
-                    gruposUro[g].push(f);
+            itemsCatalogoUro.forEach(function(item) {
+                var field = Object.assign({}, item, {
+                    refTexto: item.refTexto || ((item.refMin != null && item.refMax != null)
+                        ? item.refMin + ' - ' + item.refMax
+                        : '')
                 });
-            }
+                var grupo = field.grupo || 'General';
+                if (!gruposUro[grupo]) gruposUro[grupo] = [];
+                gruposUro[grupo].push(field);
+            });
             var ordenGruposUro = ['Macroscópico', 'Químico', 'Microscópico'];
             Object.keys(gruposUro).forEach(function(g) {
                 if (ordenGruposUro.indexOf(g) === -1) ordenGruposUro.push(g);
@@ -392,13 +414,15 @@
         if (!uro) return '';
         var datosUro = uro.datos;
         var html = '<h6 class="reporte-area-titulo">Examen de Orina / Uroanálisis</h6>';
-        html += '<div class="table-responsive"><table class="table table-bordered table-sm"><tbody>';
+        html += '<div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th>Parámetro</th><th>Resultado</th><th>Unidad</th><th>Valor de Referencia</th></tr></thead><tbody>';
         uro.ordenGrupos.forEach(function(grupo) {
             if (!uro.grupos[grupo]) return;
+            html += '<tr class="table-light"><th colspan="4">' + escapeHtml(grupo) + '</th></tr>';
             uro.grupos[grupo].forEach(function(f) {
                 var val = datosUro[f.id] || '-';
                 if (val === '') val = '-';
-                html += '<tr><td class="fw-semibold" width="40%">' + f.nombre + '</td><td>' + val + '</td></tr>';
+                var referencia = f.refTexto || ((f.refMin != null && f.refMax != null) ? f.refMin + ' - ' + f.refMax : '-');
+                html += '<tr><td class="fw-semibold">' + escapeHtml(f.nombre) + '</td><td>' + escapeHtml(val) + '</td><td class="text-muted">' + escapeHtml(f.unidad || '-') + '</td><td>' + escapeHtml(referencia) + '</td></tr>';
             });
         });
         html += '</tbody></table></div>';
@@ -866,7 +890,9 @@
                         resultado: field.unidad
                             ? (payload.uro.datos[field.id] || '-') + ' ' + field.unidad
                             : payload.uro.datos[field.id],
-                        referencia: field.refTexto || '-'
+                        referencia: field.refTexto || ((field.refMin != null && field.refMax != null)
+                            ? field.refMin + ' - ' + field.refMax
+                            : '-')
                     };
                 }));
             });

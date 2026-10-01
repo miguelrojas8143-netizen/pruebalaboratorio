@@ -7,6 +7,7 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const {
     EXAMENES_HEMATOLOGIA,
+    EXAMENES_UROANALISIS,
     inicializarCatalogoExamenes,
     guardarHistorialPaciente
 } = require('./database/examenes');
@@ -40,11 +41,21 @@ try {
         INSERT INTO historial_examenes (orden_paciente, fecha, examen, resultado, unidad)
         VALUES (?, ?, ?, ?, ?)
     `).run('001', '30/09/2026', 'Glucosa', '91', 'mg/dL');
+    db.prepare(`
+        INSERT INTO historial_examenes (orden_paciente, fecha, examen, resultado, unidad)
+        VALUES (?, ?, ?, ?, ?)
+    `).run('001', '30/09/2026', 'Uroanálisis', JSON.stringify({
+        ur_aspecto: 'Límpido',
+        ur_ph: '6.0',
+        ur_bacterias: 'Ausentes'
+    }), '');
 
     inicializarCatalogoExamenes(db);
     inicializarCatalogoExamenes(db);
 
-    assert.strictEqual(db.prepare('SELECT COUNT(*) AS total FROM examenes').get().total, 23);
+    assert.strictEqual(db.prepare('SELECT COUNT(*) AS total FROM examenes').get().total, 44);
+    assert.strictEqual(db.prepare('SELECT COUNT(*) AS total FROM examenes_opciones').get().total,
+        EXAMENES_UROANALISIS.reduce(function(total, item) { return total + (item.opciones || []).length; }, 0));
     const migrados = db.prepare(`
         SELECT h.idresultado, h.resultado, h.unidad, h.referencia, e.nombre, e.refMin, e.refMax
         FROM historial_examenes h
@@ -52,12 +63,16 @@ try {
         WHERE h.orden_paciente = ?
         ORDER BY h.idresultado
     `).all('001');
-    assert.strictEqual(migrados.length, 3);
-    assert.deepStrictEqual(migrados.map(function(row) { return row.idresultado; }).sort(), [
+    const migradosHematologia = migrados.filter(function(row) { return row.idresultado.indexOf('ur_') !== 0; });
+    const migradosUroanalisis = migrados.filter(function(row) { return row.idresultado.indexOf('ur_') === 0; });
+    assert.strictEqual(migradosHematologia.length, 3);
+    assert.strictEqual(migradosUroanalisis.length, 3);
+    assert.deepStrictEqual(migradosHematologia.map(function(row) { return row.idresultado; }).sort(), [
         'globulos_blancos', 'hemoglobina', 'neutrofilos_por'
     ]);
     assert.strictEqual(migrados.find(function(row) { return row.idresultado === 'hemoglobina'; }).referencia, 'F: 12.0-16.0');
     assert.strictEqual(db.prepare("SELECT COUNT(*) AS total FROM historial_examenes WHERE examen = 'Hematología Completa' AND idresultado IS NULL").get().total, 0);
+    assert.strictEqual(db.prepare("SELECT COUNT(*) AS total FROM historial_examenes WHERE examen = 'Uroanálisis' AND idresultado IS NULL").get().total, 0);
     assert.strictEqual(db.prepare("SELECT COUNT(*) AS total FROM historial_examenes WHERE examen = 'Glucosa' AND idresultado IS NULL").get().total, 1);
 
     const resultadosNuevos = [
@@ -71,7 +86,17 @@ try {
                 __referencias: { hemoglobina: 'F: 12.0-16.0' }
             })
         },
-        { fecha: '01/10/2026', examen: 'Glucosa', resultado: '96', unidad: 'mg/dL' }
+        { fecha: '01/10/2026', examen: 'Glucosa', resultado: '96', unidad: 'mg/dL' },
+        {
+            fecha: '01/10/2026',
+            examen: 'Uroanálisis',
+            tipoFormulario: 'uroanalisis',
+            resultado: JSON.stringify({
+                ur_aspecto: 'Turbio',
+                ur_ph: '7.0',
+                ur_bacterias: 'Moderadas'
+            })
+        }
     ];
     guardarHistorialPaciente(db, '001', resultadosNuevos);
     const guardados = db.prepare(`
@@ -80,9 +105,11 @@ try {
         WHERE orden_paciente = ?
         ORDER BY idresultado
     `).all('001');
-    assert.strictEqual(guardados.length, 4);
+    assert.strictEqual(guardados.length, 7);
     assert.strictEqual(guardados.find(function(row) { return row.idresultado === 'hemoglobina'; }).resultado, '14.2');
     assert.strictEqual(guardados.find(function(row) { return row.idresultado === 'hemoglobina'; }).referencia, 'F: 12.0-16.0');
+    assert.strictEqual(guardados.find(function(row) { return row.idresultado === 'ur_ph'; }).resultado, '7.0');
+    assert.strictEqual(guardados.find(function(row) { return row.idresultado === 'ur_ph'; }).unidad, '');
     assert.strictEqual(guardados.find(function(row) { return row.idresultado === null; }).resultado, '96');
 
     const historialHidratado = db.prepare(`
@@ -94,11 +121,12 @@ try {
         WHERE h.orden_paciente = ?
     `).all('001');
     guardarHistorialPaciente(db, '001', historialHidratado);
-    assert.strictEqual(db.prepare('SELECT COUNT(*) AS total FROM historial_examenes WHERE orden_paciente = ?').get('001').total, 4);
-    assert.strictEqual(JSON.parse(db.prepare('SELECT historial FROM pacientes WHERE orden = ?').get('001').historial).length, 4);
+    assert.strictEqual(db.prepare('SELECT COUNT(*) AS total FROM historial_examenes WHERE orden_paciente = ?').get('001').total, 7);
+    assert.strictEqual(JSON.parse(db.prepare('SELECT historial FROM pacientes WHERE orden = ?').get('001').historial).length, 7);
     assert.strictEqual(EXAMENES_HEMATOLOGIA.length, 23);
+    assert.strictEqual(EXAMENES_UROANALISIS.length, 21);
 
-    console.log('OK: catálogo, migración y guardado/recarga del historial hematológico.');
+    console.log('OK: catálogo, migración y guardado/recarga de Hematología y Uroanálisis.');
 } finally {
     db.close();
     for (const sufijo of ['', '-shm', '-wal']) {
