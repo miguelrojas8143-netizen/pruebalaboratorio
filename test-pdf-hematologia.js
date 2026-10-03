@@ -156,10 +156,17 @@ assert.strictEqual(payloadHeces.heces.grupos['Químico'].length, 3);
 assert.strictEqual(payloadHeces.heces.grupos['Microscópico y parasitológico'].length, 6);
 assert.strictEqual(payloadHeces.heces.grupos['Químico'][2].resultado, '0.30 (INDETERMINADO)');
 window.PdfReport.renderDom(payloadHeces, {});
-assert.ok(elementosDom.bloqueHeces.innerHTML.includes('<th>Parámetro</th><th>Resultado</th>'));
+// Formato universal: Parámetro | Resultado | Unidad | Valores de Referencia.
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('<th width="35%">Parámetro</th><th width="20%">Resultado</th><th width="15%">Unidad</th>'));
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('Valores de Referencia'));
 assert.ok(elementosDom.bloqueHeces.innerHTML.includes('Microscópico y parasitológico'));
 assert.ok(elementosDom.bloqueHeces.innerHTML.includes('&lt;observado&gt;'));
 assert.ok(!elementosDom.bloqueHeces.innerHTML.includes('<observado>'));
+// Regresiones reportadas: ni 'undefined' ni el JSON crudo en ninguna celda.
+assert.ok(!elementosDom.bloqueHeces.innerHTML.includes('undefined'));
+assert.ok(!elementosDom.bloqueHeces.innerHTML.includes(JSON.stringify(datosHeces)));
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('Moco Fecal'));
+assert.ok(elementosDom.bloqueHeces.innerHTML.includes('5.5 - 8'));
 
 const textosPdf = [];
 const documentosPdf = [];

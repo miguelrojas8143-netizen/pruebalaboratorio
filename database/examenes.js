@@ -1,305 +1,683 @@
 'use strict';
 
-const EXAMENES_HEMATOLOGIA = [
-    { id: 'globulos_blancos', nombre: 'Glóbulos Blancos', unidad: 'x10³/µL', refMin: 4.0, refMax: 10.0, grupo: 'Hemograma' },
-    { id: 'neutrofilos_num', nombre: 'Neutrófilos #', unidad: 'x10³/µL', refMin: 2.0, refMax: 7.0, tipo: 'calculado', grupo: 'Absolutos' },
-    { id: 'linfocitos_num', nombre: 'Linfocitos #', unidad: 'x10³/µL', refMin: 1.0, refMax: 7.0, refTexto: 'A: 1.0-4.0; N: <7.0', tipo: 'calculado', grupo: 'Absolutos' },
-    { id: 'eosinofilos_num', nombre: 'Eosinófilos #', unidad: 'x10³/µL', refMin: 0.0, refMax: 0.85, refTexto: 'A <0.45 ; N: <0.85', tipo: 'calculado', grupo: 'Absolutos' },
-    { id: 'monocitos_num', nombre: 'Monocitos #', unidad: 'x10³/µL', refMin: 0.0, refMax: 0.8, refTexto: '<0.8', tipo: 'calculado', grupo: 'Absolutos' },
-    { id: 'basofilos_num', nombre: 'Basófilos #', unidad: 'x10³/µL', refMin: 0.0, refMax: 0.15, refTexto: '<0.15', tipo: 'calculado', grupo: 'Absolutos' },
-    { id: 'neutrofilos_por', nombre: 'Neutrófilos %', unidad: '%', refTexto: '-', tipo: 'texto', grupo: 'Porcentuales' },
-    { id: 'linfocitos_por', nombre: 'Linfocitos %', unidad: '%', refTexto: '-', tipo: 'texto', grupo: 'Porcentuales' },
-    { id: 'eosinofilos_por', nombre: 'Eosinófilos %', unidad: '%', refTexto: '-', tipo: 'texto', grupo: 'Porcentuales' },
-    { id: 'monocitos_por', nombre: 'Monocitos %', unidad: '%', refTexto: '-', tipo: 'texto', grupo: 'Porcentuales' },
-    { id: 'basofilos_por', nombre: 'Basófilos %', unidad: '%', refTexto: '-', tipo: 'texto', grupo: 'Porcentuales' },
-    { id: 'globulos_rojos', nombre: 'Glóbulos Rojos', unidad: 'x10⁶/µL', refMin: 4.5, refMax: 5.5, grupo: 'Hemograma' },
-    { id: 'hemoglobina', nombre: 'Hemoglobina', unidad: 'g/dL', refMin: 12.0, refMax: 18.0, refTexto: 'F: 12.0-16.0; M: 13.0-18.0', grupo: 'Hemograma' },
-    { id: 'hematocrito', nombre: 'Hematocrito', unidad: '%', refMin: 38.0, refMax: 54.0, grupo: 'Hemograma' },
-    { id: 'vcm', nombre: 'V.C.M.', unidad: 'fL', refMin: 80, refMax: 100, grupo: 'Hemograma' },
-    { id: 'hcm', nombre: 'H.C.M.', unidad: 'pg', refMin: 26, refMax: 34, grupo: 'Hemograma' },
-    { id: 'chcm', nombre: 'C.H.C.M.', unidad: 'g/dL', refMin: 32, refMax: 36, grupo: 'Hemograma' },
-    { id: 'rdw_cv', nombre: 'RDW-CV', unidad: '%', refMin: 0, refMax: 15.1, refTexto: '<15.1', grupo: 'Hemograma' },
-    { id: 'plaquetas', nombre: 'Plaquetas', unidad: 'x10³/µL', refMin: 150, refMax: 450, grupo: 'Hemograma' },
-    { id: 'vpm', nombre: 'V.P.M.', unidad: 'fL', refMin: 6.5, refMax: 13.5, grupo: 'Hemograma' },
-    { id: 'pdw', nombre: 'P.D.W.', unidad: '%', refMin: 0, refMax: 16.8, refTexto: '<16.8', grupo: 'Hemograma' },
-    { id: 'plcr', nombre: 'P.LCR', unidad: '%', refMin: 0, refMax: 42.3, refTexto: '<42.3', grupo: 'Hemograma' },
-    { id: 'vsg', nombre: 'V.S.G. 1 Hora', unidad: 'mm/h', refMin: 3, refMax: 20, refTexto: 'Niño: 3 - 13 mm/h | Mujer: < 20', grupo: 'Hemograma' }
-].map(function(item) {
-    return Object.assign({
-        area: 'Hematología',
-        examen: 'hematologia_completa',
-        tipo: 'numerico',
-        refMin: null,
-        refMax: null
-    }, item);
-});
+/**
+ * Puente entre SQLite y el historial del paciente.
+ *
+ * El catálogo (exámenes, parámetros y valores de referencia) ya no vive en
+ * este archivo: se resuelve siempre contra las tablas normalizadas
+ * `examenes`, `parametros_examen` y `rangos_referencia`, sembradas por
+ * `database/migracion-catalogo.js`.
+ */
 
-const EXAMENES_UROANALISIS = [
-    { id: 'ur_aspecto', nombre: 'Aspecto', grupo: 'Macroscópico', tipo: 'seleccion_unica', opciones: ['Límpido', 'Turbio', 'Ligeramente turbio'] },
-    { id: 'ur_color', nombre: 'Color', grupo: 'Macroscópico', tipo: 'seleccion_unica', opciones: ['Amarillo claro', 'Amarillo oscuro', 'Incoloro o amarillo muy pálido', 'Ámbar / Rojizo'] },
-    { id: 'ur_olor', nombre: 'Olor', grupo: 'Macroscópico', tipo: 'seleccion_unica', opciones: ['Sui géneris (característica normal)', 'Fétido (amoniacal)', 'Afrutado (cetónico)', 'Fuerte'] },
-    { id: 'ur_reaccion', nombre: 'Reacción', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Ácida', 'Alcalina'] },
-    { id: 'ur_ph', nombre: 'pH', grupo: 'Químico', tipo: 'numerico', refMin: 4.5, refMax: 8.0, refTexto: '4.5 - 8.0' },
-    { id: 'ur_densidad', nombre: 'Densidad', grupo: 'Químico', tipo: 'numerico', refMin: 1.005, refMax: 1.030, refTexto: '1.005 - 1.030' },
-    { id: 'ur_urobilinogeno', nombre: 'Urobilinógeno', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Normal', 'Aumentado', 'Disminuido'] },
-    { id: 'ur_albumina', nombre: 'Albúmina', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Trazas', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_glucosa', nombre: 'Glucosa', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_cetonas', nombre: 'Cetonas', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_proteinas', nombre: 'Proteínas', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_hemoglobina', nombre: 'Hemoglobina', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Trazas', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_bilirrubina', nombre: 'Bilirrubina', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_nitritos', nombre: 'Nitritos', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Positivo'] },
-    { id: 'ur_leucocitos_tira', nombre: 'Leucocitos', grupo: 'Químico', tipo: 'seleccion_unica', opciones: ['Negativo', 'Positivo (+)', 'Positivo (++)', 'Positivo (+++)'] },
-    { id: 'ur_leucocitos_micro', nombre: 'Leucocitos (Micro)', unidad: 'cpo/campo', grupo: 'Microscópico', tipo: 'seleccion_unica', opciones: ['0-2 por campo', '3-10 por campo', '11-20 por campo', '21-50 por campo', '> 50 por campo'] },
-    { id: 'ur_celulas_epiteliales', nombre: 'Células Epiteliales', unidad: 'cpo/campo', grupo: 'Microscópico', tipo: 'seleccion_unica', opciones: ['Ausentes', 'Escasas', 'Moderadas', 'Abundantes'] },
-    { id: 'ur_eritrocitos', nombre: 'Eritrocitos', unidad: 'cpo/campo', grupo: 'Microscópico', tipo: 'seleccion_unica', opciones: ['0-1 por campo', '2-5 por campo', '6-10 por campo', '> 10 por campo'] },
-    { id: 'ur_bacterias', nombre: 'Bacterias', grupo: 'Microscópico', tipo: 'seleccion_unica', opciones: ['Ausentes', 'Escasas', 'Moderadas', 'Abundantes'] },
-    { id: 'ur_cilindros', nombre: 'Cilindros', grupo: 'Microscópico', tipo: 'seleccion_unica', opciones: ['Ausentes', 'Hialinas', 'Granulosos', 'Eritrocitarios', 'Leucocíticos'] },
-    { id: 'ur_cristales', nombre: 'Cristales', grupo: 'Microscópico', tipo: 'seleccion_unica', opciones: ['Ausentes', 'Oxalato de calcio', 'Fosfatos', 'Uratas', 'Carbonatos'] }
-].map(function(item) {
-    return Object.assign({
-        area: 'Uroanálisis',
-        examen: 'examen_orina',
-        unidad: '',
-        refMin: null,
-        refMax: null
-    }, item);
-});
+const { asegurarCatalogoPoblado } = require('./migracion-catalogo');
+const { columnasDe, existeTabla } = require('./schema');
 
-const EXAMENES_CATALOGO = EXAMENES_HEMATOLOGIA.concat(EXAMENES_UROANALISIS);
+/** Añade una columna si falta (bases creadas por versiones anteriores). */
+function asegurarColumna(db, tabla, columna, definicion) {
+    if (!existeTabla(db, tabla)) return;
+    if (columnasDe(db, tabla).some(function(c) { return c.name === columna; })) return;
+    db.exec('ALTER TABLE ' + tabla + ' ADD COLUMN ' + columna + ' ' + definicion);
+}
+
+const NOMBRES_EXAMEN_COMPUESTO = {
+    hematologia_completa: 'Hematología Completa',
+    examen_orina: 'Uroanálisis',
+    uroanalisis: 'Uroanálisis',
+    examen_heces: 'Examen Directo de Heces'
+};
+
+const ALIAS_EXAMEN_COMPUESTO = {
+    hematologia_completa: ['hematología completa', 'hematologia completa', 'hematologia_completa'],
+    examen_orina: ['uroanálisis', 'uroanalisis', 'examen de orina', 'examen general de orina', 'examen_orina', 'uroanalisis'],
+    examen_heces: [
+        'examen directo de heces',
+        'examen de heces',
+        'examen_directo_de_heces',
+        'examen_heces',
+        'coproanálisis',
+        'coproanalisis'
+    ]
+};
+
+/** Formularios compuestos que se persisten como un JSON y se explotan a filas. */
+const EXAMEN_POR_FORMULARIO = {
+    uroanalisis: 'examen_orina',
+    heces: 'examen_heces'
+};
 
 function referenciaPorDefecto(item) {
-    if (item.refTexto !== undefined) return item.refTexto;
-    if (item.refMin !== undefined && item.refMax !== undefined) return item.refMin + ' - ' + item.refMax;
+    if (!item) return '';
+    if (item.refTexto !== undefined && item.refTexto !== '') return item.refTexto;
+    if (item.refMin != null && item.refMax != null) return item.refMin + ' - ' + item.refMax;
     return '';
 }
 
-function asegurarColumna(db, tabla, columna, definicion) {
-    const columnas = db.prepare('PRAGMA table_info(' + tabla + ')').all();
-    if (!columnas.some(function(item) { return item.name === columna; })) {
-        db.exec('ALTER TABLE ' + tabla + ' ADD COLUMN ' + columna + ' ' + definicion);
+/**
+ * Carga el índice id -> parámetro desde las tablas normalizadas.
+ * Un mismo código puede ser a la vez una prueba del catálogo y un parámetro de
+ * una prueba compuesta, así que se guardan todas las pruebas a las que
+ * pertenece.
+ */
+function cargarIndiceCatalogo(db) {
+    const porId = new Map();
+
+    function registrar(codigo, datos) {
+        let item = porId.get(codigo);
+        if (!item) {
+            item = {
+                id: codigo,
+                nombre: datos.nombre,
+                unidad: datos.unidad || '',
+                refMin: datos.ref_min,
+                refMax: datos.ref_max,
+                refTexto: datos.ref_texto || '',
+                grupo: datos.grupo || '',
+                refactor: datos.examen_id,
+                pruebas: new Set()
+            };
+            porId.set(codigo, item);
+        }
+        item.pruebas.add(datos.examen_id);
+        return item;
+    }
+
+    db.prepare('SELECT id, nombre, unidad, ref_min, ref_max, ref_texto, grupo FROM examenes ORDER BY orden').all()
+        .forEach(function(fila) {
+            registrar(fila.id, {
+                examen_id: fila.id,
+                nombre: fila.nombre,
+                unidad: fila.unidad,
+                ref_min: fila.ref_min,
+                ref_max: fila.ref_max,
+                ref_texto: fila.ref_texto,
+                grupo: fila.grupo
+            });
+        });
+
+    db.prepare(`
+        SELECT codigo, examen_id, nombre, unidad, ref_min, ref_max, ref_texto, grupo, orden
+        FROM parametros_examen
+        ORDER BY orden
+    `).all().forEach(function(fila) {
+        registrar(fila.codigo, {
+            examen_id: fila.examen_id,
+            nombre: fila.nombre,
+            unidad: fila.unidad,
+            ref_min: fila.ref_min,
+            ref_max: fila.ref_max,
+            ref_texto: fila.ref_texto,
+            grupo: fila.grupo
+        });
+    });
+
+    const codigosDe = db.prepare('SELECT codigo FROM parametros_examen WHERE examen_id = ?');
+    const idsHematologia = new Set(codigosDe.all('hematologia_completa').map(function(f) { return f.codigo; }));
+    const idsUroanalisis = new Set(codigosDe.all('examen_orina').map(function(f) { return f.codigo; }));
+
+    // Solo las pruebas con parámetros se explotan a una fila por parámetro; las
+    // demás siguen siendo un único resultado.
+    const idsConParametros = new Set(
+        db.prepare('SELECT DISTINCT examen_id FROM parametros_examen').all().map(function(f) { return f.examen_id; })
+    );
+
+    return {
+        porId: porId,
+        idsHematologia: idsHematologia,
+        idsUroanalisis: idsUroanalisis,
+        idsConParametros: idsConParametros
+    };
+}
+
+function nombreDePrueba(indice, examenId) {
+    if (NOMBRES_EXAMEN_COMPUESTO[examenId]) return NOMBRES_EXAMEN_COMPUESTO[examenId];
+    const item = indice.porId.get(examenId);
+    return (item && item.nombre) || examenId;
+}
+
+function identificarExamen(entrada, valores, indice) {
+    // 1) El id del catálogo es la señal más fiable: lo escribe el formulario que
+    //    captura el resultado (heces, uroanálisis, perfiles…).
+    const examenIdDirecto = String(entrada.examen_id || '').trim();
+    if (examenIdDirecto && indice.idsConParametros.has(examenIdDirecto)) return examenIdDirecto;
+    // 2) El tipo de formulario identifica igual que la prueba, sin depender del
+    //    nombre legible que el usuario pudo haber editado.
+    const porFormulario = EXAMEN_POR_FORMULARIO[String(entrada.tipoFormulario || '').trim()];
+    if (porFormulario) return porFormulario;
+    // 3) Alias sobre el nombre, para los historiales ya guardados.
+    const nombre = String(entrada.examen_completo || entrada.examen || entrada.nombre || entrada.id || '')
+        .trim()
+        .toLowerCase();
+    for (const examenId of Object.keys(ALIAS_EXAMEN_COMPUESTO)) {
+        if (ALIAS_EXAMEN_COMPUESTO[examenId].indexOf(nombre) !== -1) return examenId;
+    }
+
+    if (valores) {
+        const ids = Object.keys(valores);
+        const hematologia = ids.filter(function(id) { return indice.idsHematologia.has(id); }).length;
+        const uroanalisis = ids.filter(function(id) { return indice.idsUroanalisis.has(id); }).length;
+        if (hematologia >= 2 && hematologia > uroanalisis) return 'hematologia_completa';
+        if (uroanalisis >= 2 && uroanalisis > hematologia) return 'examen_orina';
+    }
+    return null;
+}
+
+function analizarResultado(resultado) {
+    if (resultado && typeof resultado === 'object' && !Array.isArray(resultado)) return resultado;
+    try {
+        const valores = JSON.parse(resultado || '{}');
+        return (valores && typeof valores === 'object' && !Array.isArray(valores)) ? valores : null;
+    } catch (error) {
+        return null;
     }
 }
 
-function inicializarCatalogoExamenes(db) {
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS examenes (
-            id TEXT PRIMARY KEY,
-            examen TEXT NOT NULL,
-            nombre TEXT NOT NULL,
-            area TEXT NOT NULL,
-            unidad TEXT NOT NULL DEFAULT '',
-            refMin REAL,
-            refMax REAL,
-            refTexto TEXT NOT NULL DEFAULT '',
-            tipo TEXT NOT NULL DEFAULT 'numerico',
-            grupo TEXT NOT NULL DEFAULT 'General'
+/**
+ * Inserta una fila del historial por parámetro de la prueba compuesta.
+ * Devuelve cuántas filas se escribieron.
+ */
+function insertarParametros(insertar, orden, fecha, examenId, valores, indice) {
+    const referencias = valores.__referencias || {};
+    let cantidad = 0;
+    for (const codigo of Object.keys(valores)) {
+        if (codigo === '__referencias') continue;
+        const item = indice.porId.get(codigo);
+        const resultado = valores[codigo];
+        if (!item || !item.pruebas.has(examenId)) continue;
+        if (resultado == null || String(resultado).trim() === '') continue;
+        const referencia = referencias[codigo];
+        insertar.run(
+            orden,
+            fecha,
+            nombreDePrueba(indice, examenId),
+            String(resultado),
+            item.unidad,
+            codigo,
+            referencia === undefined ? referenciaPorDefecto(item) : String(referencia)
         );
-        CREATE TABLE IF NOT EXISTS historial_examenes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            orden_paciente TEXT,
-            fecha TEXT,
-            examen TEXT,
-            resultado TEXT,
-            unidad TEXT,
-            FOREIGN KEY(orden_paciente) REFERENCES pacientes(orden)
-        );
-        CREATE TABLE IF NOT EXISTS examenes_opciones (
-            idresultado TEXT NOT NULL,
-            orden INTEGER NOT NULL,
-            valor TEXT NOT NULL,
-            PRIMARY KEY(idresultado, orden),
-            UNIQUE(idresultado, valor),
-            FOREIGN KEY(idresultado) REFERENCES examenes(id) ON DELETE CASCADE
-        );
-    `);
-
-    asegurarColumna(db, 'historial_examenes', 'idresultado', 'TEXT REFERENCES examenes(id)');
-    asegurarColumna(db, 'historial_examenes', 'referencia', 'TEXT');
-
-    const upsert = db.prepare(`
-        INSERT INTO examenes (id, examen, nombre, area, unidad, refMin, refMax, refTexto, tipo, grupo)
-        VALUES (@id, @examen, @nombre, @area, @unidad, @refMin, @refMax, @refTexto, @tipo, @grupo)
-        ON CONFLICT(id) DO UPDATE SET
-            examen = excluded.examen,
-            nombre = excluded.nombre,
-            area = excluded.area,
-            unidad = excluded.unidad,
-            refMin = excluded.refMin,
-            refMax = excluded.refMax,
-            refTexto = excluded.refTexto,
-            tipo = excluded.tipo,
-            grupo = excluded.grupo
-    `);
-    const actualizarOpciones = db.prepare(`
-        INSERT INTO examenes_opciones (idresultado, orden, valor)
-        VALUES (?, ?, ?)
-    `);
-    const borrarOpciones = db.prepare('DELETE FROM examenes_opciones WHERE idresultado = ?');
-    const guardarCatalogo = db.transaction(function() {
-        EXAMENES_CATALOGO.forEach(function(item) {
-            upsert.run(Object.assign({}, item, { refTexto: item.refTexto || '' }));
-            if (item.opciones) {
-                borrarOpciones.run(item.id);
-                item.opciones.forEach(function(valor, indice) {
-                    actualizarOpciones.run(item.id, indice, valor);
-                });
-            }
-        });
-    });
-    guardarCatalogo();
-
-    const insertarResultadoMigrado = db.prepare(`
-        INSERT INTO historial_examenes
-            (orden_paciente, fecha, examen, resultado, unidad, idresultado, referencia)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    const obtenerLegado = db.prepare(`
-        SELECT id, orden_paciente, fecha, examen, resultado
-        FROM historial_examenes
-        WHERE idresultado IS NULL
-    `);
-    const borrarLegado = db.prepare('DELETE FROM historial_examenes WHERE id = ?');
-    const itemsPorId = new Map(EXAMENES_CATALOGO.map(function(item) { return [item.id, item]; }));
-    const normalizarNombre = function(nombre) {
-        return String(nombre || '').trim().toLowerCase();
-    };
-    const identificarCatalogo = function(registro, valores) {
-        const nombre = normalizarNombre(registro.examen);
-        if (['hematología completa', 'hematologia completa', 'hematologia_completa'].includes(nombre)) return 'hematologia_completa';
-        if (['uroanálisis', 'uroanalisis', 'examen de orina', 'examen general de orina', 'examen_orina'].includes(nombre)) return 'examen_orina';
-        const ids = Object.keys(valores);
-        const hematologia = ids.filter(function(id) { return EXAMENES_HEMATOLOGIA.some(function(item) { return item.id === id; }); }).length;
-        const uroanalisis = ids.filter(function(id) { return EXAMENES_UROANALISIS.some(function(item) { return item.id === id; }); }).length;
-        if (hematologia >= 2 && hematologia > uroanalisis) return 'hematologia_completa';
-        if (uroanalisis >= 2 && uroanalisis > hematologia) return 'examen_orina';
-        return null;
-    };
-    const migrarLegado = db.transaction(function() {
-        obtenerLegado.all().forEach(function(registro) {
-            let valores;
-            try {
-                valores = JSON.parse(registro.resultado || '{}');
-            } catch (error) {
-                return;
-            }
-            if (!valores || typeof valores !== 'object' || Array.isArray(valores)) return;
-            const examenId = identificarCatalogo(registro, valores);
-            if (!examenId) return;
-
-            let cantidadMigrada = 0;
-            for (const [idresultado, valor] of Object.entries(valores)) {
-                const item = itemsPorId.get(idresultado);
-                if (!item || item.examen !== examenId || valor === null || valor === undefined || String(valor).trim() === '') continue;
-                const referenciaPersonalizada = valores.__referencias && valores.__referencias[idresultado];
-                insertarResultadoMigrado.run(
-                    registro.orden_paciente,
-                    registro.fecha,
-                    examenId === 'hematologia_completa' ? 'Hematología Completa' : 'Uroanálisis',
-                    String(valor),
-                    item.unidad,
-                    idresultado,
-                    referenciaPersonalizada === undefined ? referenciaPorDefecto(item) : String(referenciaPersonalizada)
-                );
-                cantidadMigrada += 1;
-            }
-            if (cantidadMigrada > 0) borrarLegado.run(registro.id);
-        });
-    });
-    migrarLegado();
+        cantidad += 1;
+    }
+    return cantidad;
 }
 
+/**
+ * Persiste el historial de una orden. Los resultados de pruebas compuestas se
+ * explotan a una fila por parámetro para que cada valor conserve su referencia.
+ */
 function guardarHistorialPaciente(db, orden, historial) {
-    const catalogoPorId = new Map(EXAMENES_CATALOGO.map(function(item) {
-        return [item.id, item];
-    }));
-    const idsHematologia = new Set(EXAMENES_HEMATOLOGIA.map(function(item) { return item.id; }));
-    const idsUroanalisis = new Set(EXAMENES_UROANALISIS.map(function(item) { return item.id; }));
+    const indice = cargarIndiceCatalogo(db);
     const insertar = db.prepare(`
         INSERT INTO historial_examenes
             (orden_paciente, fecha, examen, resultado, unidad, idresultado, referencia)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    const identificarExamen = function(entry, valores) {
-        const nombre = String(entry.examen_completo || entry.examen || entry.nombre || entry.id || '').trim().toLowerCase();
-        if (['hematología completa', 'hematologia completa', 'hematologia_completa'].includes(nombre)) return 'hematologia_completa';
-        if (['uroanálisis', 'uroanalisis', 'examen de orina', 'examen general de orina', 'examen_orina'].includes(nombre) || entry.tipoFormulario === 'uroanalisis') return 'examen_orina';
-        if (valores && typeof valores === 'object') {
-            const ids = Object.keys(valores);
-            const hematologia = ids.filter(function(id) { return idsHematologia.has(id); }).length;
-            const uroanalisis = ids.filter(function(id) { return idsUroanalisis.has(id); }).length;
-            if (hematologia >= 2 && hematologia > uroanalisis) return 'hematologia_completa';
-            if (uroanalisis >= 2 && uroanalisis > hematologia) return 'examen_orina';
-        }
-        return null;
-    };
 
     const guardar = db.transaction(function() {
         db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(orden);
-        for (const entry of historial || []) {
-            if (entry.idresultado && catalogoPorId.has(entry.idresultado)) {
-                const item = catalogoPorId.get(entry.idresultado);
+
+        for (const entrada of historial || []) {
+            // 1) Entrada ya aplanada por parámetro.
+            if (entrada.idresultado && indice.porId.has(entrada.idresultado)) {
+                const item = indice.porId.get(entrada.idresultado);
                 insertar.run(
                     orden,
-                    entry.fecha || '',
-                    entry.examen_completo || (item.examen === 'hematologia_completa' ? 'Hematología Completa' : 'Uroanálisis'),
-                    entry.resultado == null ? '' : String(entry.resultado),
-                    entry.unidad || item.unidad,
-                    entry.idresultado,
-                    entry.referencia == null ? referenciaPorDefecto(item) : String(entry.referencia)
+                    entrada.fecha || '',
+                    entrada.examen_completo || nombreDePrueba(indice, item.refactor),
+                    entrada.resultado == null ? '' : String(entrada.resultado),
+                    entrada.unidad || item.unidad,
+                    entrada.idresultado,
+                    entrada.referencia == null ? referenciaPorDefecto(item) : String(entrada.referencia)
                 );
                 continue;
             }
 
-            let valores;
-            try {
-                valores = typeof entry.resultado === 'string'
-                    ? JSON.parse(entry.resultado || '{}')
-                    : (entry.resultado || {});
-            } catch (error) {
-                valores = {};
-            }
-            const examenId = identificarExamen(entry, valores);
+            // 2) Resultado guardado como un único JSON con todos los parámetros.
+            const valores = analizarResultado(entrada.resultado);
+            const examenId = identificarExamen(entrada, valores, indice);
             if (examenId) {
-                if (valores && typeof valores === 'object' && !Array.isArray(valores)) {
-                    for (const [idresultado, resultado] of Object.entries(valores)) {
-                        const item = catalogoPorId.get(idresultado);
-                        if (!item || item.examen !== examenId || resultado == null || String(resultado).trim() === '') continue;
-                        const referencias = valores.__referencias || {};
-                        const referencia = referencias[idresultado];
-                        insertar.run(
-                            orden,
-                            entry.fecha || '',
-                            examenId === 'hematologia_completa' ? 'Hematología Completa' : 'Uroanálisis',
-                            String(resultado),
-                            item.unidad,
-                            idresultado,
-                            referencia === undefined ? referenciaPorDefecto(item) : String(referencia)
-                        );
-                    }
+                if (valores) {
+                    insertarParametros(insertar, orden, entrada.fecha || '', examenId, valores, indice);
                 }
                 continue;
             }
 
+            // 3) Resultado simple sin catálogo asociado.
             insertar.run(
                 orden,
-                entry.fecha || '',
-                entry.examen || entry.nombre || '',
-                entry.resultado == null ? '' : String(entry.resultado),
-                entry.unidad || '',
+                entrada.fecha || '',
+                entrada.examen || entrada.nombre || '',
+                entrada.resultado == null ? '' : String(entrada.resultado),
+                entrada.unidad || '',
                 null,
-                entry.referencia || null
+                entrada.referencia || null
             );
         }
-        db.prepare('UPDATE pacientes SET historial = ? WHERE orden = ?').run(JSON.stringify(historial || []), orden);
+
+        db.prepare('UPDATE pacientes SET historial = ? WHERE orden = ?')
+            .run(JSON.stringify(historial || []), orden);
     });
+
     guardar();
 }
 
+/**
+ * Convierte filas del historial heredado (un JSON por orden) a una fila por
+ * parámetro. Se ejecuta una sola vez, al abrir una base ya existente.
+ */
+function migrarHistorialLegado(db) {
+    const indice = cargarIndiceCatalogo(db);
+    const consultar = db.prepare(
+        'SELECT id, orden_paciente, fecha, examen, resultado FROM historial_examenes WHERE idresultado IS NULL'
+    );
+    const registrar = db.prepare(`
+        INSERT INTO historial_examenes
+            (orden_paciente, fecha, examen, resultado, unidad, idresultado, referencia)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const borrar = db.prepare('DELETE FROM historial_examenes WHERE id = ?');
+
+    const migrar = db.transaction(function() {
+        let migradas = 0;
+        for (const registro of consultar.all()) {
+            const valores = analizarResultado(registro.resultado);
+            if (!valores) continue;
+            const examenId = identificarExamen({ examen: registro.examen }, valores, indice);
+            if (!examenId) continue;
+
+            const cantidad = insertarParametros(
+                registrar, registro.orden_paciente, registro.fecha, examenId, valores, indice
+            );
+            if (cantidad > 0) {
+                borrar.run(registro.id);
+                migradas += cantidad;
+            }
+        }
+        return migradas;
+    });
+
+    return migrar();
+}
+
+/**
+ * Guarda pruebas compuestas como una fila por parámetro. La lectura vuelve a
+ * agrupar esas filas para que el resto de la aplicación siga usando el formato
+ * lógico { id: examenId, resultado: JSON }.
+ */
+function guardarExamenesPaciente(db, orden, examenes) {
+    const parametrosDeExamen = db.prepare(
+        'SELECT codigo FROM parametros_examen WHERE examen_id = ? ORDER BY orden_render, orden'
+    );
+    const nombreDeExamenId = db.prepare('SELECT nombre FROM examenes WHERE id = ?');
+    const examenPorNombre = db.prepare(
+        'SELECT id, nombre FROM examenes WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?))'
+    );
+    const eliminar = db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?');
+    const insertar = db.prepare(`
+        INSERT INTO paciente_examenes
+            (orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const guardar = db.transaction(function() {
+        eliminar.run(orden);
+        for (const examen of examenes || []) {
+            let examenId = String(examen.examen_id || examen.id || '').trim();
+            let nombre = String(examen.nombre_examen || examen.nombre || '').trim();
+            let parametros = parametrosDeExamen.all(examenId);
+
+            if (!parametros.length && nombre) {
+                const coincidencias = examenPorNombre.all(nombre);
+                if (coincidencias.length === 1) {
+                    examenId = coincidencias[0].id;
+                    nombre = coincidencias[0].nombre;
+                    parametros = parametrosDeExamen.all(examenId);
+                }
+            }
+            if (!nombre && examenId) {
+                const catalogo = nombreDeExamenId.get(examenId);
+                nombre = (catalogo && catalogo.nombre) || examenId;
+            }
+            if (!nombre) nombre = examenId;
+
+            let valores = null;
+            if (examen.resultado && typeof examen.resultado === 'object' &&
+                !Array.isArray(examen.resultado)) {
+                valores = examen.resultado;
+            } else {
+                valores = analizarResultado(examen.resultado);
+            }
+
+            if (!parametros.length || !valores) {
+                insertar.run(
+                    orden,
+                    nombre,
+                    examen.resultado == null ? '' : String(examen.resultado),
+                    examenId || null,
+                    null,
+                    null
+                );
+                continue;
+            }
+
+            const codigos = new Set(parametros.map(function(parametro) { return parametro.codigo; }));
+            const clavesDesconocidas = Object.keys(valores).filter(function(codigo) {
+                return codigo !== '__referencias' && !codigos.has(codigo);
+            });
+            if (clavesDesconocidas.length) {
+                throw new Error(
+                    'Parámetros sin declarar en el catálogo de ' + nombre + ': ' +
+                    clavesDesconocidas.join(', ')
+                );
+            }
+
+            const referencias = valores.__referencias || {};
+            parametros.forEach(function(parametro) {
+                const resultado = valores[parametro.codigo];
+                const referencia = referencias[parametro.codigo];
+                insertar.run(
+                    orden,
+                    nombre,
+                    resultado == null ? '' : String(resultado),
+                    examenId,
+                    parametro.codigo,
+                    referencia == null ? null : String(referencia)
+                );
+            });
+        }
+    });
+
+    guardar();
+}
+
+/**
+ * Normaliza las pruebas compuestas que las versiones anteriores guardaron
+ * como un JSON en una sola fila de `paciente_examenes`.
+ */
+function migrarExamenesPacienteLegados(db) {
+    if (!existeTabla(db, 'paciente_examenes')) return 0;
+
+    const indice = cargarIndiceCatalogo(db);
+    const codigosPorExamen = new Map();
+    db.prepare('SELECT examen_id, codigo FROM parametros_examen').all().forEach(function(fila) {
+        if (!codigosPorExamen.has(fila.examen_id)) codigosPorExamen.set(fila.examen_id, new Set());
+        codigosPorExamen.get(fila.examen_id).add(fila.codigo);
+    });
+    const filas = db.prepare(`
+        SELECT id, orden_paciente, nombre_examen, resultado, examen_id
+        FROM paciente_examenes
+        WHERE idresultado IS NULL
+    `).all();
+    const insertar = db.prepare(`
+        INSERT INTO paciente_examenes
+            (orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const eliminar = db.prepare('DELETE FROM paciente_examenes WHERE id = ?');
+
+    const migrar = db.transaction(function() {
+        let migradas = 0;
+        filas.forEach(function(fila) {
+            const valores = analizarResultado(fila.resultado);
+            if (!valores) return;
+
+            let examenId = String(fila.examen_id || '').trim();
+            if (!indice.idsConParametros.has(examenId)) {
+                examenId = identificarExamen({ examen: fila.nombre_examen }, valores, indice) || '';
+            }
+            if (!examenId || !indice.idsConParametros.has(examenId)) {
+                examenId = examenPorClaves(Object.keys(valores), codigosPorExamen) || '';
+            }
+            const codigos = codigosPorExamen.get(examenId);
+            if (!codigos || !codigos.size) return;
+
+            const desconocidos = Object.keys(valores).filter(function(codigo) {
+                return codigo !== '__referencias' && !codigos.has(codigo);
+            });
+            if (desconocidos.length) return;
+
+            const nombre = nombreDePrueba(indice, examenId);
+            const referencias = valores.__referencias || {};
+            codigos.forEach(function(codigo) {
+                const resultado = valores[codigo];
+                const referencia = referencias[codigo];
+                insertar.run(
+                    fila.orden_paciente,
+                    nombre,
+                    resultado == null ? '' : String(resultado),
+                    examenId,
+                    codigo,
+                    referencia == null ? null : String(referencia)
+                );
+            });
+            eliminar.run(fila.id);
+            migradas += 1;
+        });
+        return migradas;
+    });
+
+    return migrar();
+}
+
+/**
+ * Convierte las filas normalizadas de `paciente_examenes` a exámenes lógicos.
+ * También reconoce los registros JSON guardados por versiones anteriores.
+ */
+function mapearExamenesGuardados(db, filas) {
+    const idsCompuestos = new Set(
+        db.prepare('SELECT DISTINCT examen_id FROM parametros_examen').all()
+            .map(function(fila) { return fila.examen_id; })
+    );
+    const entradas = [];
+    const grupos = new Map();
+
+    function obtenerGrupo(fila, examenId, nombre) {
+        const clave = String(fila.orden_paciente || '') + '\u0000' + examenId;
+        let grupo = grupos.get(clave);
+        if (!grupo) {
+            grupo = {
+                id: examenId,
+                examen_id: examenId,
+                nombre: nombre,
+                nombre_examen: nombre,
+                valores: {},
+                referencias: {}
+            };
+            grupos.set(clave, grupo);
+            entradas.push(grupo);
+        }
+        return grupo;
+    }
+
+    filas.forEach(function(fila) {
+        const examenId = String(fila.examen_id || fila.nombre_examen || '').trim();
+        const nombre = String(fila.nombre_examen || examenId).trim();
+        const esParametroNormalizado = !!fila.idresultado;
+        const valoresLegados = !esParametroNormalizado && idsCompuestos.has(examenId)
+            ? analizarResultado(fila.resultado)
+            : null;
+
+        if (esParametroNormalizado || valoresLegados) {
+            const grupo = obtenerGrupo(fila, examenId, nombre);
+            if (esParametroNormalizado) {
+                grupo.valores[fila.idresultado] = fila.resultado == null ? '' : String(fila.resultado);
+                if (fila.referencia != null && String(fila.referencia).trim() !== '') {
+                    grupo.referencias[fila.idresultado] = String(fila.referencia);
+                }
+            } else {
+                Object.keys(valoresLegados).forEach(function(codigo) {
+                    if (codigo === '__referencias') return;
+                    grupo.valores[codigo] = valoresLegados[codigo];
+                });
+                Object.assign(grupo.referencias, valoresLegados.__referencias || {});
+            }
+            return;
+        }
+
+        entradas.push({
+            id: examenId,
+            examen_id: fila.examen_id || null,
+            nombre: nombre,
+            nombre_examen: nombre,
+            resultado: fila.resultado || ''
+        });
+    });
+
+    return entradas.map(function(entrada) {
+        if (!entrada.valores) return entrada;
+        if (Object.keys(entrada.referencias).length) {
+            entrada.valores.__referencias = entrada.referencias;
+        }
+        return {
+            id: entrada.id,
+            examen_id: entrada.examen_id,
+            nombre: entrada.nombre,
+            nombre_examen: entrada.nombre_examen,
+            resultado: JSON.stringify(entrada.valores)
+        };
+    });
+}
+
+/**
+ * Identifica la prueba a la que pertenece un JSON de resultados.
+ * Devuelve el examen_id cuyos parámetros cubren más claves, o null.
+ */
+function examenPorClaves(claves, codigosPorExamen) {
+    let mejor = null;
+    let mejorCoincidencias = 0;
+    codigosPorExamen.forEach(function(codigos, examenId) {
+        let coincidencias = 0;
+        claves.forEach(function(clave) { if (codigos.has(clave)) coincidencias += 1; });
+        if (coincidencias > mejorCoincidencias) {
+            mejorCoincidencias = coincidencias;
+            mejor = examenId;
+        }
+    });
+    // Dos claves es el mismo umbral que usa el renderer para no colapsar
+    // un examen normal en un perfil compuesto.
+    return mejorCoincidencias >= 2 ? mejor : null;
+}
+
+/**
+ * Repara filas heredadas de `paciente_examenes` que carecen de nombre o id.
+ * Las pruebas compuestas JSON se convierten por separado en
+ * `migrarExamenesPacienteLegados`.
+ */
+function repararExamenesDePaciente(db) {
+    if (!existeTabla(db, 'paciente_examenes')) return { reparados: 0, sinIdentificar: 0 };
+    asegurarColumna(db, 'paciente_examenes', 'examen_id', 'TEXT');
+
+    const indice = cargarIndiceCatalogo(db);
+    const codigosPorExamen = new Map();
+    db.prepare('SELECT examen_id, codigo FROM parametros_examen').all().forEach(function(fila) {
+        if (!codigosPorExamen.has(fila.examen_id)) codigosPorExamen.set(fila.examen_id, new Set());
+        codigosPorExamen.get(fila.examen_id).add(fila.codigo);
+    });
+
+    const porReparar = db.prepare(`
+        SELECT id, orden_paciente, nombre_examen, resultado, examen_id FROM paciente_examenes
+        WHERE (nombre_examen IS NULL OR TRIM(nombre_examen) = '')
+           OR (examen_id IS NULL OR TRIM(examen_id) = '')
+    `).all();
+    if (porReparar.length === 0) return { reparados: 0, sinIdentificar: 0 };
+
+    const delHistorial = db.prepare(`
+        SELECT DISTINCT examen FROM historial_examenes
+        WHERE orden_paciente = ? AND idresultado IS NULL AND resultado = ?
+    `);
+    const examenesPorNombre = db.prepare(
+        'SELECT id, nombre FROM examenes WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?))'
+    );
+    const nombreDeExamenId = db.prepare('SELECT nombre FROM examenes WHERE id = ?');
+    const actualizar = db.prepare('UPDATE paciente_examenes SET nombre_examen = ?, examen_id = ? WHERE id = ?');
+
+    const reparar = db.transaction(function() {
+        let reparados = 0;
+        let sinIdentificar = 0;
+        for (const fila of porReparar) {
+            let examenId = String(fila.examen_id || '').trim();
+            let nombre = String(fila.nombre_examen || '').trim();
+
+            // 1) Las claves del JSON dicen qué prueba compuesta es.
+            if (!examenId) {
+                const valores = analizarResultado(fila.resultado);
+                if (valores) examenId = examenPorClaves(Object.keys(valores), codigosPorExamen) || '';
+            }
+            // 2) El historial de la misma orden conserva el nombre de la prueba.
+            if (!nombre || !examenId) {
+                const candidatos = delHistorial.all(fila.orden_paciente, fila.resultado);
+                if (candidatos.length > 0) {
+                    nombre = nombre || String(candidatos[0].examen || '').trim();
+                }
+            }
+            // 3) Los formularios no tienen parámetros en el catálogo: se localizan
+            //    por su nombre, que es lo que los identifica en el reporte.
+            if (!examenId && nombre) {
+                const porNombre = examenesPorNombre.all(nombre);
+                if (porNombre.length === 1) examenId = porNombre[0].id;
+            }
+            if (!nombre && examenId) {
+                const filaCatalogo = nombreDeExamenId.get(examenId);
+                nombre = (filaCatalogo && filaCatalogo.nombre) || nombreDePrueba(indice, examenId);
+            }
+            if (!nombre) {
+                sinIdentificar += 1;
+                continue;
+            }
+            if (nombre === String(fila.nombre_examen || '').trim()
+                && examenId === String(fila.examen_id || '').trim()) {
+                continue;
+            }
+            actualizar.run(nombre, examenId || null, fila.id);
+            reparados += 1;
+        }
+        return { reparados: reparados, sinIdentificar: sinIdentificar };
+    });
+
+    return reparar();
+}
+
+/**
+ * Punto de entrada que usa el proceso principal: crea el esquema normalizado
+ * y siembra el catálogo la primera vez.
+ */
+function inicializarCatalogoExamenes(db, raizProyecto) {
+    asegurarColumna(db, 'paciente_examenes', 'examen_id', 'TEXT');
+    asegurarColumna(db, 'paciente_examenes', 'idresultado', 'TEXT');
+    asegurarColumna(db, 'paciente_examenes', 'referencia', 'TEXT');
+    asegurarColumna(db, 'historial_examenes', 'idresultado', 'TEXT');
+    asegurarColumna(db, 'historial_examenes', 'referencia', 'TEXT');
+
+    const sembrado = asegurarCatalogoPoblado(db, raizProyecto);
+    if (sembrado) {
+        console.log('🌱 Catálogo de exámenes sembrado desde los archivos de configuración:', sembrado);
+    }
+    const resultadosLegados = migrarExamenesPacienteLegados(db);
+    if (resultadosLegados > 0) {
+        console.log('🧬 Resultados compuestos normalizados en', resultadosLegados, 'examen(es)');
+    }
+    const migradas = migrarHistorialLegado(db);
+    if (migradas > 0) {
+        console.log('🧬 Historial heredado aplanado a', migradas, 'parámetros');
+    }
+    const reparados = repararExamenesDePaciente(db);
+    if (reparados.reparados > 0) {
+        console.log('🩺 Exámenes de paciente reparados:', reparados.reparados);
+    }
+    if (reparados.sinIdentificar > 0) {
+        console.warn(
+            '⚠️  ' + reparados.sinIdentificar + ' examen(es) sin nombre no se pudieron identificar; '
+            + 'su reporte se imprimirá con el JSON sin desglosar'
+        );
+    }
+}
+
 module.exports = {
-    EXAMENES_HEMATOLOGIA,
-    EXAMENES_UROANALISIS,
     referenciaPorDefecto,
     inicializarCatalogoExamenes,
-    guardarHistorialPaciente
+    guardarExamenesPaciente,
+    mapearExamenesGuardados,
+    migrarExamenesPacienteLegados,
+    guardarHistorialPaciente,
+    migrarHistorialLegado,
+    repararExamenesDePaciente,
+    examenPorClaves
 };

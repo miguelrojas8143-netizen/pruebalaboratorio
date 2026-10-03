@@ -19,41 +19,107 @@
         if (el) el.textContent = value == null ? '' : value;
     }
 
-    var CAMPOS_HECES = [
-        { id: 'consistencia', nombre: 'Consistencia', grupo: 'Macroscópico' },
-        { id: 'colorHeces', nombre: 'Color de las heces', grupo: 'Macroscópico' },
-        { id: 'mocoFecal', nombre: 'Moco fecal', grupo: 'Macroscópico' },
-        { id: 'phHeces', nombre: 'pH', grupo: 'Químico' },
-        { id: 'glucosaHeces', nombre: 'Glucosa', grupo: 'Químico' },
-        { id: 'sustanciasReductoras', nombre: 'Sustancias reductoras', grupo: 'Químico' },
-        { id: 'leucocitosPMN', nombre: 'Leucocitos PMN', grupo: 'Microscópico y parasitológico' },
-        { id: 'leucocitosMononucleados', nombre: 'Leucocitos mononucleados', grupo: 'Microscópico y parasitológico' },
-        { id: 'directoConcentracion', nombre: 'Examen directo por concentración', grupo: 'Microscópico y parasitológico' },
-        { id: 'entamoebaColi', nombre: 'Entamoeba coli', grupo: 'Microscópico y parasitológico' },
-        { id: 'restosAlimentos', nombre: 'Restos de alimentos', grupo: 'Microscópico y parasitológico' },
-        { id: 'floraBacteriana', nombre: 'Flora bacteriana', grupo: 'Microscópico y parasitológico' }
-    ];
-    var ORDEN_GRUPOS_HECES = ['Macroscópico', 'Químico', 'Microscópico y parasitológico'];
+    /** Referencia legible de un parámetro, con el rango numérico como respaldo. */
+    function referenciaDe(item) {
+        if (!item) return '-';
+        if (item.refTexto !== undefined && item.refTexto !== null && String(item.refTexto).trim() !== '') {
+            return String(item.refTexto).trim();
+        }
+        if (item.refMin != null && item.refMax != null) return item.refMin + ' - ' + item.refMax;
+        return '-';
+    }
 
-    function construirGruposHeces(datos) {
-        var grupos = {};
-        ORDEN_GRUPOS_HECES.forEach(function(grupo) {
-            grupos[grupo] = [];
-        });
-        CAMPOS_HECES.forEach(function(campo) {
-            var resultado = datos[campo.id];
-            if (campo.id === 'sustanciasReductoras' && resultado !== undefined &&
-                resultado !== null && String(resultado).trim() !== '') {
-                var interpretacion = window.interpretarSustanciasReductoras(resultado).texto;
-                if (interpretacion) resultado = resultado + ' (' + interpretacion + ')';
+    /**
+     * Normaliza cualquier valor a texto imprimible.
+     *
+     * Es la barrera que impide los dos síntomas reportados: un `undefined` en la
+     * columna Parámetro y un objeto serializado en la columna Resultado.
+     * - `null`/`undefined`/vacío  -> '-'
+     * - objetos y arreglos        -> se recorren, nunca se imprimen en crudo
+     */
+    function valorImprimible(valor) {
+        if (valor === null || valor === undefined) return '-';
+        if (typeof valor === 'number') return isFinite(valor) ? String(valor) : '-';
+        if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
+        if (typeof valor === 'string') {
+            var limpio = valor.trim();
+            return limpio === '' ? '-' : limpio;
+        }
+        if (Array.isArray(valor)) {
+            var partes = valor.map(valorImprimible).filter(function(v) { return v !== '-'; });
+            return partes.length ? partes.join(', ') : '-';
+        }
+        if (typeof valor === 'object') {
+            // Un objeto que llegó como celda (JSON guardado sin desglosar) se
+            // aplana en pares legibles en lugar de imprimirse como '{"a":"b"}'.
+            var claves = Object.keys(valor).filter(function(k) {
+                return k !== '__referencias' && valorImprimible(valor[k]) !== '-';
+            });
+            if (!claves.length) return '-';
+            return claves.map(function(k) { return k + ': ' + valorImprimible(valor[k]); }).join('; ');
+        }
+        return String(valor);
+    }
+
+    /** Catálogo de una prueba compuesta; `[]` si no existe o no tiene parámetros. */
+    function itemsDeExamen(examenId) {
+        var detalles = window.App && window.App.examenesDetallados ? window.App.examenesDetallados : null;
+        var detalle = detalles ? detalles[examenId] : null;
+        return (detalle && detalle.items && detalle.items.length) ? detalle.items : [];
+    }
+
+    /**
+     * Ajustes de presentación que dependen del parámetro. Se mantiene fuera del
+     * recorrido genérico para que agregar un examen no toque esta función.
+     */
+    var DECORADORES_RESULTADO = {
+        'examen_heces': {
+            'sustanciasReductoras': function(valor) {
+                if (!window.interpretarSustanciasReductoras) return valor;
+                var interpretacion = window.interpretarSustanciasReductoras(valor).texto;
+                return interpretacion ? valor + ' (' + interpretacion + ')' : valor;
             }
-            grupos[campo.grupo].push({
-                id: campo.id,
-                nombre: campo.nombre,
-                resultado: resultado == null || String(resultado).trim() === '' ? '-' : String(resultado)
+        }
+    };
+
+    /**
+     * Groups the results of a composite exam by its catalog `grupo`, in catalog
+     * order, and emits one normalized row per parameter.
+     *
+     * @param {Object} datos   { clave: valor } con los resultados del examen
+     * @param {Array}  items   items del catálogo (id, nombre, unidad, grupo…)
+     * @param {string} examenId id del catálogo, para aplicar decoradores
+     * @returns {{grupos: Object, ordenGrupos: string[]}}
+     */
+    function construirGruposDeExamen(datos, items, examenId) {
+        var grupos = {};
+        var ordenGrupos = [];
+        var decoradores = DECORADORES_RESULTADO[examenId] || {};
+        var valores = (datos && typeof datos === 'object') ? datos : {};
+
+        items.forEach(function(item) {
+            var grupo = item.grupo || 'General';
+            if (!grupos[grupo]) {
+                grupos[grupo] = [];
+                ordenGrupos.push(grupo);
+            }
+            var bruto = valores[item.id];
+            var decorado = decoradores[item.id];
+            if (decorado && bruto != null && String(bruto).trim() !== '') {
+                bruto = decorado(String(bruto));
+            }
+            grupos[grupo].push({
+                id: item.id,
+                nombre: item.nombre || item.id,
+                resultado: valorImprimible(bruto),
+                unidad: valorImprimible(item.unidad),
+                refTexto: referenciaDe(item),
+                refMin: item.refMin,
+                refMax: item.refMax
             });
         });
-        return grupos;
+
+        return { grupos: grupos, ordenGrupos: ordenGrupos };
     }
 
     /* ---------- Clasificación de resultados ----------*/
@@ -106,11 +172,13 @@
             ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
                 ? examen.refMin + ' - ' + examen.refMax : '-');
         return {
-            nombre: examen.nombre,
-            texto: r.texto,
+            // `valorImprimible` sustituye nombre y resultado: un examen sin
+            // catalogar nunca imprime `undefined` ni su JSON crudo.
+            nombre: valorImprimible(examen.nombre || examen.id),
+            texto: valorImprimible(r.texto),
             clase: r.clase,
-            unidad: examen.unidad || '-',
-            refTexto: refTexto,
+            unidad: valorImprimible(examen.unidad),
+            refTexto: valorImprimible(refTexto),
             esSecrecionVaginal: examen.area === 'Secreción Vaginal'
         };
     }
@@ -309,36 +377,25 @@
         var heces = null;
         if (examenesHeces && window.tieneDatosHeces(examenesHeces)) {
             var datosHeces = JSON.parse(examenesHeces.resultado || '{}');
+            var itemsHeces = itemsDeExamen('examen_heces');
+            var gruposHeces = construirGruposDeExamen(datosHeces, itemsHeces, 'examen_heces');
             heces = {
                 datos: datosHeces,
-                grupos: construirGruposHeces(datosHeces),
-                ordenGrupos: ORDEN_GRUPOS_HECES
+                grupos: gruposHeces.grupos,
+                ordenGrupos: gruposHeces.ordenGrupos
             };
         }
 
         var uro = null;
         if (examenesUro && window.tieneDatosUroanalisis(examenesUro)) {
             var datosUro = JSON.parse(examenesUro.resultado || '{}');
-            var detallesUro = window.App && window.App.examenesDetallados
-                ? window.App.examenesDetallados.examen_orina
-                : null;
-            var itemsCatalogoUro = detallesUro && detallesUro.items ? detallesUro.items : (window.UROANALYSIS_FIELDS || []);
-            var gruposUro = {};
-            itemsCatalogoUro.forEach(function(item) {
-                var field = Object.assign({}, item, {
-                    refTexto: item.refTexto || ((item.refMin != null && item.refMax != null)
-                        ? item.refMin + ' - ' + item.refMax
-                        : '')
-                });
-                var grupo = field.grupo || 'General';
-                if (!gruposUro[grupo]) gruposUro[grupo] = [];
-                gruposUro[grupo].push(field);
-            });
-            var ordenGruposUro = ['Macroscópico', 'Químico', 'Microscópico'];
-            Object.keys(gruposUro).forEach(function(g) {
-                if (ordenGruposUro.indexOf(g) === -1) ordenGruposUro.push(g);
-            });
-            uro = { datos: datosUro, grupos: gruposUro, ordenGrupos: ordenGruposUro };
+            var uroCatalogoId = itemsDeExamen(examenesUro.examen_id || 'examen_orina').length
+                ? (examenesUro.examen_id || 'examen_orina')
+                : 'examen_orina';
+            var itemsCatalogoUro = itemsDeExamen(uroCatalogoId);
+            if (!itemsCatalogoUro.length && window.UROANALYSIS_FIELDS) itemsCatalogoUro = window.UROANALYSIS_FIELDS;
+            var gruposUro = construirGruposDeExamen(datosUro, itemsCatalogoUro, uroCatalogoId);
+            uro = { datos: datosUro, grupos: gruposUro.grupos, ordenGrupos: gruposUro.ordenGrupos };
         }
 
         var antibiograma = null;
@@ -432,38 +489,69 @@
         return html;
     }
 
-    function renderHecesDom(heces) {
-        if (!heces) return '';
-        var html = '<h6 class="reporte-area-titulo">Examen de Heces</h6>' +
-            '<div class="table-responsive"><table class="table table-bordered table-sm">' +
-            '<thead><tr><th>Parámetro</th><th>Resultado</th></tr></thead><tbody>';
-        heces.ordenGrupos.forEach(function(grupo) {
-            html += '<tr class="table-light"><th colspan="2">' + escapeHtml(grupo) + '</th></tr>';
-            heces.grupos[grupo].forEach(function(campo) {
-                html += '<tr><td class="fw-semibold">' + escapeHtml(campo.nombre) +
-                    '</td><td>' + escapeHtml(campo.resultado) + '</td></tr>';
+    /**
+     * Renderer universal de tablas de resultados.
+     *
+     * Recibe los grupos ya normalizados por `construirGruposDeExamen` y produce
+     * siempre el mismo esqueleto — Parámetro | Resultado | Unidad | Valores de
+     * Referencia — con un `<tr>` por parámetro y una fila de subtítulo por grupo.
+     *
+     * Al no conocer la prueba, este es el único punto que hay que tocar para que
+     * un examen nuevo se imprima con el formato limpio: basta con darle un id de
+     * catálogo con `items`; no hay que programar su tabla.
+     *
+     * @param {string} titulo      encabezado del bloque (ej. 'Examen de Heces')
+     * @param {Object} grupos      { grupo: [filas] }
+     * @param {string[]} ordenGrupos orden de impresión de los grupos
+     * @param {Object} [opciones]  { clase, tituloColumnaReferencia, colspan }
+     */
+    function renderTablaParametrosDom(titulo, grupos, ordenGrupos, opciones) {
+        opciones = opciones || {};
+        var columnas = opciones.columnas === false ? 2 : 4;
+        var tituloRef = opciones.tituloColumnaReferencia || 'Valores de Referencia';
+
+        var encabezados = '<th width="35%">Parámetro</th><th width="20%">Resultado</th>';
+        if (columnas === 4) {
+            encabezados += '<th width="15%">Unidad</th><th width="30%">' + escapeHtml(tituloRef) + '</th>';
+        }
+
+        var html = '<div class="pdf-bloque ' + escapeHtml(opciones.clase || '') + '">';
+        if (titulo) html += '<h6 class="reporte-area-titulo">' + escapeHtml(titulo) + '</h6>';
+        html += '<div class="pdf-resultado-wrapper"><table class="pdf-reporte-tabla table table-bordered table-sm">' +
+            '<thead><tr>' + encabezados + '</tr></thead><tbody>';
+
+        (ordenGrupos || []).forEach(function(grupo) {
+            var filas = grupos[grupo];
+            if (!filas || !filas.length) return;
+            html += '<tr class="pdf-grupo-fila"><th colspan="' + columnas + '">' + escapeHtml(grupo) + '</th></tr>';
+            filas.forEach(function(fila) {
+                html += '<tr>' +
+                    '<td class="fw-semibold">' + escapeHtml(valorImprimible(fila.nombre)) + '</td>' +
+                    '<td class="' + escapeHtml(fila.clase || '') + '">' + escapeHtml(valorImprimible(fila.resultado)) + '</td>';
+                if (columnas === 4) {
+                    html += '<td class="text-muted">' + escapeHtml(valorImprimible(fila.unidad)) + '</td>' +
+                        '<td>' + escapeHtml(referenciaDe(fila)) + '</td>';
+                }
+                html += '</tr>';
             });
         });
-        return html + '</tbody></table></div>';
+
+        return html + '</tbody></table></div></div>';
+    }
+
+    function renderHecesDom(heces) {
+        if (!heces) return '';
+        return renderTablaParametrosDom('Examen de Heces', heces.grupos, heces.ordenGrupos, {
+            clase: 'pdf-heces'
+        });
     }
 
     function renderUroDom(uro) {
         if (!uro) return '';
-        var datosUro = uro.datos;
-        var html = '<h6 class="reporte-area-titulo">Examen de Orina / Uroanálisis</h6>';
-        html += '<div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th>Parámetro</th><th>Resultado</th><th>Unidad</th><th>Valor de Referencia</th></tr></thead><tbody>';
-        uro.ordenGrupos.forEach(function(grupo) {
-            if (!uro.grupos[grupo]) return;
-            html += '<tr class="table-light"><th colspan="4">' + escapeHtml(grupo) + '</th></tr>';
-            uro.grupos[grupo].forEach(function(f) {
-                var val = datosUro[f.id] || '-';
-                if (val === '') val = '-';
-                var referencia = f.refTexto || ((f.refMin != null && f.refMax != null) ? f.refMin + ' - ' + f.refMax : '-');
-                html += '<tr><td class="fw-semibold">' + escapeHtml(f.nombre) + '</td><td>' + escapeHtml(val) + '</td><td class="text-muted">' + escapeHtml(f.unidad || '-') + '</td><td>' + escapeHtml(referencia) + '</td></tr>';
-            });
+        return renderTablaParametrosDom('Examen de Orina / Uroanálisis', uro.grupos, uro.ordenGrupos, {
+            clase: 'pdf-uroanalisis',
+            tituloColumnaReferencia: 'Valor de Referencia'
         });
-        html += '</tbody></table></div>';
-        return html;
     }
 
     function renderAntibiogramaDom(ab) {
@@ -566,7 +654,12 @@
 
          var paciente = result.paciente;
          paciente.examenes = (result.examenes || []).map(function(e) {
-             return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+             return {
+                 id: e.examen_id || e.nombre_examen || '',
+                 nombre: e.nombre_examen || '',
+                 examen_id: e.examen_id || '',
+                 resultado: e.resultado || ''
+             };
          });
          // Enriquecer exámenes con datos del catálogo (area, tipo, unidad, referencias)
          paciente.examenes = window.enriquecerExamenesDesdeCatalogo
@@ -753,14 +846,27 @@
         return y + 2;
     }
 
-    function agregarHecesPDF(doc, heces, opciones) {
+    /**
+     * Tabla de resultados en PDF para cualquier examen compuesto.
+     *
+     * Mismo contrato que `renderTablaParametrosDom`: recibe `{grupos, ordenGrupos}`
+     * ya normalizado y dibuja un bloque con encabezados repetidos en cada página
+     * y una fila por parámetro. Un examen nuevo no requiere código aquí.
+     *
+     * @returns {number} coordenada Y libre para seguir dibujando
+     */
+    function agregarGruposPDF(doc, titulo, grupos, ordenGrupos, opciones) {
         opciones = opciones || {};
         var pageHeight = doc.internal.pageSize.getHeight();
-        var pageWidth = doc.internal.pageSize.getWidth();
         var margenIzquierdo = 14;
         var margenInferior = 30;
-        var ancho = pageWidth - 28;
-        var columnaResultadoX = margenIzquierdo + ancho * 0.58;
+        var ancho = doc.internal.pageSize.getWidth() - 28;
+        var columnas = {
+            parametro: { x: margenIzquierdo, ancho: 55 },
+            resultado: { x: margenIzquierdo + 55, ancho: 45 },
+            unidad: { x: margenIzquierdo + 100, ancho: 25 },
+            referencia: { x: margenIzquierdo + 125, ancho: ancho - 125 }
+        };
         var y = opciones.y || 20;
 
         function nuevaPagina() {
@@ -774,12 +880,25 @@
 
         function escribirEncabezados() {
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
+            doc.setFontSize(7);
             doc.setTextColor(25, 25, 25);
             doc.setFillColor(233, 233, 233);
-            doc.rect(margenIzquierdo, y - 3, ancho, 6, 'F');
-            doc.text('PARÁMETRO', margenIzquierdo + 2, y);
-            doc.text('RESULTADO', columnaResultadoX + 2, y);
+            doc.rect(margenIzquierdo, y - 3, ancho, 5.5, 'F');
+            doc.text('PARÁMETRO', columnas.parametro.x + 2, y);
+            doc.text('RESULTADO', columnas.resultado.x + 2, y);
+            doc.text('UNIDAD', columnas.unidad.x + 2, y);
+            doc.text('VALOR DE REFERENCIA', columnas.referencia.x + 2, y);
+            y += 5;
+        }
+
+        function escribirTituloGrupo(grupo) {
+            if (y + 8 > pageHeight - margenInferior) nuevaPagina();
+            doc.setFillColor(230, 237, 243);
+            doc.rect(margenIzquierdo, y - 3, ancho, 5, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(31, 78, 104);
+            doc.text(textoPlano(grupo).toUpperCase(), margenIzquierdo + 2, y);
             y += 5;
         }
 
@@ -793,45 +912,44 @@
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(31, 78, 104);
-        doc.text('EXAMEN DE HECES', margenIzquierdo, y);
+        doc.text(textoPlano(titulo).toUpperCase(), margenIzquierdo, y);
         y += 6;
         escribirEncabezados();
 
-        heces.ordenGrupos.forEach(function(grupo) {
-            if (y + 8 > pageHeight - margenInferior) nuevaPagina();
-            doc.setFillColor(230, 237, 243);
-            doc.rect(margenIzquierdo, y - 3, ancho, 5, 'F');
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
-            doc.setTextColor(31, 78, 104);
-            doc.text(textoPlano(grupo).toUpperCase(), margenIzquierdo + 2, y);
-            y += 5;
+        (ordenGrupos || []).forEach(function(grupo) {
+            var filas = grupos[grupo];
+            if (!filas || !filas.length) return;
+            escribirTituloGrupo(grupo);
 
-            heces.grupos[grupo].forEach(function(campo) {
-                var nombre = doc.splitTextToSize(String(campo.nombre || ''), columnaResultadoX - margenIzquierdo - 6);
-                var resultado = doc.splitTextToSize(String(campo.resultado || '-'), ancho - (columnaResultadoX - margenIzquierdo) - 4);
-                var alto = Math.max(nombre.length, resultado.length) * 3.6 + 2.5;
+            filas.forEach(function(fila) {
+                // Sin `textoPlano`: un resultado puede contener de forma literal
+                // algo como "<observado>" y jsPDF no interpreta HTML, así que
+                // quitar etiquetas perdería el dato clínico.
+                var celdas = [
+                    doc.splitTextToSize(valorImprimible(fila.nombre), columnas.parametro.ancho - 6),
+                    doc.splitTextToSize(valorImprimible(fila.resultado), columnas.resultado.ancho - 4),
+                    doc.splitTextToSize(valorImprimible(fila.unidad), columnas.unidad.ancho - 4),
+                    doc.splitTextToSize(referenciaDe(fila), columnas.referencia.ancho - 4)
+                ];
+                var alto = Math.max.apply(null, celdas.map(function(c) { return c.length; })) * 3.6 + 2.5;
                 if (y + alto > pageHeight - margenInferior) {
                     nuevaPagina();
-                    doc.setFillColor(230, 237, 243);
-                    doc.rect(margenIzquierdo, y - 3, ancho, 5, 'F');
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(7.5);
-                    doc.setTextColor(31, 78, 104);
-                    doc.text(textoPlano(grupo).toUpperCase(), margenIzquierdo + 2, y);
-                    y += 5;
+                    escribirTituloGrupo(grupo);
                 }
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7.5);
                 doc.setTextColor(25, 25, 25);
-                doc.text(nombre, margenIzquierdo + 2, y);
-                doc.text(resultado, columnaResultadoX + 2, y);
+                doc.text(celdas[0], columnas.parametro.x + 2, y);
+                doc.text(celdas[1], columnas.resultado.x + 2, y);
+                doc.text(celdas[2], columnas.unidad.x + 2, y);
+                doc.text(celdas[3], columnas.referencia.x + 2, y);
                 doc.setDrawColor(210, 215, 220);
                 doc.setLineWidth(0.2);
                 doc.line(margenIzquierdo, y + alto - 1.5, margenIzquierdo + ancho, y + alto - 1.5);
                 y += alto;
             });
         });
+
         return y + 2;
     }
 
@@ -974,7 +1092,7 @@
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
             }
-            y = agregarHecesPDF(doc, payload.heces, {
+            y = agregarGruposPDF(doc, 'Examen de Heces', payload.heces.grupos, payload.heces.ordenGrupos, {
                 y: y,
                 didDrawPage: encabezadoPagina,
                 startY: yDespuesEncabezado
@@ -989,15 +1107,13 @@
             var uroFilas = [];
             payload.uro.ordenGrupos.forEach(function(grupo) {
                 if (!payload.uro.grupos[grupo]) return;
-                uroFilas = uroFilas.concat(payload.uro.grupos[grupo].map(function(field) {
+                uroFilas = uroFilas.concat(payload.uro.grupos[grupo].map(function(campo) {
                     return {
-                        nombre: field.nombre,
-                        resultado: field.unidad
-                            ? (payload.uro.datos[field.id] || '-') + ' ' + field.unidad
-                            : payload.uro.datos[field.id],
-                        referencia: field.refTexto || ((field.refMin != null && field.refMax != null)
-                            ? field.refMin + ' - ' + field.refMax
-                            : '-')
+                        nombre: valorImprimible(campo.nombre),
+                        resultado: valorImprimible(campo.unidad) !== '-'
+                            ? valorImprimible(campo.resultado) + ' ' + valorImprimible(campo.unidad)
+                            : valorImprimible(campo.resultado),
+                        referencia: referenciaDe(campo)
                     };
                 }));
             });
@@ -1059,7 +1175,14 @@
         generarPDF: generarPDF,
         generarDesdePayload: generarDesdePayload,
         vistaPrevia: vistaPrevia,
-        descargarPDF: descargarPDF
+        descargarPDF: descargarPDF,
+        // Núcleo reutilizable: un examen futuro sólo necesita un id de catálogo
+        // con `items`; estas tres funciones resuelven agrupación y tabla.
+        itemsDeExamen: itemsDeExamen,
+        construirGruposDeExamen: construirGruposDeExamen,
+        renderTablaParametrosDom: renderTablaParametrosDom,
+        agregarGruposPDF: agregarGruposPDF,
+        valorImprimible: valorImprimible
     };
 
     window.vistaPrevia = vistaPrevia;

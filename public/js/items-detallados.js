@@ -7,25 +7,6 @@
 (function() {
     'use strict';
 
-    function escaparHtml(valor) {
-        return String(valor == null ? '' : valor)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-    }
-
-    function obtenerReferenciaTexto(item, referenciasGuardadas) {
-        if (referenciasGuardadas && referenciasGuardadas[item.id] !== undefined) {
-            return referenciasGuardadas[item.id];
-        }
-        if (item.refTexto !== undefined) return item.refTexto;
-        if (item.refMin !== undefined && item.refMax !== undefined) {
-            return item.refMin + ' - ' + item.refMax;
-        }
-        return '';
-    }
-
     window.renderizarItemsDetalladosModal = function(items, prefix) {
         var porGrupo = {};
         items.forEach(function(item) {
@@ -53,35 +34,59 @@
     };
 
     window.toggleItemsExamenTabla = function(examenId) {
-        window.abrirModalItemsExamen(examenId);
+        return window.abrirModalItemsExamen(examenId);
     };
 
-    window.abrirModalItemsExamen = function(examenId) {
-        var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
-        if (!examen) return;
-        var detalle = window.App.examenesDetallados[examenId];
-        if (!detalle || !detalle.items || detalle.items.length === 0) return;
-
-        document.getElementById('modalItemsExamenTitulo').textContent = detalle.nombre + ' - Ítems Detallados';
-
-        var valoresGuardados = {};
+    function valoresGuardadosDe(examen) {
+        var guardados = {};
         try {
             var resultado = typeof examen.resultado === 'string' ? examen.resultado : JSON.stringify(examen.resultado || {});
-            if (resultado && resultado.trim().startsWith('{')) {
-                valoresGuardados = JSON.parse(resultado);
+            if (resultado && resultado.trim().charAt(0) === '{') {
+                guardados = JSON.parse(resultado);
             }
         } catch(e) {}
+        return guardados;
+    }
 
-        var body = document.getElementById('modalItemsExamenBody');
-        body.innerHTML = renderizarItemsDetalladosTabla(detalle.items, examenId, valoresGuardados, 'modalItem_');
-        inicializarCalculosEnVivoModal(body);
+    /**
+     * Abre el modal de ítems detallados dibujando el formulario con los datos
+     * que devuelve SQLite (SELECT * FROM parametros_examen WHERE examen_id = ?).
+     */
+    window.abrirModalItemsExamen = function(examenId) {
+        var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
+        if (!examen) return Promise.resolve();
+        var detalle = window.App.examenesDetallados[examenId];
+        if (!detalle || !detalle.items || detalle.items.length === 0) return Promise.resolve();
 
         var modalEl = document.getElementById('modalItemsExamen');
+        var body = document.getElementById('modalItemsExamenBody');
+        if (!modalEl || !body) return Promise.resolve();
+
+        document.getElementById('modalItemsExamenTitulo').textContent = detalle.nombre + ' - Ítems Detallados';
         modalEl.setAttribute('data-examen-id', examenId);
         modalEl.setAttribute('data-editor-mode', 'detallado');
 
-        var modal = new bootstrap.Modal(document.getElementById('modalItemsExamen'));
-        modal.show();
+        var esHematologia = examenId === 'hematologia_completa';
+        var soloResultados = esHematologia || detalle.items.every(function(item) {
+            return item.tipo !== 'seleccion_unica' && item.tipo !== 'multiselect_cantidad';
+        });
+
+        return window.renderizarParametrosDesdeSQLite(body, examenId, valoresGuardadosDe(examen), {
+            prefijo: 'modalItem_',
+            agrupar: !esHematologia,
+            grupoUnico: esHematologia ? 'Hematología' : null,
+            clasesFila: [
+                esHematologia && 'items-detallados-verticales',
+                soloResultados && 'items-detallados-tabla'
+            ].filter(Boolean).join(' '),
+            cabecera: soloResultados,
+            unidades: soloResultados
+        }).then(function() {
+            inicializarCalculosEnVivoModal(body);
+            new bootstrap.Modal(modalEl).show();
+        }).catch(function(error) {
+            console.error('[abrirModalItemsExamen] Error:', error);
+        });
     };
 
     function leerDatosModal(examenId) {
@@ -140,8 +145,7 @@
 
         var detalle = window.App.examenesDetallados[examenId];
         if (detalle && detalle.items && detalle.items.length > 0) {
-            window.abrirModalItemsExamen(examenId);
-            return;
+            return window.abrirModalItemsExamen(examenId);
         }
 
         var modalEl = document.getElementById('modalItemsExamen');
@@ -208,66 +212,6 @@
         if (modal) modal.hide();
     };
 
-    function renderizarItemsDetalladosTabla(items, examenId, valoresGuardados, prefix) {
-        prefix = prefix || 'tablaItem_';
-        var esHematologia = examenId === 'hematologia_completa';
-        var ordenHematologia = [
-            'globulos_blancos',
-            'neutrofilos_num', 'linfocitos_num', 'eosinofilos_num', 'monocitos_num', 'basofilos_num',
-            'neutrofilos_por', 'linfocitos_por', 'eosinofilos_por', 'monocitos_por', 'basofilos_por',
-            'plaquetas', 'globulos_rojos', 'hemoglobina', 'hematocrito', 'vcm', 'hcm', 'chcm',
-            'rdw_cv', 'vpm', 'pdw', 'plcr', 'vsg'
-        ];
-        if (esHematologia) {
-            items = items.slice().sort(function(a, b) {
-                return ordenHematologia.indexOf(a.id) - ordenHematologia.indexOf(b.id);
-            });
-        }
-        var referenciasGuardadas = valoresGuardados.__referencias || {};
-        var porGrupo = {};
-        items.forEach(function(item) {
-            var grupo = esHematologia ? 'Hematología' : (item.grupo || 'General');
-            if (!porGrupo[grupo]) porGrupo[grupo] = [];
-            porGrupo[grupo].push(item);
-        });
-
-        var html = '';
-        var esTablaResultados = items.length > 0 && items.every(function(item) {
-            return item.tipo !== 'seleccion_unica' && item.tipo !== 'multiselect_cantidad';
-        });
-        if (esTablaResultados) {
-            html += '<div class="items-detallados-cabecera"><span>Parámetro</span><span>Resultado</span><span>Unidad</span><span>Valores de Referencia</span></div>';
-        }
-        Object.keys(porGrupo).sort().forEach(function(grupo) {
-            if (!esHematologia) {
-                html += '<h6 class="small fw-bold text-secondary mb-2 mt-3">' + grupo + '</h6>';
-            }
-            var claseLayout = esHematologia ? ' items-detallados-verticales' : '';
-            if (esTablaResultados) claseLayout += ' items-detallados-tabla';
-            html += '<div class="row g-3' + claseLayout + '">';
-            porGrupo[grupo].forEach(function(item) {
-                var inputId = prefix + examenId + '_' + item.id;
-                var obligatorio = item.obligatorio ? '<span class="text-danger">*</span>' : '';
-                var tipoInput = item.tipo === 'texto' ? 'text' : 'number';
-                var step = item.tipo === 'texto' ? '' : 'step="0.01"';
-                var valorGuardado = valoresGuardados[item.id] !== undefined ? valoresGuardados[item.id] : '';
-                var referenciaTexto = obtenerReferenciaTexto(item, referenciasGuardadas);
-                var referenciaInput = '<input type="text" class="form-control form-control-sm referencia-item-input" data-item-id="' + item.id + '" value="' + escaparHtml(referenciaTexto) + '" placeholder="Referencia">';
-                var atributoCalculado = item.tipo === 'calculado' ? ' readonly title="Valor calculado automáticamente"' : '';
-
-                var claseNumerica = tipoInput === 'number' ? ' item-input-numerico' : '';
-                var unidad = item.unidad || '-';
-                var contenidoResultado = '<input type="' + tipoInput + '" class="form-control form-control-sm tabla-item-input' + claseNumerica + '" ' + step + atributoCalculado + ' id="' + inputId + '" data-item-id="' + item.id + '" data-examen-id="' + examenId + '" value="' + valorGuardado + '" placeholder="-">';
-                if (esTablaResultados) {
-                    html += '<div class="col-md-4 col-sm-6"><label class="form-label small fw-semibold mb-1">' + item.nombre + ' ' + obligatorio + '</label>' + contenidoResultado + '<span class="item-unidad">' + unidad + '</span><span class="item-referencia">' + referenciaInput + '</span></div>';
-                } else {
-                    html += '<div class="col-md-4 col-sm-6"><label class="form-label small fw-semibold mb-1">' + item.nombre + ' ' + obligatorio + '</label>' + contenidoResultado + '<div class="mt-1">' + referenciaInput + '</div></div>';
-                }
-            });
-            html += '</div>';
-        });
-        return html;
-    }
     window.guardarItemsExamen = function(examenId) {
         var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
         if (!examen) return;

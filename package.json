@@ -7,6 +7,8 @@
     "prestart": "npm run build:includes",
     "build:includes": "node scripts/build-includes.js",
     "start": "node scripts/start.js",
+    "migrar:catalogo": "node scripts/migrar-catalogo.js",
+    "verificar:catalogo": "node scripts/migrar-catalogo.js --db=:memory: --sql-only",
     "build": "electron-builder --win --x64 --publish never",
     "postbuild": "electron-builder install-app-deps",
     "postinstall": "electron-builder install-app-deps"

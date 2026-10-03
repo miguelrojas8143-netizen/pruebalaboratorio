@@ -3,6 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const Database = require('better-sqlite3');
+const {
+    guardarExamenesPaciente,
+    mapearExamenesGuardados,
+    migrarExamenesPacienteLegados
+} = require('./database/examenes');
 
 const db = new Database(':memory:');
 db.exec(`
@@ -10,19 +15,44 @@ db.exec(`
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         orden_paciente TEXT,
         nombre_examen TEXT,
-        resultado TEXT DEFAULT ''
+        resultado TEXT DEFAULT '',
+        examen_id TEXT,
+        idresultado TEXT,
+        referencia TEXT
     )
 `);
-
-const replaceExamenes = db.transaction(function(orden, examenes) {
-    db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(orden);
-    const insert = db.prepare(
-        'INSERT INTO paciente_examenes (orden_paciente, nombre_examen, resultado) VALUES (?, ?, ?)'
+db.exec(`
+    CREATE TABLE examenes (
+        id TEXT PRIMARY KEY, nombre TEXT, unidad TEXT DEFAULT '',
+        ref_min REAL, ref_max REAL, ref_texto TEXT DEFAULT '', grupo TEXT DEFAULT '',
+        orden INTEGER DEFAULT 0
     );
-    examenes.forEach(function(examen) {
-        insert.run(orden, examen.nombre || examen.id, examen.resultado || '');
-    });
+    CREATE TABLE parametros_examen (
+        codigo TEXT, nombre TEXT, unidad TEXT DEFAULT '',
+        ref_min REAL, ref_max REAL, ref_texto TEXT DEFAULT '', grupo TEXT DEFAULT '',
+        examen_id TEXT,
+        orden INTEGER,
+        orden_render INTEGER
+    )
+`);
+db.prepare('INSERT INTO examenes (id, nombre) VALUES (?, ?)').run(
+    'examen_heces',
+    'Examen Directo de Heces'
+);
+const insertarParametro = db.prepare(
+    'INSERT INTO parametros_examen (codigo, nombre, examen_id, orden, orden_render) VALUES (?, ?, ?, ?, ?)'
+);
+[
+    'consistencia', 'colorHeces', 'mocoFecal', 'phHeces', 'glucosaHeces',
+    'sustanciasReductoras', 'leucocitosPMN', 'leucocitosMononucleados',
+    'directoConcentracion', 'entamoebaColi', 'restosAlimentos', 'floraBacteriana'
+].forEach(function(codigo, orden) {
+    insertarParametro.run(codigo, codigo, 'examen_heces', orden, orden);
 });
+
+const replaceExamenes = function(orden, examenes) {
+    guardarExamenesPaciente(db, orden, examenes);
+};
 
 const campos = {
     mocoFecal: 'Escaso',
@@ -105,21 +135,26 @@ async function main() {
     await window.guardarFormularioHeces();
 
     const rows = db.prepare(
-        'SELECT nombre_examen, resultado FROM paciente_examenes WHERE orden_paciente = ? ORDER BY id'
+        'SELECT orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia FROM paciente_examenes WHERE orden_paciente = ? ORDER BY id'
     ).all('001');
-    assert.strictEqual(rows.length, 2);
-    assert.strictEqual(rows[0].nombre_examen, 'Examen Directo de Heces');
-    assert.deepStrictEqual(JSON.parse(rows[0].resultado), campos);
-    assert.strictEqual(rows[1].resultado, '96');
+    assert.strictEqual(rows.length, Object.keys(campos).length + 1);
+    assert.strictEqual(rows.filter(function(row) { return row.idresultado; }).length, Object.keys(campos).length);
+    assert.deepStrictEqual(
+        rows.filter(function(row) { return row.idresultado; }).reduce(function(result, row) {
+            result[row.idresultado] = row.resultado;
+            return result;
+        }, {}),
+        campos
+    );
+    assert.strictEqual(rows.find(function(row) { return !row.idresultado; }).resultado, '96');
     assert.strictEqual(elements.formularioHeces.style.display, 'none');
     assert.strictEqual(renderCount, 1);
-    assert.strictEqual(window.pacienteActivo.examenes[0].resultado, rows[0].resultado);
+    assert.deepStrictEqual(
+        JSON.parse(window.pacienteActivo.examenes[0].resultado),
+        campos
+    );
 
-    const examenesRecargados = db.prepare(
-        'SELECT nombre_examen, resultado FROM paciente_examenes WHERE orden_paciente = ?'
-    ).all('001').map(function(row) {
-        return { id: row.nombre_examen, nombre: row.nombre_examen, resultado: row.resultado };
-    });
+    const examenesRecargados = mapearExamenesGuardados(db, rows);
     window.examenesOrden = window.enriquecerExamenesDesdeCatalogo(examenesRecargados);
     assert.strictEqual(window.examenesOrden[0].tipoFormulario, 'heces');
     Object.keys(campos).forEach(function(id) {
@@ -134,15 +169,31 @@ async function main() {
         campos
     );
 
+    db.prepare(`
+        INSERT INTO paciente_examenes
+            (orden_paciente, nombre_examen, resultado, examen_id)
+        VALUES (?, ?, ?, ?)
+    `).run('002', 'Examen Directo de Heces', JSON.stringify(campos), 'examen_heces');
+    assert.strictEqual(migrarExamenesPacienteLegados(db), 1);
+    const filasLegadasConvertidas = db.prepare(`
+        SELECT orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia
+        FROM paciente_examenes WHERE orden_paciente = ? ORDER BY id
+    `).all('002');
+    assert.strictEqual(filasLegadasConvertidas.length, Object.keys(campos).length);
+    assert.deepStrictEqual(
+        JSON.parse(mapearExamenesGuardados(db, filasLegadasConvertidas)[0].resultado),
+        campos
+    );
+
     shouldFail = true;
     elements.phHeces.value = '7.4';
     await window.guardarFormularioHeces();
     assert.strictEqual(elements.formularioHeces.style.display, 'block');
     assert.strictEqual(renderCount, 1);
-    assert.strictEqual(window.examenesOrden[0].resultado, rows[0].resultado);
+    assert.deepStrictEqual(JSON.parse(window.examenesOrden[0].resultado), campos);
     assert.strictEqual(db.prepare(
-        'SELECT resultado FROM paciente_examenes WHERE orden_paciente = ? AND nombre_examen = ?'
-    ).get('001', 'Examen Directo de Heces').resultado, rows[0].resultado);
+        'SELECT resultado FROM paciente_examenes WHERE orden_paciente = ? AND idresultado = ?'
+    ).get('001', 'phHeces').resultado, campos.phHeces);
     assert(alerts.some(function(message) { return message.indexOf('fallo simulado') !== -1; }));
     assert.strictEqual(errors.length, 1);
 

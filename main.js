@@ -3,10 +3,17 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
-const { inicializarCatalogoExamenes, guardarHistorialPaciente } = require('./database/examenes');
+const {
+    inicializarCatalogoExamenes,
+    guardarExamenesPaciente,
+    mapearExamenesGuardados,
+    guardarHistorialPaciente
+} = require('./database/examenes');
+const { prepararConsultasCatalogo } = require('./database/schema');
 
 let db = null;
 let insertPacienteStmt = null;
+let consultasCatalogo = null;
 
 function initDatabase() {
     // Usar la carpeta de datos del usuario (funciona en desarrollo y producción)
@@ -79,6 +86,9 @@ function initDatabase() {
             orden_paciente TEXT,
             nombre_examen TEXT,
             resultado TEXT DEFAULT '',
+            examen_id TEXT,
+            idresultado TEXT,
+            referencia TEXT,
             FOREIGN KEY(orden_paciente) REFERENCES pacientes(orden)
         )
     `);
@@ -91,11 +101,14 @@ function initDatabase() {
             examen TEXT,
             resultado TEXT,
             unidad TEXT,
+            idresultado TEXT,
+            referencia TEXT,
             FOREIGN KEY(orden_paciente) REFERENCES pacientes(orden)
         )
     `);
 
-    inicializarCatalogoExamenes(db);
+    inicializarCatalogoExamenes(db, __dirname);
+    consultasCatalogo = prepararConsultasCatalogo(db);
     
     // Tabla para órdenes archivadas (cuando un paciente crea una nueva visita)
     db.exec(`
@@ -183,28 +196,19 @@ function initDatabase() {
     const selectPacientePorOrdenStmt = db.prepare(
         'SELECT id, orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro, refAdaptadas, perfiles, historial, visitas FROM pacientes WHERE orden = ?'
     );
-    const selectExamenesPorOrdenStmt = db.prepare(
-        'SELECT id, nombre_examen, resultado FROM paciente_examenes WHERE orden_paciente = ?'
-    );
-    const insertExamenStmt = db.prepare(
-        'INSERT INTO paciente_examenes (orden_paciente, nombre_examen, resultado) VALUES (?, ?, ?)'
-    );
     const selectExamenesStmt = db.prepare(
-        'SELECT id, orden_paciente, nombre_examen, resultado FROM paciente_examenes WHERE orden_paciente = ?'
+        'SELECT id, orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia FROM paciente_examenes WHERE orden_paciente = ?'
     );
-    const deleteExamenesStmt = db.prepare(
-        'DELETE FROM paciente_examenes WHERE orden_paciente = ?'
-    );
-    
+
+    /**
+     * Resuelve cómo se identifica un examen al persistirlo. El id del catálogo
+     * es lo que permite reconstruir después el tipo de formulario (heces,
+     * uroanálisis, antibiograma) sin depender del nombre; el nombre se usa
+     * como etiqueta legible en el reporte.
+     */
     ipcMain.handle('guardar-examenes-paciente', (event, data) => {
         try {
-            const t = db.transaction((examenes) => {
-                deleteExamenesStmt.run(data.orden);
-                for (const examen of examenes) {
-                    insertExamenStmt.run(data.orden, examen.nombre_examen, examen.resultado || '');
-                }
-            });
-            t(data.examenes || []);
+            guardarExamenesPaciente(db, data.orden, data.examenes || []);
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
@@ -214,7 +218,7 @@ function initDatabase() {
     ipcMain.handle('obtener-examenes-paciente', (event, { orden }) => {
         try {
             const examenes = selectExamenesStmt.all(orden);
-            return { success: true, examenes: examenes };
+            return { success: true, examenes: mapearExamenesGuardados(db, examenes) };
         } catch (err) {
             return { success: false, error: err.message, examenes: [] };
         }
@@ -231,12 +235,12 @@ function initDatabase() {
                 h.resultado,
                 COALESCE(e.unidad, h.unidad, '') AS unidad,
                 h.idresultado,
-                COALESCE(h.referencia, e.refTexto, '') AS referencia,
-                e.refMin,
-                e.refMax,
+                COALESCE(h.referencia, e.ref_texto, '') AS referencia,
+                e.ref_min AS refMin,
+                e.ref_max AS refMax,
                 e.grupo
          FROM historial_examenes h
-         LEFT JOIN examenes e ON e.id = h.idresultado
+         LEFT JOIN vw_parametros_catalogo e ON e.codigo = h.idresultado
          WHERE h.orden_paciente = ?
          ORDER BY h.fecha DESC, h.id DESC`
     );
@@ -248,9 +252,7 @@ function initDatabase() {
             const result = pacientes.map(function(p) {
                 var examenes = selectExamenesStmt.all(p.orden);
                 return Object.assign({}, p, {
-                    examenes: examenes.map(function(e) {
-                        return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
-                    }),
+                    examenes: mapearExamenesGuardados(db, examenes),
                     refAdaptadas: !!p.refAdaptadas,
                     perfiles: p.perfiles ? JSON.parse(p.perfiles) : [],
                     historial: p.historial ? JSON.parse(p.historial) : []
@@ -276,9 +278,7 @@ function initDatabase() {
             var examenes = selectExamenesStmt.all(ordenStr);
             var historial = selectHistorialStmt.all(ordenStr);
             var pacienteCompleto = Object.assign({}, paciente, {
-                examenes: examenes.map(function(e) {
-                    return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
-                }),
+                examenes: mapearExamenesGuardados(db, examenes),
                 refAdaptadas: !!paciente.refAdaptadas,
                 perfiles: paciente.perfiles ? JSON.parse(paciente.perfiles) : [],
                 historial: historial,
@@ -324,17 +324,7 @@ function initDatabase() {
     // IPC: Guardar exámenes de un paciente (formato orden.js)
     ipcMain.handle('guardar-paciente-examenes', (event, data) => {
         try {
-            const orden = data.orden;
-            const examenes = data.examenes || [];
-            const t = db.transaction(() => {
-                deleteExamenesStmt.run(orden);
-                for (const examen of examenes) {
-                    var nombreExamen = examen.nombre_examen || examen.nombre || examen.id || '';
-                    var resultado = examen.resultado || '';
-                    insertExamenStmt.run(orden, nombreExamen, resultado);
-                }
-            });
-            t();
+            guardarExamenesPaciente(db, data.orden, data.examenes || []);
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
@@ -395,9 +385,7 @@ function initDatabase() {
                     paciente.id,
                     ordenAnterior,
                     paciente.fechaRegistro || '',
-                    JSON.stringify(examenes.map(function(e) {
-                        return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
-                    })),
+                    JSON.stringify(mapearExamenesGuardados(db, examenes)),
                     paciente.refAdaptadas || 0,
                     paciente.perfiles || '[]',
                     paciente.historial || '[]',
@@ -467,7 +455,137 @@ function initDatabase() {
         }
     });
     
+    registrarHandlersCatalogo();
+
     console.log('✅ Base de datos SQLite inicializada:', dbPath);
+}
+
+/**
+ * Catálogo de exámenes servido desde SQLite.
+ *
+ * Todas las consultas usan prepared statements con parámetros vinculados, por
+ * lo que ningún valor del renderer se concatena en el SQL. Los resultados se
+ * arman en objetos planos listos para el renderer.
+ */
+function registrarHandlersCatalogo() {
+    function agruparPorClave(filas, clave) {
+        const mapa = new Map();
+        filas.forEach(function(fila) {
+            const valor = fila[clave];
+            if (!mapa.has(valor)) mapa.set(valor, []);
+            mapa.get(valor).push(fila);
+        });
+        return mapa;
+    }
+
+    function envolver(fn) {
+        return function(event, ...args) {
+            try {
+                return fn(...args);
+            } catch (error) {
+                console.error('[catalogo] Error:', error);
+                return { success: false, error: error.message };
+            }
+        };
+    }
+
+    /** SELECT * FROM parametros_examen WHERE examen_id = ? */
+    ipcMain.handle('obtener-parametros-examen', envolver(function(examenId) {
+        const id = String(examenId || '').trim();
+        if (!id) return { success: true, parametros: [], opciones: [] };
+        const parametros = consultasCatalogo.parametros.all(id);
+        const ids = new Set(parametros.map(function(p) { return p.id; }));
+        const opciones = consultasCatalogo.opcionesParametro.all().filter(function(fila) {
+            return ids.has(fila.parametro_id);
+        });
+        return { success: true, parametros: parametros, opciones: opciones };
+    }));
+
+    /** Un solo volcado con todo el catálogo; evita N consultas de red. */
+    ipcMain.handle('obtener-catalogo', envolver(function() {
+        const categorias = consultasCatalogo.categorias.all();
+        const examenes = consultasCatalogo.examenes.all();
+        const opciones = agruparPorClave(consultasCatalogo.opcionesExamen.all(), 'examen_id');
+        const parametrosPorExamen = agruparPorClave(consultasCatalogo.todosParametros.all(), 'examen_id');
+        const opcionesParametro = agruparPorClave(consultasCatalogo.opcionesParametro.all(), 'parametro_id');
+        const perfiles = consultasCatalogo.perfiles.all();
+        const perfilesExamenes = agruparPorClave(consultasCatalogo.perfilesExamenes.all(), 'perfil_id');
+
+        const examenesPorId = new Map(examenes.map(function(e) { return [e.id, e]; }));
+
+        examenes.forEach(function(examen) {
+            examen.opciones = valoresDe(opciones.get(examen.id));
+            examen.parametros = parametrosPorExamen.get(examen.id) || [];
+            examen.parametros.forEach(function(parametro) {
+                parametro.opciones = valoresDe(opcionesParametro.get(parametro.id));
+            });
+        });
+
+        resolverPerfiles(perfiles, perfilesExamenes, examenesPorId);
+
+        return { success: true, categorias: categorias, examenes: examenes, perfiles: perfiles };
+    }));
+
+    /** Rangos de referencia por sexo y franja etaria. */
+    ipcMain.handle('obtener-referencias', envolver(function() {
+        const rangos = consultasCatalogo.rangos.all();
+        const porSexo = {};
+        const compartidas = {};
+        rangos.forEach(function(rango) {
+            if (!rango.examen_id || rango.orden !== 1) return;
+            if (rango.sexo !== 'ambos') {
+                if (!porSexo[rango.examen_id]) porSexo[rango.examen_id] = {};
+                const porEdad = porSexo[rango.examen_id];
+                if (!porEdad[rango.categoria_edad]) porEdad[rango.categoria_edad] = {};
+                porEdad[rango.categoria_edad][rango.sexo] = {
+                    refMin: rango.ref_min,
+                    refMax: rango.ref_max
+                };
+                return;
+            }
+            if (!compartidas[rango.examen_id]) compartidas[rango.examen_id] = {};
+            compartidas[rango.examen_id][rango.categoria_edad] = {
+                refMin: rango.ref_min,
+                refMax: rango.ref_max
+            };
+        });
+        return { success: true, sexSpecific: porSexo, shared: compartidas };
+    }));
+
+    /** Perfiles con la composición de sus exámenes. */
+    ipcMain.handle('obtener-perfiles', envolver(function() {
+        const perfiles = consultasCatalogo.perfiles.all();
+        const examenesPorId = new Map(consultasCatalogo.examenes.all().map(function(e) { return [e.id, e]; }));
+        const perfilesExamenes = agruparPorClave(consultasCatalogo.perfilesExamenes.all(), 'perfil_id');
+        resolverPerfiles(perfiles, perfilesExamenes, examenesPorId);
+        return { success: true, perfiles: perfiles };
+    }));
+
+    function resolverPerfiles(perfiles, perfilesExamenes, examenesPorId) {
+        perfiles.forEach(function(perfil) {
+            perfil.examenes = (perfilesExamenes.get(perfil.id) || []).map(function(fila) {
+                const examen = examenesPorId.get(fila.examen_id);
+                if (!examen) return { id: fila.examen_id, nombre: fila.examen_id };
+                return {
+                    id: examen.id,
+                    nombre: examen.nombre,
+                    area: examen.categoria,
+                    unidad: examen.unidad,
+                    tipo: examen.tipo,
+                    refMin: examen.ref_min,
+                    refMax: examen.ref_max,
+                    refTexto: examen.ref_texto,
+                    grupo: fila.grupo || examen.grupo,
+                    orden: fila.orden
+                };
+            });
+        });
+        return perfiles;
+    }
+
+    function valoresDe(filas) {
+        return (filas || []).map(function(fila) { return fila.valor; });
+    }
 }
 
 app.on('before-quit', () => {

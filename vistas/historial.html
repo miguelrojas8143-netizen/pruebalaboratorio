@@ -89,10 +89,7 @@
 <!-- jsPDF y autoTable para generar PDFs -->
 <script src="../public/lib/jspdf.umd.min.js"></script>
 <script src="../public/lib/jspdf.plugin.autotable.min.js"></script>
-<script src="../public/js/catalogo-base.js"></script>
-<script src="../public/js/perfiles.js"></script>
-<script src="../public/js/examenes-detallados.js"></script>
-<script src="../public/js/referencias.js"></script>
+<script src="../public/js/db-catalogo.js"></script>
 <script src="../public/js/calculos.js"></script>
 <script src="../public/js/hematologia.js"></script>
 <script src="../public/js/uroanalisis.js"></script>
@@ -112,8 +109,13 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         window.mostrarFechaHoy();
-        // Migrado: initHistorial usa SQLite IPC (async), no necesita IndexedDB
-        window.initHistorial();
+        // El catálogo vive en SQLite: se espera a db-catalogo.js antes de leerlo.
+        var iniciar = function() { window.initHistorial(); };
+        if (window.catalogoListo) {
+            window.catalogoListo.then(iniciar, iniciar);
+        } else {
+            iniciar();
+        }
     });
 </script>
 </body>

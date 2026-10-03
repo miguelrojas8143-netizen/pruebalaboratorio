@@ -103,7 +103,12 @@
 
             var paciente = result.paciente;
             paciente.examenes = (result.examenes || []).map(function(e) {
-                return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+                return {
+                    id: e.examen_id || e.id || e.nombre_examen,
+                    examen_id: e.examen_id || e.id || null,
+                    nombre: e.nombre_examen || e.nombre || '',
+                    resultado: e.resultado || ''
+                };
             });
             paciente.id = paciente.id || null;
             paciente.visitas = paciente.visitas || 1;

@@ -23,8 +23,16 @@
         }
 
         var paciente = result.paciente;
+        // `examen_id` es el que permite resolver en el catálogo area, tipo y
+        // tipoFormulario; sin él un formulario como heces se imprimiría como una
+        // fila única con el JSON crudo.
         paciente.examenes = (result.examenes || []).map(function(e) {
-            return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+            return {
+                id: e.examen_id || e.nombre_examen || '',
+                nombre: e.nombre_examen || '',
+                examen_id: e.examen_id || '',
+                resultado: e.resultado || ''
+            };
         });
         // Enriquecer exámenes con datos del catálogo (area, tipo, unidad, referencias)
         paciente.examenes = window.enriquecerExamenesDesdeCatalogo

@@ -5,6 +5,39 @@
  */
 (function() {
     'use strict';
+
+    /**
+     * Respaldo del orden de los campos si el catálogo no estuviera cargado.
+     * Las claves deben coincidir con `examenes-detallados.js`.
+     */
+    var ORDEN_CAMPOS_HECES = [
+        'consistencia', 'colorHeces', 'mocoFecal',
+        'phHeces', 'glucosaHeces', 'sustanciasReductoras',
+        'leucocitosPMN', 'leucocitosMononucleados', 'directoConcentracion',
+        'entamoebaColi', 'restosAlimentos', 'floraBacteriana'
+    ];
+
+    /**
+     * Parámetros del examen de heces tomados del catálogo, no hardcodeados.
+     * `window.App.examenesDetallados.examen_heces` es la única fuente de verdad:
+     * la misma definición que siembra SQLite y que usa el renderer del reporte,
+     * así que agregar un campo no obliga a tocar el HTML ni el PDF.
+     */
+    function camposHeces() {
+        var detalle = window.App && window.App.examenesDetallados
+            ? window.App.examenesDetallados.examen_heces
+            : null;
+        if (detalle && detalle.items && detalle.items.length) return detalle.items;
+        return ORDEN_CAMPOS_HECES.map(function(id) {
+            return { id: id, nombre: id, tipo: 'texto' };
+        });
+    }
+
+    function valorDeCampo(id) {
+        var el = document.getElementById(id);
+        return el ? String(el.value || '').trim() : '';
+    }
+
 // Sección de exámenes de heces
     window.abrirFormularioHeces = function(examenId) {
         var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
@@ -17,18 +50,10 @@
         form.style.display = 'block';
         try {
             var datos = JSON.parse(examen.resultado || '{}');
-            if (datos.mocoFecal) document.getElementById('mocoFecal').value = datos.mocoFecal;
-            if (datos.phHeces) document.getElementById('phHeces').value = datos.phHeces;
-            if (datos.glucosaHeces) document.getElementById('glucosaHeces').value = datos.glucosaHeces;
-            if (datos.leucocitosPMN) document.getElementById('leucocitosPMN').value = datos.leucocitosPMN;
-            if (datos.leucocitosMononucleados) document.getElementById('leucocitosMononucleados').value = datos.leucocitosMononucleados;
-            if (datos.sustanciasReductoras) document.getElementById('sustanciasReductoras').value = datos.sustanciasReductoras;
-            if (datos.consistencia) document.getElementById('consistencia').value = datos.consistencia;
-            if (datos.colorHeces) document.getElementById('colorHeces').value = datos.colorHeces;
-            if (datos.directoConcentracion) document.getElementById('directoConcentracion').value = datos.directoConcentracion;
-            if (datos.entamoebaColi) document.getElementById('entamoebaColi').value = datos.entamoebaColi;
-            if (datos.restosAlimentos) document.getElementById('restosAlimentos').value = datos.restosAlimentos;
-            if (datos.floraBacteriana) document.getElementById('floraBacteriana').value = datos.floraBacteriana;
+            camposHeces().forEach(function(campo) {
+                var el = document.getElementById(campo.id);
+                if (el) el.value = datos[campo.id] != null ? datos[campo.id] : '';
+            });
         } catch(e) {}
 
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -42,20 +67,14 @@
             alert('No se encontró el examen de heces que se va a guardar.');
             return;
         }
-        var datos = {
-            mocoFecal: document.getElementById('mocoFecal') ? document.getElementById('mocoFecal').value : '',
-            phHeces: document.getElementById('phHeces') ? document.getElementById('phHeces').value : '',
-            glucosaHeces: document.getElementById('glucosaHeces') ? document.getElementById('glucosaHeces').value : '',
-            leucocitosPMN: document.getElementById('leucocitosPMN') ? document.getElementById('leucocitosPMN').value : '',
-            leucocitosMononucleados: document.getElementById('leucocitosMononucleados') ? document.getElementById('leucocitosMononucleados').value : '',
-            sustanciasReductoras: document.getElementById('sustanciasReductoras') ? document.getElementById('sustanciasReductoras').value : '',
-            consistencia: document.getElementById('consistencia') ? document.getElementById('consistencia').value : '',
-            colorHeces: document.getElementById('colorHeces') ? document.getElementById('colorHeces').value : '',
-            directoConcentracion: document.getElementById('directoConcentracion') ? document.getElementById('directoConcentracion').value : '',
-            entamoebaColi: document.getElementById('entamoebaColi') ? document.getElementById('entamoebaColi').value : '',
-            restosAlimentos: document.getElementById('restosAlimentos') ? document.getElementById('restosAlimentos').value : '',
-            floraBacteriana: document.getElementById('floraBacteriana') ? document.getElementById('floraBacteriana').value : ''
-        };
+        // Un objeto { clave: valor } recorrido en el orden del catálogo, con
+        // las claves vacías descartadas: así la base de datos recibe una fila
+        // por parámetro con contenido real y no una fila con el JSON entero.
+        var datos = {};
+        camposHeces().forEach(function(campo) {
+            var valor = valorDeCampo(campo.id);
+            if (valor !== '') datos[campo.id] = valor;
+        });
 
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });
@@ -76,12 +95,21 @@
 
         var resultado = JSON.stringify(datos);
         var examenesActualizados = examenes.map(function(item) {
-            return item.id === examenId ? Object.assign({}, item, { resultado: resultado }) : item;
+            if (item.id !== examenId) return item;
+            return Object.assign({}, item, {
+                resultado: resultado,
+                examen_id: 'examen_heces',
+                tipoFormulario: 'heces'
+            });
         });
 
         var guardado;
         try {
-            guardado = await window.api.guardarPacienteExamenes(orden, examenesActualizados);
+            var examenesParaGuardar = examenesActualizados.map(function(item) {
+                if (item.id !== examenId) return item;
+                return Object.assign({}, item, { resultado: datos });
+            });
+            guardado = await window.api.guardarPacienteExamenes(orden, examenesParaGuardar);
             if (!guardado || !guardado.success) {
                 throw new Error(guardado && guardado.error ? guardado.error : 'No se pudieron guardar los resultados.');
             }
@@ -92,6 +120,8 @@
         }
 
         examen.resultado = resultado;
+        examen.examen_id = 'examen_heces';
+        examen.tipoFormulario = 'heces';
         if (window.pacienteActivo) {
             window.pacienteActivo.examenes = JSON.parse(JSON.stringify(examenes));
         }

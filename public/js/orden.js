@@ -75,7 +75,12 @@
             }
             var paciente = result.paciente;
             var examenesGuardados = (result.examenes || []).map(function(e) {
-                return { id: e.nombre_examen, nombre: e.nombre_examen, resultado: e.resultado || '' };
+                return {
+                    id: e.examen_id || e.id || e.nombre_examen,
+                    examen_id: e.examen_id || e.id || null,
+                    nombre: e.nombre_examen || e.nombre || '',
+                    resultado: e.resultado || ''
+                };
             });
             paciente.examenes = window.enriquecerExamenesDesdeCatalogo
                 ? window.enriquecerExamenesDesdeCatalogo(examenesGuardados)
@@ -707,8 +712,16 @@
                 return {
                     fecha: fechaHoy,
                     examen: examen.nombre,
+                    // El id del catálogo y el tipo de formulario son los que
+                    // permiten a `guardarHistorialPaciente` explotar un examen
+                    // compuesto a una fila por parámetro. Sin ellos el motor
+                    // solo puede adivinar por el nombre.
+                    examen_id: examen.examen_id || examen.id || null,
+                    tipoFormulario: examen.tipoFormulario || null,
+                    idresultado: examen.idresultado || null,
                     resultado: examen.resultado,
-                    unidad: examen.unidad || ''
+                    unidad: examen.unidad || '',
+                    referencia: examen.referencia || null
                 };
             });
             var historialCombinado = historialExistente.concat(nuevasEntradas);

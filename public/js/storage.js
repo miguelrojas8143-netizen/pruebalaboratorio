@@ -28,12 +28,16 @@
     function _initDBAsync() {
         if (!window.api || typeof window.api.obtenerPacientesCompletos !== 'function') {
             console.warn('[storage] SQLite API no disponible, usando caché vacía');
-            _marcarListo();
+            _catalogo().then(_marcarListo);
             return Promise.resolve();
         }
 
-        return window.api.obtenerPacientesCompletos()
-            .then(function(r) {
+        // El catálogo vive en SQLite: se espera a que db-catalogo.js lo haya
+        // hidratado en window.App antes de marcar el almacenamiento como listo,
+        // para que ningún consumidor lo lea vacío.
+        return Promise.all([window.api.obtenerPacientesCompletos(), _catalogo()])
+            .then(function(resultados) {
+                var r = resultados[0];
                 if (r && r.success) {
                     _cache.pacientes = r.pacientes || [];
                 }
@@ -47,6 +51,10 @@
                 console.error('[storage] Error inicializando SQLite:', e);
                 _marcarListo();
             });
+    }
+
+    function _catalogo() {
+        return window.catalogoListo ? window.catalogoListo.catch(function() {}) : Promise.resolve();
     }
 
     if (window.api && typeof window.api.obtenerPacientesCompletos === 'function') {

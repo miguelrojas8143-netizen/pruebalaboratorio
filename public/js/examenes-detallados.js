@@ -104,3 +104,33 @@ window.App.examenesDetallados.depuracion_creatinina = {
         { id: 'depuracion_valor', nombre: 'Depuración (Calculada)', unidad: 'mL/min/1.73m²', tipo: 'texto', grupo: 'Resultado' }
     ]
 };
+
+/**
+ * Examen Directo de Heces.
+ *
+ * Los ids son las claves que escribe `heces.js` en el formulario, por eso no
+ * deben renombrarse sin actualizar también `public/js/heces.js`.
+ * `grupo` es lo que usa el renderer para imprimir los subtítulos
+ * Macroscópico / Químico / Microscópico y parasitológico.
+ * `area` fija la categoría en SQLite; el examen ya existe en `catalogo-base.js`
+ * con tipo `heces`, así que la fila de `examenes` no se duplica.
+ */
+window.App.examenesDetallados.examen_heces = {
+    nombre: 'Examen Directo de Heces',
+    items: [
+        { id: 'consistencia', nombre: 'Consistencia', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Blanda, formada', grupo: 'Macroscópico' },
+        { id: 'colorHeces', nombre: 'Color de las heces', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Marrón', grupo: 'Macroscópico' },
+        { id: 'mocoFecal', nombre: 'Moco Fecal', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Ausente', grupo: 'Macroscópico' },
+
+        { id: 'phHeces', nombre: 'pH', area: 'Coproanálisis', unidad: '', tipo: 'numerico', refMin: 5.5, refMax: 8.0, grupo: 'Químico' },
+        { id: 'glucosaHeces', nombre: 'Glucosa', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Negativa', grupo: 'Químico' },
+        { id: 'sustanciasReductoras', nombre: 'Sustancias reductoras', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Negativas', grupo: 'Químico' },
+
+        { id: 'leucocitosPMN', nombre: 'Leucocitos PMN', area: 'Coproanálisis', unidad: 'cpo/campo', tipo: 'texto', refTexto: 'Ausentes', grupo: 'Microscópico y parasitológico' },
+        { id: 'leucocitosMononucleados', nombre: 'Leucocitos mononucleados', area: 'Coproanálisis', unidad: 'cpo/campo', tipo: 'texto', refTexto: 'Ausentes', grupo: 'Microscópico y parasitológico' },
+        { id: 'directoConcentracion', nombre: 'Examen directo por concentración', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Sin parásitos', grupo: 'Microscópico y parasitológico' },
+        { id: 'entamoebaColi', nombre: 'Entamoeba coli', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Ausente', grupo: 'Microscópico y parasitológico' },
+        { id: 'restosAlimentos', nombre: 'Restos de alimentos', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Ausentes', grupo: 'Microscópico y parasitológico' },
+        { id: 'floraBacteriana', nombre: 'Flora bacteriana', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Normal', grupo: 'Microscópico y parasitológico' }
+    ]
+};
