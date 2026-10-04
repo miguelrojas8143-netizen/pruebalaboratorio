@@ -378,6 +378,14 @@ body {
     padding: 0.45rem 0.65rem;
 }
 
+/* Formulario de registro: se mantiene fijo al hacer scroll (no se mueve al llenar la cola) */
+.index-recepcion .formulario-sticky {
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+    z-index: 5;
+}
+
 .index-recepcion .modal-content {
     border: 0;
     border-radius: 12px;
@@ -620,7 +628,7 @@ td.grupo-header-clickable:hover {
 /* Color del input según el valor ingresado: alto (amarillo), bajo (rojo), normal (verde) */
 .resultado-alto { background-color: #fff3cd !important; border-color: #ffc107 !important; }
 .resultado-bajo { background-color: #f8d7da !important; border-color: #dc3545 !important; }
-/*.resultado-normal { background-color: #d1e7dd !important; border-color: #198754 !important; }
+.resultado-normal { background-color: #d1e7dd !important; border-color: #198754 !important; }
 
 
 /* Item del historial con barra lateral azul */
@@ -913,6 +921,30 @@ td.grupo-header-clickable:hover {
 }
 #collapseOrdenesAnteriores .card-header {
     cursor: pointer;
+}
+
+/* ============================================================
+    HISTORIAL (vista historial.html)
+    ============================================================ */
+
+/* Header del "Orden Actual": texto oscuro visible sobre gris claro */
+.orden-actual-card .card-header {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+}
+.orden-actual-card .card-header strong {
+    color: #0d6efd;
+}
+
+/* Chevron: transición suave y rotación al expandir (Chromium 108+ / Electron 21) */
+.card-header .collapse-icon {
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+}
+.card-header:has(+ .collapse.show) .collapse-icon {
+    transform: rotate(90deg);
 }
 
 /* ============================================================

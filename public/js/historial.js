@@ -58,6 +58,44 @@
         return resultado;
     }
 
+    function clasificarColorResultado(examen) {
+        if (!examen) return '';
+        if (examen.tipoFormulario === 'heces' || examen.tipoFormulario === 'uroanalisis' ||
+            examen.tipoFormulario === 'antibiograma') return '';
+        if (examen.tipo === 'multiselect_cantidad' || examen.tipo === 'texto' ||
+            examen.tipo === 'seleccion_unica' || examen.tipo === 'tipo_sanguineo') return '';
+        var valor = parseFloat(examen.resultado);
+        if (isNaN(valor)) return '';
+        var refMin = parseFloat(examen.refMin);
+        var refMax = parseFloat(examen.refMax);
+        if (isNaN(refMin) || isNaN(refMax)) return '';
+        if (valor < refMin) return 'resultado-bajo';
+        if (valor > refMax) return 'resultado-alto';
+        return 'resultado-normal';
+    }
+
+    function renderizarTablaExamenes(examenes) {
+        if (!examenes || examenes.length === 0) {
+            return '<p class="text-muted mb-0">Sin exámenes registrados.</p>';
+        }
+        var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
+        html += '<thead class="table-light"><tr><th>Examen</th><th>Resultado</th><th>Unidad</th><th>Valor Ref.</th></tr></thead>';
+        html += '<tbody>';
+        examenes.forEach(function(e) {
+            var refTexto = e.refTexto || ((e.refMin !== undefined && e.refMax !== undefined && (e.refMin || e.refMax))
+                ? e.refMin + ' - ' + e.refMax : '-');
+            var colorClass = clasificarColorResultado(e);
+            html += '<tr>';
+            html += '<td>' + escapeHtml(e.nombre || e.id || '-') + '</td>';
+            html += '<td class="' + colorClass + '">' + escapeHtml(formatearResultado(e)) + '</td>';
+            html += '<td>' + escapeHtml(e.unidad || '-') + '</td>';
+            html += '<td>' + escapeHtml(refTexto || '-') + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        return html;
+    }
+
     function renderizarPacientes(pacientes, forzarTodos) {
         var contenedor = document.getElementById('contenedorHistorial');
         if (!contenedor) return;
@@ -93,7 +131,7 @@
             html += '</div>';
             html += '</div>';
 
-            html += '<div class="card-body">';
+            html += '<div class="card-body" id="accordionPac_' + pIndex + '">';
 
             var activeOrden = String(paciente.orden || '').padStart(3, '0');
             var activeFecha = paciente.fechaRegistro || new Date().toLocaleDateString('es-ES');
@@ -112,7 +150,7 @@
             }
 
             html += '<div class="card mb-2 shadow-sm orden-actual-card border-success">';
-            html += '<div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa; cursor: pointer;">';
+            html += '<div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa;" data-bs-toggle="collapse" data-bs-target="#ordActual_' + pIndex + '" data-bs-parent="#accordionPac_' + pIndex + '" role="button">';
             html += '<div class="d-flex align-items-center">';
             html += '<i class="bi bi-chevron-right me-2 collapse-icon"></i>';
             html += '<div><strong>Orden #' + escapeHtml(activeOrden) + '</strong> <span class="text-muted small">- ' + escapeHtml(activeFecha) + '</span></div>';
@@ -124,24 +162,10 @@
             html += '<button type="button" class="btn btn-sm btn-outline-success" onclick="window.imprimirOrdenPaciente(' + paciente.id + ', -1)" title="Imprimir orden actual"><i class="bi bi-printer"></i></button>';
             html += '</div>';
             html += '</div>';
+            html += '<div class="collapse show" id="ordActual_' + pIndex + '" data-bs-parent="#accordionPac_' + pIndex + '">';
             html += '<div class="card-body">';
-            if (activeTotalExamenes > 0) {
-                html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
-                html += '<thead class="table-light"><tr><th>Examen</th><th>Resultado</th><th>Unidad</th><th>Valor Ref.</th></tr></thead>';
-                html += '<tbody>';
-                activeExamenes.forEach(function(e) {
-                    var refTexto = e.refTexto || ((e.refMin !== undefined && e.refMax !== undefined && (e.refMin || e.refMax)) ? e.refMin + ' - ' + e.refMax : '-');
-                    html += '<tr>';
-                    html += '<td>' + escapeHtml(e.nombre || e.id || '-') + '</td>';
-                    html += '<td>' + escapeHtml(formatearResultado(e)) + '</td>';
-                    html += '<td>' + escapeHtml(e.unidad || '-') + '</td>';
-                    html += '<td>' + escapeHtml(refTexto || '-') + '</td>';
-                    html += '</tr>';
-                });
-                html += '</tbody></table></div>';
-            } else {
-                html += '<p class="text-muted mb-0">Sin exámenes registrados.</p>';
-            }
+            html += renderizarTablaExamenes(activeExamenes);
+            html += '</div>';
             html += '</div>';
             html += '</div>';
 
@@ -162,7 +186,7 @@
                 var totalExamenes = (ord.examenes || []).length;
 
                 html += '<div class="card mb-2 border-0 orden-anterior-card">';
-                html += '<div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa; cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' + idUnico + '" role="button">';
+                html += '<div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa;" data-bs-toggle="collapse" data-bs-target="#' + idUnico + '" data-bs-parent="#accordionPac_' + pIndex + '" role="button">';
                 html += '<div class="d-flex align-items-center">';
                 html += '<i class="bi bi-chevron-right me-2 collapse-icon"></i>';
                 html += '<div><strong>Orden #' + escapeHtml(ord.orden) + '</strong> <span class="text-muted small">- ' + escapeHtml(ord.fecha || 'N/A') + '</span></div>';
@@ -173,25 +197,9 @@
                 html += '<button type="button" class="btn btn-sm btn-outline-success" onclick="window.imprimirOrdenPaciente(' + paciente.id + ', ' + originalIndex + ')" title="Imprimir orden"><i class="bi bi-printer"></i></button>';
                 html += '</div>';
                 html += '</div>';
-                html += '<div class="collapse" id="' + idUnico + '">';
+                html += '<div class="collapse" id="' + idUnico + '" data-bs-parent="#accordionPac_' + pIndex + '">';
                 html += '<div class="card-body">';
-                if (totalExamenes > 0) {
-                    html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
-                    html += '<thead class="table-light"><tr><th>Examen</th><th>Resultado</th><th>Unidad</th><th>Valor Ref.</th></tr></thead>';
-                    html += '<tbody>';
-                    ord.examenes.forEach(function(e) {
-                        var refTexto = e.refTexto || ((e.refMin !== undefined && e.refMax !== undefined && (e.refMin || e.refMax)) ? e.refMin + ' - ' + e.refMax : '-');
-                        html += '<tr>';
-                        html += '<td>' + escapeHtml(e.nombre || e.id || '-') + '</td>';
-                        html += '<td>' + escapeHtml(formatearResultado(e)) + '</td>';
-                        html += '<td>' + escapeHtml(e.unidad || '-') + '</td>';
-                        html += '<td>' + escapeHtml(refTexto || '-') + '</td>';
-                        html += '</tr>';
-                    });
-                    html += '</tbody></table></div>';
-                } else {
-                    html += '<p class="text-muted mb-0">Sin exámenes registrados.</p>';
-                }
+                html += renderizarTablaExamenes(ord.examenes);
                 html += '</div>';
                 html += '</div>';
                 html += '</div>';

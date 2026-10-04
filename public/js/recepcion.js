@@ -175,6 +175,7 @@
             try {
                 const result = await window.api.guardarPaciente(nuevoPaciente);
                 if (result.success) {
+                    nuevoPaciente.orden = result.orden || nuevoPaciente.orden;
                     var numeroOrdenEl = document.getElementById('numeroOrden');
                     if (numeroOrdenEl) numeroOrdenEl.textContent = nuevoPaciente.orden;
                     _ordenNavegar = nuevoPaciente.orden;

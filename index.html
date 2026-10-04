@@ -21,7 +21,7 @@
             <img src="public/imagen/portada.png" alt="Logo" class="logo-navbar me-2">
             MiroLab Systems
             <span class="navbar-text">-Demo Version 1</span>
-        </span>
+                </span>
 
         <div class="d-flex align-items-center">
             <span class="text-white small no-imprimir"><i class="bi bi-calendar3 me-1"></i> <span id="fechaHoy"></span></span>
@@ -36,14 +36,15 @@
                 <a class="sidebar-link active" href="index.html"><i class="bi bi-house-door-fill"></i> Recepción</a>
                 <a class="sidebar-link" href="vistas/catalogo.html"><i class="bi bi-journal-medical"></i> Catálogo</a>
                 <a class="sidebar-link" href="vistas/historial.html"><i class="bi bi-file-earmark-text"></i> Historial</a>
-               <!--<a class="sidebar-link" href="vistas/orden.html"><i class="bi bi-clipboard-plus"></i> Orden</a> 
-                <a class="sidebar-link" href="vistas/reporte.html"><i class="bi bi-file-bar-graph"></i> Reporte</a>--> 
+
+                <!-- cspell:ignore mostrar mostrarEstadisticas Estadisticas abrirGestionPacientes -->
                 <a class="sidebar-link" onclick="mostrarEstadisticas()" title="Estadísticas">
-                <i class="bi bi-bar-chart-line"></i>
-            </a>
-            <a class="sidebar-link text-danger" onclick="abrirGestionPacientes()" title="Eliminar Pacientes">
-                <i class="bi bi-trash"></i>
-            </a>
+                    <i class="bi bi-bar-chart-line"></i>
+                </a>
+                <!-- cspell:ignore abrir Gestion Pacientes -->
+                <a class="sidebar-link text-danger" onclick="abrirGestionPacientes()" title="Eliminar Pacientes">
+                    <i class="bi bi-trash"></i>
+                </a>
 
             </nav>
         </aside>
@@ -69,34 +70,7 @@
 
         <div class="row g-3 mb-3">
             <div class="col-lg-7 order-lg-2">
-<!--
-                                <div class="row g-3 mb-3" id="seccionMetricas" style="display:none;">
-                    <div class="col-4">
-                        <div class="card shadow-sm text-center h-100">
-                            <div class="card-body p-2">
-                                <h6 class="card-title mb-1 fw-semibold"><i class="bi bi-clipboard-data me-1"></i>Órdenes Hoy</h6>
-                                <h3 class="mb-0 text-primary" id="metricaOrdenesHoy">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card shadow-sm text-center h-100">
-                            <div class="card-body p-2">
-                                <h6 class="card-title mb-1 fw-semibold"><i class="bi bi-hourglass-text me-1"></i>Pendientes</h6>
-                                <h3 class="mb-0 text-warning" id="metricaPendientes">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card shadow-sm text-center h-100">
-                            <div class="card-body p-2">
-                                <h6 class="card-title mb-1 fw-semibold"><i class="bi bi-check-circle me-1"></i>Completadas</h6>
-                                <h3 class="mb-0 text-success" id="metricaCompletadas">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            -->
+
                 <div class="card shadow-sm h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-list-ol me-2"></i> Cola de Pacientes (Órdenes de Hoy)</span>
@@ -134,8 +108,8 @@
                 </div>
             </div>
 
-            <div class="col-lg-5">
-                <div class="card shadow-sm h-100">
+            <div class="col-lg-5 formulario-sticky">
+                <div class="card shadow-sm">
                     <div class="card-header">
                         <i class="bi bi-person-plus-fill me-2"></i> Registro de Nuevo Paciente
                     </div>

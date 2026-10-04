@@ -9,6 +9,7 @@ const {
     mapearExamenesGuardados,
     guardarHistorialPaciente
 } = require('./database/examenes');
+const { actualizarOrdenPaciente } = require('./database/ordenes');
 const { prepararConsultasCatalogo } = require('./database/schema');
 
 let db = null;
@@ -396,19 +397,22 @@ function initDatabase() {
                 var maxOrden = row ? parseInt(row.maxOrden || 0, 10) : 0;
                 var nuevaOrden = String(maxOrden + 1).padStart(3, '0');
                 // Actualizar paciente: nuevo orden, incrementar visitas, nueva fecha
-                db.prepare(
-                    'UPDATE pacientes SET orden = ?, visitas = visitas + 1, fechaRegistro = ?'
-                ).run(nuevaOrden, new Date().toLocaleDateString('es-ES'));
+                actualizarOrdenPaciente(
+                    db,
+                    paciente.id,
+                    nuevaOrden,
+                    new Date().toLocaleDateString('es-ES')
+                );
                 // Limpiar exámenes de la nueva orden (no deben existir aún)
                 db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(nuevaOrden);
                 // Limpiar historial de exámenes para la nueva orden
                 db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(nuevaOrden);
                 return nuevaOrden;
             });
-            var nuevaOrden = insertT();
-            // Limpiar refAdaptadas y perfiles para la nueva orden
-            db.prepare('UPDATE pacientes SET refAdaptadas = 0, perfiles = ? WHERE orden = ?')
-                .run('[]', nuevaOrden);
+            var nuevaOrden = ejecutarConLlavesSuspendidas(db, insertT);
+            // Limpiar refAdaptadas, perfiles e historial para la nueva orden
+            db.prepare('UPDATE pacientes SET refAdaptadas = 0, perfiles = ?, historial = ? WHERE orden = ?')
+                .run('[]', '[]', nuevaOrden);
             return {
                 success: true,
                 nuevaOrden: nuevaOrden,
@@ -458,6 +462,31 @@ function initDatabase() {
     registrarHandlersCatalogo();
 
     console.log('✅ Base de datos SQLite inicializada:', dbPath);
+}
+
+/**
+ * Ejecuta una transacción con la verificación de llaves foráneas suspendida.
+ *
+ * Al crear una visita nueva el paciente cambia de número de orden, y ese
+ * `orden` es la clave que referencian `paciente_examenes.orden_paciente` y
+ * `historial_examenes.orden_paciente`. SQLite no propaga el cambio (ninguna de
+ * esas llaves lleva ON UPDATE CASCADE) y aborta con
+ * "FOREIGN KEY constraint failed".
+ *
+ * Las filas de la orden anterior deben SEGUIR apuntando a ese número: son los
+ * resultados de la visita previa, ya copiados a `ordenes_archivadas`. Por eso no
+ * sirve una cascada, que además las movería a la orden nueva y el DELETE de
+ * limpieza las borraría. `PRAGMA foreign_keys` no cambia dentro de una
+ * transacción, de ahí el envoltorio.
+ */
+function ejecutarConLlavesSuspendidas(db, transaccion) {
+    const activas = !!db.pragma('foreign_keys', { simple: true });
+    if (activas) db.pragma('foreign_keys = OFF');
+    try {
+        return transaccion();
+    } finally {
+        if (activas) db.pragma('foreign_keys = ON');
+    }
 }
 
 /**
