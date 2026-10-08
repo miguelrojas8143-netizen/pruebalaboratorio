@@ -242,6 +242,17 @@
         return nuevoExamen;
     }
 
+    function tieneResultadosFormulario(examen) {
+        try {
+            var datos = JSON.parse(examen.resultado || '{}');
+            return Object.keys(datos).some(function(id) {
+                return id !== '__referencias' && datos[id] != null && String(datos[id]).trim() !== '';
+            });
+        } catch (e) {
+            return false;
+        }
+    }
+
     function renderizarTablaExamenes() {
         var tbody = document.getElementById('tablaExamenes');
         tbody.innerHTML = '';
@@ -286,44 +297,11 @@
                 fila.classList.add('tipificacion-row');
             }
             if (examen.tipoFormulario === 'heces') {
-                var resumenHtml = '';
-                try {
-                    var datos = JSON.parse(examen.resultado || '{}');
-                    if (Object.keys(datos).length > 0) {
-                        var campos = [];
-                        if (datos.sustanciasReductoras) {
-                            var interp = window.interpretarSustanciasReductoras(datos.sustanciasReductoras);
-                            campos.push('Sust. Reductoras: ' + datos.sustanciasReductoras + ' (' + interp.texto + ')');
-                        }
-                        if (datos.consistencia) campos.push('Consistencia: ' + datos.consistencia);
-                        if (datos.colorHeces) campos.push('Color: ' + datos.colorHeces);
-                        if (campos.length > 0) {
-                            resumenHtml = '<br><small class="text-success">' + campos.join(' | ') + '</small>';
-                        }
-                    }
-                } catch(e) {}
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenHtml + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+                var accionHeces = tieneResultadosFormulario(examen) ? 'Editar resultados' : 'Cargar resultados';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionHeces + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipoFormulario === 'uroanalisis') {
-                var resumenUro = '';
-                try {
-                    var datosUro = JSON.parse(examen.resultado || '{}');
-                    if (Object.keys(datosUro).length > 0) {
-                        var camposUro = [];
-                        var detalleUro = window.App.examenesDetallados.uroanalisis;
-                        var ordenUro = ['ur_aspecto', 'ur_color', 'ur_olor', 'ur_reaccion', 'ur_ph', 'ur_densidad', 'ur_urobilinogeno', 'ur_albumina', 'ur_glucosa', 'ur_cetonas', 'ur_proteinas', 'ur_hemoglobina', 'ur_bilirrubina', 'ur_nitritos', 'ur_leucocitos_tira', 'ur_leucocitos_micro', 'ur_celulas_epiteliales', 'ur_eritrocitos', 'ur_bacterias', 'ur_cilindros', 'ur_cristales'];
-                        ordenUro.forEach(function(k) {
-                            if (datosUro[k]) {
-                                var item = detalleUro && detalleUro.items ? detalleUro.items.find(function(i) { return i.id === k; }) : null;
-                                var nom = item ? item.nombre : k;
-                                camposUro.push(nom + ': ' + datosUro[k]);
-                            }
-                        });
-                        if (camposUro.length > 0) {
-                            resumenUro = '<br><small class="text-success">' + camposUro.join(' | ') + '</small>';
-                        }
-                    }
-                } catch(e) {}
-                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioUroanalisis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar Resultados</button>' + resumenUro + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+                var accionUro = tieneResultadosFormulario(examen) ? 'Editar resultados' : 'Cargar resultados';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioUroanalisis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionUro + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipoFormulario === 'antibiograma') {
                 var resumenAb = '';
                 try {
@@ -432,6 +410,7 @@
         if (window.App.perfiles[examenId]) {
             $("#selectorExamenes").val(null).trigger("change");
             var perfil = window.App.perfiles[examenId];
+            var esSecrecionVaginalIndividual = examenId === 'perfil_secrecion_vaginal';
             var catalogo = window.obtenerCatalogo();
             var catalogoMap = {};
             catalogo.forEach(function(e) { catalogoMap[e.id] = e; });
@@ -480,9 +459,11 @@
                 }
             });
             var nuevos = examenesPerfil.filter(function(e) { return !idsExistentes.includes(e.id); });
-            nuevos.forEach(function(examen) {
-                examen.grupoPerfil = perfil.nombre;
-            });
+            if (!esSecrecionVaginalIndividual) {
+                nuevos.forEach(function(examen) {
+                    examen.grupoPerfil = perfil.nombre;
+                });
+            }
             window.examenesOrden = window.examenesOrden.map(function(e) {
                 var actualizado = examenesPerfil.find(function(n) { return n.id === e.id; });
                 if (actualizado) {
@@ -493,10 +474,11 @@
                     e.area = actualizado.area;
                     e.unidad = actualizado.unidad;
                     e.grupo = actualizado.grupo;
+                    if (esSecrecionVaginalIndividual) delete e.grupoPerfil;
                 }
                 return e;
             }).concat(nuevos);
-            if (window.pacienteActivo) {
+            if (window.pacienteActivo && !esSecrecionVaginalIndividual) {
                 if (!window.pacienteActivo.perfiles) window.pacienteActivo.perfiles = [];
                 if (!window.pacienteActivo.perfiles.includes(examenId)) window.pacienteActivo.perfiles.push(examenId);
             }
@@ -810,7 +792,9 @@
         select.append(new Option("", "", false, false));
         var catalogo = window.obtenerCatalogo();
         var porArea = {};
-        catalogo.forEach(function(examen) {
+        catalogo.filter(function(examen) {
+            return examen.tipo !== 'perfil' || window.esExamenNormalCompuesto(examen.id);
+        }).forEach(function(examen) {
             var area = examen.area || "General";
             if (!porArea[area]) porArea[area] = [];
             porArea[area].push(examen);
@@ -824,13 +808,16 @@
                     { sensitivity: "base" }
                 );
             }).forEach(function(examen) {
-                group.append(new Option(examen.nombre, examen.id));
+                var nombre = examen.id === 'perfil_secrecion_vaginal'
+                    ? 'Secreción Vaginal'
+                    : examen.nombre;
+                group.append(new Option(nombre, examen.id));
             });
             select.append(group);
         });
 
         //Grupos de perfiles 
-        var groupPerfiles = $("<optgroup>").attr("label", "Perfiles / Paneles");
+        var groupPerfiles = $("<optgroup>").attr("label", "Perfiles");
         Object.keys(window.App.perfiles).filter(function(key) {
             return !window.esExamenNormalCompuesto(key);
         }).sort(function(a, b) {

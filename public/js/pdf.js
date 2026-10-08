@@ -365,8 +365,7 @@
             }
              else if (area === 'Hematología') {
                 var sep = window.separarVSG(porArea[area]);
-                if (sep.vsg.length) subareas.push({ titulo: 'V.S.G.', rows: clasificarFilas(sep.vsg) });
-                if (sep.otros.length) subareas.push({ rows: clasificarFilas(sep.otros) });
+                     subareas.push({ rows: clasificarFilas(sep.otros.concat(sep.vsg)) });
             } else {
                 subareas.push({ rows: clasificarFilas(porArea[area]) });
             }
@@ -792,7 +791,7 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(7.5);
             doc.setTextColor(25, 25, 25);
-            doc.text('PRUEBA', columnas.prueba.x, y);
+            doc.text('PARAMETRO', columnas.prueba.x, y);
             doc.text('RESULTADO', columnas.resultado.x, y);
             doc.text('VALOR DE REFERENCIA', columnas.referencia.x, y);
             y += 3;

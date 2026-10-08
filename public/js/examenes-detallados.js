@@ -35,24 +35,6 @@ window.App.examenesDetallados.hematologia_completa = {
         { id: 'vsg', nombre: 'V.S.G. 1 Hora', unidad: 'mm/h', refMin: 3, refMax: 20, refTexto: 'Niño: 3 - 13 mm/h | Mujer: < 20', grupo: 'Hemograma' }
     ]
 };
-
-window.App.examenesDetallados.quimica_perfil_veinte = {
-    nombre: 'Perfil veinte',
-    items: [
-        { id: 'trigliceridos', nombre: 'Triglicéridos', unidad: 'mg/dL', refMin: 0, refMax: 160, grupo: 'Química Sanguínea' },
-        { id: 'colesterol_total', nombre: 'Colesterol Total', unidad: 'mg/dL', refMin: 0, refMax: 200, grupo: 'Química Sanguínea' },
-        { id: 'colesterol_hdl', nombre: 'HDL Colesterol', unidad: 'mg/dL', refMin: 40, refMax: 60, grupo: 'Química Sanguínea' },
-        { id: 'colesterol_ldl', nombre: 'LDL Colesterol', unidad: 'mg/dL', refMin: 0, refMax: 120, grupo: 'Química Sanguínea' },
-        { id: 'glicemia_basal', nombre: 'Glicemia', unidad: 'mg/dL', refMin: 70, refMax: 100, grupo: 'Química Sanguínea' },
-        { id: 'calcio', nombre: 'Calcio', unidad: 'mg/dL', refMin: 8.5, refMax: 10.5, grupo: 'Química Sanguínea' },
-        { id: 'fosforo', nombre: 'Fósforo', unidad: 'mg/dL', refMin: 2.9, refMax: 4.7, grupo: 'Química Sanguínea' },
-        { id: 'acido_urico', nombre: 'Ácido Úrico', unidad: 'mg/dL', refMin: 3.5, refMax: 6.5, grupo: 'Química Sanguínea' },
-        { id: 'creatinina', nombre: 'Creatinina', unidad: 'mg/dL', refMin: 0.6, refMax: 1.2, grupo: 'Química Sanguínea' },
-        { id: 'urea', nombre: 'Urea', unidad: 'mg/dL', refMin: 15, refMax: 40, grupo: 'Química Sanguínea' },
-        { id: 'tgo', nombre: 'TGO/AST', unidad: 'U/L', refMin: 5, refMax: 40, grupo: 'Química Sanguínea' },
-        { id: 'tgp', nombre: 'TGP/ALT', unidad: 'U/L', refMin: 7, refMax: 56, grupo: 'Química Sanguínea' }
-    ]
-};
 // Hemograma Completo (CBC)Los elementos se definen arriba. A continuación se presentan exámenes detallados adicionales.
 
 // A continuación se presentan exámenes detallados adicionales.

@@ -27,19 +27,5 @@
             return { globulina: globulina, relacion_ag: relacionAG };
         }
     };
-    window.App.calculos.perfil_lipidico = {
-        nombre: 'Perfil Lipídico',
-        entradas: ['colesterol_total', 'colesterol_hdl', 'trigliceridos'],
-        salidas: ['colesterol_vldl', 'colesterol_ldl'],
-        calcular: function(examenesOrden) {
-            var total = window.obtenerValor(examenesOrden, 'colesterol_total');
-            var hdl = window.obtenerValor(examenesOrden, 'colesterol_hdl');
-            var trig = window.obtenerValor(examenesOrden, 'trigliceridos');
-            if (isNaN(total) || isNaN(hdl) || isNaN(trig)) return null;
-            var vldl = trig / 5;
-            var ldl = total - hdl - vldl;
-            return { colesterol_vldl: vldl, colesterol_ldl: ldl };
-        }
-    };
 
 })();

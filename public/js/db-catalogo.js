@@ -424,7 +424,9 @@
             return creado;
         });
     };
-
+// ----------------------------------------------------------------------
+// Funciones auxiliares
+// ----------------------------------------------------------------------
     function referenciaPorDefecto(parametro) {
         if (parametro.refTexto) return parametro.refTexto;
         if (parametro.refMin !== null && parametro.refMin !== undefined

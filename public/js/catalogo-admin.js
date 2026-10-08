@@ -39,6 +39,10 @@
     function actualizarTablaCatalogo() {
         var contenedor = document.getElementById('catalogoAcordeones');
         if (!contenedor) return;
+        var seccionesAbiertas = {};
+        contenedor.querySelectorAll('.accordion-collapse.show').forEach(function(seccion) {
+            seccionesAbiertas[seccion.id] = true;
+        });
         var catalogo = window.obtenerCatalogo().filter(function(e) {
             return e.tipo !== 'perfil' || window.esExamenNormalCompuesto(e.id);
         });
@@ -57,9 +61,10 @@
                 return a.nombre.localeCompare(b.nombre);
             });
             var areaId = 'area-' + area.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+            var expandida = !!seccionesAbiertas[areaId];
             var item = document.createElement('div');
             item.className = 'accordion-item';
-            item.innerHTML = '<h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#' + areaId + '">' + area + ' <span class="badge bg-secondary ms-2">' + examenes.length + '</span></button></h2><div id="' + areaId + '" class="accordion-collapse collapse"><div class="accordion-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 align-middle"><thead class="table-light"><tr><th width="15%">ID</th><th width="18%">Nombre</th><th width="13%">Área</th><th width="13%">Unidad</th><th width="13%">Ref. Mín</th><th width="13%">Ref. Máx</th><th width="13%">Valor por Defecto</th><th width="10%" class="text-center">Guardar</th></tr></thead><tbody>' + examenes.map(function(examen) {
+            item.innerHTML = '<h2 class="accordion-header"><button class="accordion-button' + (expandida ? '' : ' collapsed') + '" type="button" data-bs-toggle="collapse" data-bs-target="#' + areaId + '" aria-expanded="' + expandida + '" aria-controls="' + areaId + '">' + area + ' <span class="badge bg-secondary ms-2">' + examenes.length + '</span></button></h2><div id="' + areaId + '" class="accordion-collapse collapse' + (expandida ? ' show' : '') + '"><div class="accordion-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 align-middle"><thead class="table-light"><tr><th width="15%">ID</th><th width="18%">Nombre</th><th width="13%">Área</th><th width="13%">Unidad</th><th width="13%">Ref. Mín</th><th width="13%">Ref. Máx</th><th width="13%">Valor por Defecto</th><th width="10%" class="text-center">Guardar</th></tr></thead><tbody>' + examenes.map(function(examen) {
                 return '<tr data-id="' + examen.id + '"><td>' + examen.id + '</td><td><input type="text" class="form-control form-control-sm cat-nombre" value="' + (examen.nombre || '') + '"></td><td><input type="text" class="form-control form-control-sm cat-area" value="' + (examen.area || '') + '"></td><td><input type="text" class="form-control form-control-sm cat-unidad" value="' + (examen.unidad || '') + '"></td><td><input type="number" step="0.01" class="form-control form-control-sm cat-refmin" value="' + (examen.refMin !== undefined ? examen.refMin : '') + '"></td><td><input type="number" step="0.01" class="form-control form-control-sm cat-refmax" value="' + (examen.refMax !== undefined ? examen.refMax : '') + '"></td><td><input type="text" class="form-control form-control-sm cat-valordefecto" value="' + (examen.valorDefecto || '') + '"></td><td class="text-center"><button class="btn btn-sm btn-success btn-guardar-examen" data-id="' + examen.id + '" title="Guardar este examen"><i class="bi bi-save"></i></button></td></tr>';
             }).join('') + '</tbody></table></div></div></div>';
             contenedor.appendChild(item);
@@ -235,4 +240,3 @@
     };
 
 })();
-

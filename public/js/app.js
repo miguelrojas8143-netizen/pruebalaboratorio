@@ -33,10 +33,13 @@
             if (window.initReporte) window.initReporte(params.get('orden'));
         } else if (path.includes('catalogo.html')) {
             if (window.initCatalogo) window.initCatalogo();
+        } else if (path.includes('pacientes-anteriores.html')) {
+            if (window.initPacientesAnteriores) window.initPacientesAnteriores();
         }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        if (window.Tooltips && window.Tooltips.init) window.Tooltips.init();
         window.mostrarFechaHoy();
         var yaInicializado = false;
         var ejecutarInitSafe = function() {

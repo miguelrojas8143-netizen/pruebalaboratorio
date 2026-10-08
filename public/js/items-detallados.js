@@ -62,6 +62,7 @@
         var body = document.getElementById('modalItemsExamenBody');
         if (!modalEl || !body) return Promise.resolve();
 
+        modalEl.classList.remove('modal-editor-individual');
         document.getElementById('modalItemsExamenTitulo').textContent = detalle.nombre + ' - Ítems Detallados';
         modalEl.setAttribute('data-examen-id', examenId);
         modalEl.setAttribute('data-editor-mode', 'detallado');
@@ -151,6 +152,9 @@
         var modalEl = document.getElementById('modalItemsExamen');
         var body = document.getElementById('modalItemsExamenBody');
         var valor = examen.resultado || '';
+        var examenConReferencias = window.aplicarReferenciasAdaptadas
+            ? window.aplicarReferenciasAdaptadas(window.pacienteActivo, [examen])[0]
+            : examen;
         var inputHtml;
         if (examen.tipo === 'seleccion_unica' && examen.opciones && examen.opciones.length > 0) {
             inputHtml = '<select class="form-select editor-resultado-input"><option value="">Seleccionar...</option>' +
@@ -163,10 +167,25 @@
         }
 
         document.getElementById('modalItemsExamenTitulo').textContent = examen.nombre + ' - Resultado';
-        body.innerHTML = '<div class="mb-2"><label class="form-label fw-semibold">' + examen.nombre + '</label>' +
-            inputHtml + (examen.unidad ? '<small class="text-muted">Unidad: ' + examen.unidad + '</small>' : '') +
-            ((examen.refMin !== undefined && examen.refMax !== undefined) ? '<div><small class="text-muted">Referencia: ' + examen.refMin + ' - ' + examen.refMax + '</small></div>' : '') +
+        var tieneReferencia = examen.refTexto && examen.refTexto !== '-';
+        var tieneRango = (examenConReferencias.refMin !== undefined && examenConReferencias.refMin !== null)
+            || (examenConReferencias.refMax !== undefined && examenConReferencias.refMax !== null);
+        var referencia = tieneReferencia
+            ? examen.refTexto
+            : tieneRango
+                ? (examenConReferencias.refMin !== undefined && examenConReferencias.refMin !== null ? examenConReferencias.refMin : '—')
+                    + ' - '
+                    + (examenConReferencias.refMax !== undefined && examenConReferencias.refMax !== null ? examenConReferencias.refMax : '—')
+                : '';
+        body.innerHTML = '<div class="editor-resultado-individual">' +
+            '<label class="form-label fw-semibold mb-2">' + examen.nombre + '</label>' +
+            inputHtml +
+            '<div class="editor-resultado-meta">' +
+                (examen.unidad ? '<span class="editor-resultado-unidad">Unidad: <strong>' + examen.unidad + '</strong></span>' : '') +
+                (referencia ? '<span class="editor-resultado-referencia"><span class="fw-semibold">Referencia:</span> ' + referencia + '</span>' : '') +
+            '</div>' +
             '</div>';
+        modalEl.classList.add('modal-editor-individual');
         modalEl.setAttribute('data-examen-id', examenId);
         modalEl.setAttribute('data-editor-mode', 'simple');
         new bootstrap.Modal(modalEl).show();

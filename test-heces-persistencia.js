@@ -185,15 +185,32 @@ async function main() {
         campos
     );
 
+    elements.phHeces.value = '7.2';
+    await window.guardarFormularioHeces();
+    const filasCorregidas = db.prepare(
+        'SELECT idresultado, resultado FROM paciente_examenes WHERE orden_paciente = ? AND idresultado IS NOT NULL'
+    ).all('001');
+    const resultadosCorregidos = filasCorregidas.reduce(function(result, row) {
+        result[row.idresultado] = row.resultado;
+        return result;
+    }, {});
+    assert.strictEqual(resultadosCorregidos.phHeces, '7.2');
+    Object.keys(campos).filter(function(id) { return id !== 'phHeces'; }).forEach(function(id) {
+        assert.strictEqual(resultadosCorregidos[id], campos[id]);
+    });
+    assert.strictEqual(renderCount, 2);
+
     shouldFail = true;
-    elements.phHeces.value = '7.4';
+    window.abrirFormularioHeces(window.examenesOrden[0].id);
+    elements.phHeces.value = '8.1';
     await window.guardarFormularioHeces();
     assert.strictEqual(elements.formularioHeces.style.display, 'block');
-    assert.strictEqual(renderCount, 1);
-    assert.deepStrictEqual(JSON.parse(window.examenesOrden[0].resultado), campos);
+    assert.strictEqual(elements.phHeces.value, '8.1');
+    assert.strictEqual(renderCount, 2);
+    assert.strictEqual(JSON.parse(window.examenesOrden[0].resultado).phHeces, '7.2');
     assert.strictEqual(db.prepare(
         'SELECT resultado FROM paciente_examenes WHERE orden_paciente = ? AND idresultado = ?'
-    ).get('001', 'phHeces').resultado, campos.phHeces);
+    ).get('001', 'phHeces').resultado, '7.2');
     assert(alerts.some(function(message) { return message.indexOf('fallo simulado') !== -1; }));
     assert.strictEqual(errors.length, 1);
 

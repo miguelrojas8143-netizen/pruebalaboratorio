@@ -102,30 +102,10 @@ window.App.perfiles.perfil_veinte = {
         { id: 'examen_heces', nombre: 'Heces', area: 'Coproanálisis', unidad: '', tipo: 'heces' }
     ]
 };
-window.App.perfiles.perfil_lipidico = {
-    id: 'perfil_lipidico',
-    nombre: 'Perfil Lipídico',
-    area: 'Perfiles',
-    examenes: [
-        { id: 'colesterol_total', nombre: 'Colesterol Total', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0, refMax: 200 },
-        { id: 'colesterol_hdl', nombre: 'Colesterol HDL', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 40, refMax: 60 },
-        { id: 'trigliceridos', nombre: 'Triglicéridos', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0, refMax: 160 }
-    ]
-};
-window.App.perfiles.perfil_renal = {
-    id: 'perfil_renal',
-    nombre: 'Perfil Renal',
-    area: 'Perfiles',
-    examenes: [
-        { id: 'urea', nombre: 'Urea', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 15, refMax: 40 },
-        { id: 'creatinina', nombre: 'Creatinina', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0.6, refMax: 1.2 },
-        { id: 'acido_urico', nombre: 'Ácido Úrico', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 3.5, refMax: 6.5 },
-        { id: 'examen_orina', nombre: 'Examen de Orina', area: 'Uroanálisis', unidad: '', tipo: 'perfil' }
-    ]
-};
+
 window.App.perfiles.perfil_secrecion_vaginal = {
     id: 'perfil_secrecion_vaginal',
-    nombre: 'Perfil de Secreción Vaginal',
+    nombre: 'Secreción Vaginal',
     area: 'Perfiles',
     examenes: [
         { id: 'trofozoitos_trichomonas', nombre: 'Trofozoitos de Trichomonas vaginalis', area: 'Secreción Vaginal', tipo: 'seleccion_unica', grupo: 'Examen Directo' },

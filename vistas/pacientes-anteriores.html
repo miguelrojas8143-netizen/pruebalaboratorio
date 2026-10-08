@@ -2,13 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" 
- content="default-src 'self'; img-src 'self' data:; style-src 'self'
-  'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-  
+    <meta http-equiv="Content-Security-Policy"
+  content="default-src 'self'; img-src 'self' data:; style-src 'self'
+   'unsafe-inline'; script-src 'self' 'unsafe-inline'">
     <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self' ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Histórial de Órdenes - Laboratorio</title>
+    <title>Pacientes Anteriores - Laboratorio</title>
 
     <!-- Bootstrap CSS local -->
     <link href="../public/lib/bootstrap.min.css" rel="stylesheet">
@@ -21,10 +20,10 @@
 
     <link href="../public/css/styles.css" rel="stylesheet">
 </head>
-<body>
+<body class="index-recepcion">
 <nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
     <div class="container">
-       <span class="navbar-brand mb-0 h1">
+        <span class="navbar-brand mb-0 h1">
             <img src="../public/imagen/portada.png" alt="Logo" class="logo-navbar me-2">
             MiroLab Systems
             <span class="navbar-text">-Demo Version 1</span>
@@ -42,30 +41,62 @@
 </div>
 
 <div class="container mb-4">
-    <h3><i class="bi bi-clock-history me-2"></i> Historial de Órdenes de Pacientes</h3>
-    <p class="text-muted">Pacientes y todas sus visitas (orden actual y anteriores).</p>
+    <h3><i class="bi bi-clock-history me-2"></i> Pacientes de Días Anteriores</h3>
+    <p class="text-muted">Pacientes registrados en días anteriores. Desde aquí puede dar una nueva orden.</p>
 
-    <!-- Buscador de pacientes -->
-    <div class="card shadow-sm mb-3 no-imprimir"> 
-       
+    <!-- Buscador -->
+    <div class="card shadow-sm mb-3 no-imprimir">
         <div class="card-body">
             <label class="form-label fw-semibold">Buscar paciente:</label>
             <div class="input-group" style="max-width: 500px;">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="buscadorHistorial" class="form-control" placeholder="Nombre, cédula u orden...">
-                <button class="btn btn-outline-secondary" type="button" onclick="window.limpiarBusquedaHistorial()">
+                <input type="text" id="buscadorAnteriores" class="form-control" placeholder="Nombre, cédula u orden...">
+                <button class="btn btn-outline-secondary" type="button" onclick="window.limpiarBusquedaAnteriores()">
                     <i class="bi bi-x-lg"></i> Limpiar
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Contenedor de resultados -->
-    <div id="contenedorHistorial">
-        <p class="text-muted text-center py-4"><i class="bi bi-inbox display-4 d-block mb-2"></i> Cargando pacientes...</p>
+    <!-- Tabla de pacientes -->
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ol me-2"></i> Lista de Pacientes Anteriores</span>
+            <span class="badge bg-light text-primary" id="totalAnteriores">0 pacientes</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="8%">Orden</th>
+                            <th width="32%">Nombre</th>
+                            <th width="17%">Cédula</th>
+                            <th width="15%">Fecha Registro</th>
+                            <th width="8%" class="text-center">Visitas</th>
+                            <th width="10%" class="text-center">Estado</th>
+                            <th width="10%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaAnteriores">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Cargando pacientes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-top">
+                <button id="btnAnteriorAnteriores" class="btn btn-sm btn-outline-secondary" disabled>
+                    <i class="bi bi-chevron-left me-1"></i>Anterior
+                </button>
+                <span class="text-muted small">Página <span id="paginaActualAnteriores">1</span></span>
+                <button id="btnSiguienteAnteriores" class="btn btn-sm btn-outline-secondary" disabled>
+                    Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
-
 <footer class="footer-developer no-imprimir">
     <div class="container">
         <div class="developer-card">
@@ -86,49 +117,27 @@
     </div>
 </footer>
 
- <!-- Bootstrap JS local -->
+<!-- Toast container -->
+<div id="toastContainerAnteriores" class="position-fixed bottom-0 end-0 p-3" style="z-index: 2000;"></div>
+
 <script src="../public/lib/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap JS local -->
 <script src="../public/lib/bootstrap.bundle.min.js"></script>
 <script src="../public/js/tooltips.js"></script>
-<!-- Select2 JS local -->
-<script src="../public/lib/select2.min.js"></script>
-<!-- jsPDF y autoTable para generar PDFs -->
-<script src="../public/lib/jspdf.umd.min.js"></script>
-<script src="../public/lib/jspdf.plugin.autotable.min.js"></script>
 <script src="../public/js/db-catalogo.js"></script>
-<script src="../public/js/calculos.js"></script>
-<script src="../public/js/hematologia.js"></script>
-<script src="../public/js/uroanalisis.js"></script>
-<script src="../public/js/uroanalisis-form.js"></script>
-<script src="../public/js/secrecion-vaginal.js"></script>
-<script src="../public/js/coproanalisis.js"></script>
-<script src="../public/js/bacteriologia.js"></script>
-<script src="../public/js/micologia.js"></script>
-<script src="../public/js/heces.js"></script>
-<script src="../public/js/frotis.js"></script>
-<script src="../public/js/perfiles-modal.js"></script>
-<script src="../public/js/items-detallados.js"></script>
 <script src="../public/js/utils.js"></script>
 <script src="../public/js/storage.js"></script>
-<script src="../public/js/pdf.js"></script>
-<script src="../public/js/historial.js"></script>
+<script src="../public/js/pacientes-anteriores.js"></script>
+<script src="../public/js/app.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         window.mostrarFechaHoy();
-        // El catálogo vive en SQLite: se espera a db-catalogo.js antes de leerlo.
-        var iniciar = function() { window.initHistorial(); };
-        if (window.catalogoListo) {
-            window.catalogoListo.then(iniciar, iniciar);
+        if (window.onStorageReady) {
+            window.onStorageReady(function() { initPacientesAnteriores(); });
         } else {
-            iniciar();
+            initPacientesAnteriores();
         }
     });
 </script>
-
-
-
-
-
-
 </body>
 </html>

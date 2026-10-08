@@ -297,11 +297,13 @@ function initDatabase() {
             if (id !== undefined && id !== null) {
                 db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = (SELECT orden FROM pacientes WHERE id = ?)').run(id);
                 db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = (SELECT orden FROM pacientes WHERE id = ?)').run(id);
+                db.prepare('DELETE FROM ordenes_archivadas WHERE paciente_id = ?').run(id);
                 db.prepare('DELETE FROM pacientes WHERE id = ?').run(id);
             } else if (orden) {
                 var ordenStr = String(orden).padStart(3, '0');
                 db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(ordenStr);
                 db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(ordenStr);
+                db.prepare('DELETE FROM ordenes_archivadas WHERE paciente_id = (SELECT id FROM pacientes WHERE orden = ?)').run(ordenStr);
                 db.prepare('DELETE FROM pacientes WHERE orden = ?').run(ordenStr);
             }
             return { success: true };
@@ -315,6 +317,7 @@ function initDatabase() {
         try {
             db.exec('DELETE FROM paciente_examenes');
             db.exec('DELETE FROM historial_examenes');
+            db.exec('DELETE FROM ordenes_archivadas');
             db.exec('DELETE FROM pacientes');
             return { success: true };
         } catch (err) {

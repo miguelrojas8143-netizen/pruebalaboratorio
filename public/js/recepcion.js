@@ -135,8 +135,25 @@
     window.obtenerOrdenNavegar = function() { return _ordenNavegar; };
     var _ordenNavegar = null;
 
+    function kiloColaMostrarCompletados() {
+        var val = localStorage.getItem('kilo.cola.mostrarCompletados');
+        return val !== 'false';
+    }
+
+    function inicializarToggleCompletados() {
+        var toggle = document.getElementById('mostrarCompletados');
+        if (toggle) {
+            toggle.checked = kiloColaMostrarCompletados();
+            toggle.addEventListener('change', function() {
+                localStorage.setItem('kilo.cola.mostrarCompletados', this.checked ? 'true' : 'false');
+                renderizarCola();
+            });
+        }
+    }
+
     function initRecepcion() {
         inicializarPaginacion();
+        inicializarToggleCompletados();
         renderizarMetricas();
         inicializarSelect2();
         document.getElementById('formRegistro').addEventListener('submit', async function(e) {
@@ -244,8 +261,11 @@
     function renderizarCola(filtro) {
         var pacientes = _paginacion.pacientes;
         var hoy = new Date().toLocaleDateString('es-ES');
+        var mostrarCompletados = kiloColaMostrarCompletados();
         var pacientesHoy = pacientes.filter(function(p) {
-            return p.fechaRegistro === hoy;
+            if (p.fechaRegistro !== hoy) return false;
+            if (!mostrarCompletados && window.calcularEstadoPaciente(p) === 'completo') return false;
+            return true;
         });
         var tbody = document.getElementById('tablaCola');
         if (!tbody) return;
@@ -258,7 +278,7 @@
         });
         pacientesFiltrados.sort(function(a, b) { return parseInt(a.orden) - parseInt(b.orden); });
         var totalEl = document.getElementById('totalPacientes');
-        if (totalEl) totalEl.textContent = pacientesFiltrados.length + ' pacientes';
+        if (totalEl) totalEl.textContent = pacientesFiltrados.length + ' pacientes (hoy)';
         if (pacientesFiltrados.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No se encontraron pacientes.</td></tr>';
             return;
@@ -276,7 +296,7 @@
         cargarPacientes().then(function(pacientes) {
             var hoy = new Date().toLocaleDateString('es-ES');
             var hoyPacientes = pacientes.filter(function(p) {
-                return p.fechaRegistro === hoy;
+            return p.fechaRegistro === hoy && window.calcularEstadoPaciente(p) !== 'completo';
             });
             var pendientes = hoyPacientes.filter(function(p) {
                 var e = window.calcularEstadoPaciente(p);

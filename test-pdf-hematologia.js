@@ -79,16 +79,27 @@ const payload = window.PdfReport.buildPayload({
         area: 'General',
         tipo: 'numerico',
         resultado: resultadoBiometria
+    }, {
+        id: 'vsg',
+        nombre: 'V.S.G. 1 Hora',
+        area: 'Hematología',
+        tipo: 'numerico',
+        unidad: 'mm/h',
+        resultado: '18'
     }]
 });
 
 assert.strictEqual(payload.secciones.length, 1);
 assert.strictEqual(payload.secciones[0].nombre, 'Hematología');
+assert.strictEqual(payload.secciones[0].subareas.length, 1);
+assert.strictEqual(payload.secciones[0].subareas[0].titulo, undefined);
 const filas = payload.secciones[0].subareas.flatMap(function(subarea) { return subarea.rows || []; });
-assert.strictEqual(filas.length, 23);
+assert.strictEqual(filas.length, 24);
 assert.strictEqual(filas.find(function(fila) { return fila.nombre === 'Glóbulos Blancos'; }).texto, '7.2');
 assert.strictEqual(filas.find(function(fila) { return fila.nombre === 'Hemoglobina'; }).texto, '14.1');
 assert.strictEqual(filas.find(function(fila) { return fila.nombre === 'Hemoglobina'; }).refTexto, 'F: 12.0-16.0');
+assert.strictEqual(filas[filas.length - 1].nombre, 'V.S.G. 1 Hora');
+assert.strictEqual(filas[filas.length - 1].texto, '18');
 assert.ok(filas.every(function(fila) { return fila.texto !== resultadoBiometria; }));
 
 const payloadUro = window.PdfReport.buildPayload({
