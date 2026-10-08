@@ -115,6 +115,8 @@
     function hidratar(catalogo, referencias) {
         var catalogoPlano = [];
         var examenesDetallados = {};
+        estado.examenesPorId = Object.create(null);
+        estado.parametrosPorExamen = Object.create(null);
 
         catalogo.examenes.forEach(function(fila) {
             var examen = examenDeFila(fila);
@@ -443,6 +445,22 @@
     window.App.catalogoDB = estado;
     window.catalogoListo = estado.cargando || (estado.cargando = cargarCatalogo());
     window.catalogoListo.catch(function() { /* ya registrado en cargarCatalogo */ });
+
+    window.refrescarCatalogoDesdeSQLite = function() {
+        if (!window.api || typeof window.api.obtenerCatalogo !== 'function') {
+            return Promise.reject(new Error('La conexión con SQLite no está disponible.'));
+        }
+        return Promise.all([
+            window.api.obtenerCatalogo(),
+            window.api.obtenerReferencias().catch(function() { return null; })
+        ]).then(function(respuestas) {
+            var catalogo = respuestas[0];
+            if (!catalogo || !catalogo.success) {
+                throw new Error((catalogo && catalogo.error) || 'No se pudo actualizar el catálogo.');
+            }
+            return hidratar(catalogo, respuestas[1]);
+        });
+    };
 
     window.recargarCatalogoDesdeSQLite = function() {
         estado.parametrosPorExamen = Object.create(null);

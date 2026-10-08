@@ -18,9 +18,12 @@ contextBridge.exposeInMainWorld('api', {
     eliminarPacientePorOrden: (orden) => ipcRenderer.invoke('eliminar-paciente', { orden }),
     eliminarTodosPacientes: () => ipcRenderer.invoke('eliminar-todos-pacientes'),
     obtenerCatalogo: () => ipcRenderer.invoke('obtener-catalogo'),
+    obtenerCatalogoAdmin: () => ipcRenderer.invoke('obtener-catalogo-admin'),
+    guardarExamenCatalogo: (examen) => ipcRenderer.invoke('guardar-examen-catalogo', examen),
+    actualizarEstadoExamenCatalogo: (data) => ipcRenderer.invoke('actualizar-estado-examen-catalogo', data),
+    eliminarExamenCatalogo: (data) => ipcRenderer.invoke('eliminar-examen-catalogo', data),
     obtenerParametrosExamen: (examenId) => ipcRenderer.invoke('obtener-parametros-examen', examenId),
     obtenerReferencias: () => ipcRenderer.invoke('obtener-referencias'),
     obtenerPerfiles: () => ipcRenderer.invoke('obtener-perfiles'),
     dbStatus: () => ipcRenderer.invoke('db-status'),
 });
-

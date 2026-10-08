@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS examenes (
     id              TEXT PRIMARY KEY,
     categoria_id    TEXT NOT NULL,
     nombre          TEXT NOT NULL,
+    origen          TEXT NOT NULL DEFAULT 'base',
     unidad          TEXT NOT NULL DEFAULT '',
     tipo            TEXT NOT NULL DEFAULT 'numerico',
     tipo_formulario TEXT,
@@ -247,6 +248,9 @@ function crearEsquemaCatalogo(db) {
         if (legado) apartarEsquemaLegado(db);
         db.exec('DROP TABLE IF EXISTS examenes_opciones');
         db.exec(DDL_CATALOGO);
+        if (!columnasDe(db, 'examenes').some(function(c) { return c.name === 'origen'; })) {
+            db.exec("ALTER TABLE examenes ADD COLUMN origen TEXT NOT NULL DEFAULT 'base'");
+        }
         db.exec(DDL_VISTAS);
     } finally {
         db.pragma('foreign_keys = ON');
@@ -312,6 +316,21 @@ function prepararConsultasCatalogo(db) {
             JOIN categorias_examenes c ON c.id = e.categoria_id
             WHERE e.activo = 1
             ORDER BY e.orden, e.nombre
+        `),
+        categoriasAdmin: db.prepare(`
+            SELECT c.id, c.nombre, c.orden
+            FROM categorias_examenes c
+            JOIN examenes e ON e.categoria_id = c.id
+            GROUP BY c.id
+            ORDER BY c.orden, c.nombre
+        `),
+        examenesAdmin: db.prepare(`
+            SELECT e.id, e.categoria_id, c.nombre AS categoria, e.nombre, e.unidad,
+                   e.tipo, e.tipo_formulario, e.grupo, e.valor_defecto,
+                   e.ref_min, e.ref_max, e.ref_texto, e.orden, e.activo
+            FROM examenes e
+            JOIN categorias_examenes c ON c.id = e.categoria_id
+            ORDER BY c.orden, c.nombre, e.orden, e.nombre
         `),
         opcionesExamen: db.prepare(`
             SELECT examen_id, orden, valor FROM opciones_examen ORDER BY examen_id, orden

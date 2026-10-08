@@ -415,6 +415,7 @@ function prepararEscrituras(db) {
                 ref_max         = excluded.ref_max,
                 ref_texto       = excluded.ref_texto,
                 orden           = excluded.orden
+            WHERE examenes.origen <> 'usuario'
         `),
         parametro: db.prepare(`
             INSERT INTO parametros_examen (examen_id, codigo, nombre, tipo_dato, tipo_interfaz, unidad, grupo,

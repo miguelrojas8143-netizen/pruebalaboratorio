@@ -9,6 +9,11 @@ const {
     mapearExamenesGuardados,
     guardarHistorialPaciente
 } = require('./database/examenes');
+const {
+    guardarExamenCatalogo,
+    actualizarEstadoExamenCatalogo,
+    eliminarExamenCatalogo
+} = require('./database/catalogo-admin');
 const { actualizarOrdenPaciente } = require('./database/ordenes');
 const { prepararConsultasCatalogo } = require('./database/schema');
 
@@ -556,6 +561,29 @@ function registrarHandlersCatalogo() {
         resolverPerfiles(perfiles, perfilesExamenes, examenesPorId);
 
         return { success: true, categorias: categorias, examenes: examenes, perfiles: perfiles };
+    }));
+
+    /** Catálogo administrativo: incluye también los exámenes inactivos. */
+    ipcMain.handle('obtener-catalogo-admin', envolver(function() {
+        return {
+            success: true,
+            categorias: consultasCatalogo.categoriasAdmin.all(),
+            examenes: consultasCatalogo.examenesAdmin.all()
+        };
+    }));
+
+    ipcMain.handle('guardar-examen-catalogo', envolver(function(examen) {
+        return { success: true, examen: guardarExamenCatalogo(db, examen) };
+    }));
+
+    ipcMain.handle('actualizar-estado-examen-catalogo', envolver(function(data) {
+        const resultado = actualizarEstadoExamenCatalogo(db, data && data.id, data && data.activo);
+        return { success: true, examen: resultado };
+    }));
+
+    ipcMain.handle('eliminar-examen-catalogo', envolver(function(data) {
+        const resultado = eliminarExamenCatalogo(db, data && data.id);
+        return { success: true, examen: resultado };
     }));
 
     /** Rangos de referencia por sexo y franja etaria. */

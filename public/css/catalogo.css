@@ -1,102 +1,241 @@
-/* ============================================================
-   CATÁLOGO DE EXÁMENES - ESTILOS ESPECÍFICOS
-   ============================================================ */
-
-.catalogo-card {
-    border: none;
+.catalogo-panel {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e5eaf1;
     border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
 }
 
-.catalogo-card .card-header {
-    background-color: #0d6efd;
-    color: white;
-    border-radius: 12px 12px 0 0 !important;
-    font-weight: 600;
-}
-/* Estilos para los acordeones del catálog */
-
-#catalogoAcordeones .accordion-button {
-    background-color: #f8f9fa;
-    color: #212529;
-    font-weight: 600;
-    box-shadow: none;
+.catalogo-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    color: #fff;
+    background: linear-gradient(135deg, #1a6dd4, #2196f3);
 }
 
-#catalogoAcordeones .accordion-button:not(.collapsed) {
-    background-color: #e9ecef;
-    color: #0d6efd;
-}
-
-#catalogoAcordeones .accordion-button:hover {
-    background-color: #e9ecef;
-}
-
-#catalogoAcordeones .accordion-button .badge {
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-#catalogoAcordeones .accordion-collapse {
-    transition: height 0.3s ease;
-}
-
-#catalogoAcordeones .accordion-body {
-    padding: 0;
-}
-
-#catalogoAcordeones input {
-    border-radius: 6px;
-    border: 1px solid #dee2e6;
-}
-
-#catalogoAcordeones input:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-/**/
-#catalogoAcordeones td:first-child { 
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-    color: #495057;
-    background-color: #f8f9fa;
-}
-
-#tablaCatalogoPerfiles td:first-child {
+.catalogo-panel-header h1,
+.catalogo-subheader h2 {
+    margin: 0;
+    font-size: 1.1rem;
     font-weight: 600;
 }
 
-.catalogo-perfil-badge {
+.catalogo-panel-header p {
+    margin-top: 0.25rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.85rem;
+}
+
+.catalogo-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.catalogo-search {
+    position: relative;
+    width: min(100%, 420px);
+}
+
+.catalogo-search > i {
+    position: absolute;
+    top: 50%;
+    left: 0.9rem;
+    color: #8993a1;
+    transform: translateY(-50%);
+}
+
+.catalogo-search input {
+    padding-left: 2.5rem;
+    border-radius: 2rem;
+}
+
+.catalogo-categorias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.8rem 1.25rem;
+    background: #fafbfd;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.catalogo-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    color: #455264;
+    background: #fff;
+    border: 1px solid #dce2ea;
+    border-radius: 2rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.catalogo-filtro:hover,
+.catalogo-filtro.active {
+    color: #fff;
+    background: #1a6dd4;
+    border-color: #1a6dd4;
+}
+
+.catalogo-filtro .badge-count {
+    padding: 0.05rem 0.4rem;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 1rem;
+    font-size: 0.7rem;
+}
+
+.catalogo-filtro.active .badge-count {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.catalogo-tabla {
+    min-width: 850px;
+}
+
+.catalogo-tabla thead th {
+    padding: 0.75rem 0.8rem;
+    color: #637083;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e6eaf0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.catalogo-tabla tbody td {
+    padding: 0.7rem 0.8rem;
+    border-color: #f0f2f5;
+    font-size: 0.87rem;
+}
+
+.catalogo-tabla tbody tr:hover {
+    background: #f5f9ff;
+}
+
+.catalogo-code {
+    padding: 0.25rem 0.5rem;
+    color: #1a6dd4;
+    background: #eef4ff;
+    border-radius: 5px;
+    font-family: "Courier New", monospace;
     font-size: 0.8rem;
-    padding: 4px 8px;
+    font-weight: 600;
 }
 
-/* Botón de guardar individual por examen */
-.btn-guardar-examen {
-    transition: all 0.2s ease;
-}
-.btn-guardar-examen.guardado i {
-    color: #ffffff;
-}
-
-/* Fila recién guardada: animación de fondo verde claro -> transparente */
-.fila-guardada {
-    animation: filaGuardarFade 1.2s ease-out;
-}
-@keyframes filaGuardarFade {
-    0% { background-color: #d1e7dd; }
-    100% { background-color: transparent; }
+.catalogo-type {
+    display: inline-block;
+    padding: 0.22rem 0.55rem;
+    color: #1565c0;
+    background: #e3f2fd;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
 }
 
-/* Toasts de confirmación: paleta existente (#198754 / #d1e7dd / #dc3545 / #f8d7da), sin colores nuevos */
+.catalogo-type.texto {
+    color: #2e7d32;
+    background: #e8f5e9;
+}
+
+.catalogo-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.catalogo-status::before {
+    width: 0.55rem;
+    height: 0.55rem;
+    background: #dc3545;
+    border-radius: 50%;
+    content: "";
+}
+
+.catalogo-status.activo::before {
+    background: #28a745;
+}
+
+.catalogo-action {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+}
+
+.catalogo-action:hover {
+    transform: translateY(-1px);
+}
+
+.catalogo-subheader {
+    padding: 1rem 1.25rem;
+    color: #fff;
+    background: linear-gradient(135deg, #1a6dd4, #2196f3);
+}
+
+.catalogo-perfiles .table thead th {
+    color: #637083;
+    background: #f8f9fb;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.catalogo-perfil-count {
+    padding: 0.25rem 0.55rem;
+    color: #455264;
+    background: #edf0f4;
+    border-radius: 1rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.modal-header-blue {
+    color: #fff;
+    background: linear-gradient(135deg, #1a6dd4, #2196f3);
+}
+
 .toast-success-catalogo {
     --bs-toast-color: #198754;
     --bs-toast-bg: #d1e7dd;
     --bs-toast-border-color: #d1e7dd;
     --bs-toast-header-bg: transparent;
 }
+
 .toast-danger-catalogo {
     --bs-toast-color: #dc3545;
     --bs-toast-bg: #f8d7da;
     --bs-toast-border-color: #f8d7da;
     --bs-toast-header-bg: transparent;
+}
+
+@media (max-width: 576px) {
+    .catalogo-panel-header {
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .catalogo-panel-header p {
+        display: none;
+    }
+
+    .catalogo-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 0.85rem 1rem;
+    }
+
+    .catalogo-search {
+        width: 100%;
+    }
 }
