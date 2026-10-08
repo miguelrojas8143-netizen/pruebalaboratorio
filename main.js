@@ -785,6 +785,8 @@ function crearVentana(rutaArchivo, opciones = {}) {
     return win;
 }
 
+const TIEMPO_SPLASH_MS = 3000; // 3 segundos mínimo de splash
+
 let mainWindow;
 
 app.whenReady().then(() => {
@@ -808,17 +810,49 @@ app.whenReady().then(() => {
     mainWindow = crearVentana(rutaArchivo, opcionesVentana);
     mainWindow.hide();
     
-    // 5. Mostrar cuando la página esté lista
-    mainWindow.once('ready-to-show', () => {
+    // 5. Mostrar cuando la página esté lista y haya transcurrido el tiempo mínimo de splash
+    let windowReady = false;
+    let splashCompletado = false;
+    let splashTimeout;
+
+    const cerrarSplash = () => {
         if (!splash.isDestroyed()) splash.close();
-        mainWindow.show();
-        mainWindow.focus();
-        // Abrir DevTools DESPUÉS de crear la ventana
-        mainWindow.webContents.openDevTools();
+    };
+
+    const mostrarVentanaPrincipal = () => {
+        if (!mainWindow.isDestroyed()) {
+            mainWindow.show();
+            mainWindow.focus();
+            // Abrir DevTools DESPUÉS de crear la ventana
+            mainWindow.webContents.openDevTools();
+        }
+    };
+
+    // El timeout es el gatekeeper: el splash permanece visible los N segundos
+    // mínimos aunque ready-to-show dispare antes, garantizando la duración.
+    const transicionar = () => {
+        if (windowReady && splashCompletado) {
+            cerrarSplash();
+            mostrarVentanaPrincipal();
+        }
+    };
+
+    splashTimeout = setTimeout(() => {
+        splashCompletado = true;
+        cerrarSplash();
+        transicionar();
+    }, TIEMPO_SPLASH_MS);
+
+    // Marca la ventana como lista, pero no muestra hasta que el tiempo mínimo
+    // de splash haya transcurrido (evita el race condition).
+    mainWindow.once('ready-to-show', () => {
+        windowReady = true;
+        transicionar();
     });
-    
+
+    // Si el splash se cierra manualmente, limpiar el timeout
     splash.on('closed', () => {
-        // Limpieza si fuera necesaria
+        if (splashTimeout) clearTimeout(splashTimeout);
     });
 });
 

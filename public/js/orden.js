@@ -525,23 +525,6 @@
         }, 100);
     };
 
-    window.actualizarReferencia = function(input) {
-        var fila = input.closest('tr');
-        if (!fila) return;
-        var examenId = fila.getAttribute('data-examen-id');
-        var examenes = window.examenesOrden || [];
-        var examen = examenes.find(function(e) { return e.id === examenId; });
-        if (!examen) return;
-        if (input.classList.contains('ref-min-input')) {
-            examen.refMin = parseFloat(input.value) || 0;
-        }
-        if (input.classList.contains('ref-max-input')) {
-            examen.refMax = parseFloat(input.value) || 0;
-        }
-        var resultadoInput = fila.querySelector('.resultado-input');
-        if (resultadoInput) window.validarResultado(resultadoInput);
-    };
-
     window.validarResultado = function(input) {
         var fila = input.closest('tr');
         if (!fila) return;

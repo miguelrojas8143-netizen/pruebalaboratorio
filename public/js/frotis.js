@@ -95,13 +95,4 @@
         window.renderizarTablaExamenes();
     };
 
-    window.cerrarFormularioFrotis = function() {
-        var modalEl = document.getElementById('modalFrotisMultiselect');
-        if (modalEl && typeof bootstrap !== 'undefined') {
-            var bsModal = bootstrap.Modal.getInstance(modalEl);
-            if (bsModal) bsModal.hide();
-        }
-        window._frotisEditando = null;
-    };
-
 })();

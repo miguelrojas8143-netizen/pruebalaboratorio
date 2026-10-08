@@ -86,23 +86,5 @@
         irAImpresionOriginal();
     };
 
-    // ============================================
-    // Funciones helper para usar en otros archivos
-    // ============================================
-    window.buscarPacientePorCedula = function(cedula) {
-        var pacientes = window.obtenerPacientes ? window.obtenerPacientes() : [];
-        return pacientes.filter(function(p) {
-            return p.cedula && p.cedula.toString().includes(cedula.toString());
-        });
-    };
-
-    window.buscarPacientePorNombre = function(nombre) {
-        var termino = nombre.toLowerCase();
-        var pacientes = window.obtenerPacientes ? window.obtenerPacientes() : [];
-        return pacientes.filter(function(p) {
-            return p.nombre && p.nombre.toLowerCase().includes(termino);
-        });
-    };
-
     console.log('✅ App.js cargado con soporte IndexedDB');
 })();

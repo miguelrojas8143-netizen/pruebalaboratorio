@@ -462,9 +462,4 @@
         });
     };
 
-    window.recargarCatalogoDesdeSQLite = function() {
-        estado.parametrosPorExamen = Object.create(null);
-        return cargarCatalogo();
-    };
-
 })();
