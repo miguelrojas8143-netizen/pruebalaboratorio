@@ -9,14 +9,17 @@
     // ============================================
     // Event listeners para cambios en datos
     // ============================================
-    window.addEventListener('catalogoCustomChange', function() {
-        if (document.getElementById('selectorExamenes')) {
-            window.refrescarSelect2Catalogos();
-        }
-        if (document.getElementById('catalogoAcordeones')) {
-            window.initCatalogo();
-        }
-    });
+    if (!window._catalogoChangeListenersAttached) {
+        window._catalogoChangeListenersAttached = true;
+        window.addEventListener('catalogoCustomChange', function() {
+            if (document.getElementById('selectorExamenes')) {
+                window.refrescarSelect2Catalogos();
+            }
+            if (document.getElementById('catalogoAcordeones')) {
+                window.initCatalogo();
+            }
+        });
+    }
 
     // ============================================
     // Inicialización principal

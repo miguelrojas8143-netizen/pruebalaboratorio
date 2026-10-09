@@ -122,6 +122,7 @@
             }
             window.refrescarSelect2Catalogos();
             renderizarTablaExamenes();
+            inicializarDelegadosResultados();
             renderizarHistorial();
 
             var alertaSinGuardar = document.getElementById('alertSinGuardar');
@@ -329,7 +330,7 @@
                 if (window.esSecrecionVaginal(examen)) {
                     fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-primary btn-sm" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
                 } else {
-                    fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><select class="form-select resultado-input" onchange="window.actualizarResultado(this)"><option value="">Seleccionar...</option>' + opcionesHtml2 + '</select></td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+                    fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td><select class="form-select resultado-input"><option value="">Seleccionar...</option>' + opcionesHtml2 + '</select></td><td class="text-muted small">-</td><td>-</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
                 }
             } else if (examen.tipo === 'perfil' && window.App.examenesDetallados[examen.id]) {
                 var detalle = window.App.examenesDetallados[examen.id];
@@ -508,8 +509,76 @@
         }
     };
 
+    function _debounceValidarYCalcular(input) {
+        if (window.validarResultado) window.validarResultado(input);
+        if (window.ejecutarCalculosAutomaticos) window.ejecutarCalculosAutomaticos();
+    }
+
+    var _debounceValidarYCalcularFn = debounce(_debounceValidarYCalcular, 250);
+
+    function actualizarCeldaExamen(examenId, newValue) {
+        var fila = document.querySelector('tr[data-examen-id="' + examenId + '"]');
+        if (!fila) return false;
+        var input = fila.querySelector('select.form-select');
+        if (input) {
+            if (input.value !== String(newValue)) {
+                input.value = newValue;
+            }
+            if (window.validarResultado) window.validarResultado(input);
+        }
+        var botonSpan = fila.querySelector('td:nth-child(2)');
+        if (botonSpan && window.validarResultado) {
+            var fakeInput = input || { closest: function() { return fila; } };
+            if (input) window.validarResultado(input);
+        }
+        return true;
+    }
+
+    window.actualizarCeldasCalculadas = function(cambios) {
+        Object.keys(cambios).forEach(function(examenId) {
+            actualizarCeldaExamen(examenId, cambios[examenId]);
+        });
+    };
+
+    var _delegadosResultadosInstalados = false;
+
+    function inicializarDelegadosResultados() {
+        if (_delegadosResultadosInstalados) return;
+        _delegadosResultadosInstalados = true;
+
+        var tbody = document.getElementById('tablaExamenes');
+        if (!tbody) return;
+
+        tbody.addEventListener('change', function(event) {
+            var select = event.target.closest('select.form-select');
+            if (!select || !select.closest('#tablaExamenes')) return;
+            var fila = select.closest('tr');
+            if (!fila) return;
+            var examenId = fila.getAttribute('data-examen-id');
+            var examenes = window.examenesOrden || [];
+            var examen = examenes.find(function(e) { return e.id === examenId; });
+            if (examen) {
+                examen.resultado = select.value;
+            }
+            _debounceValidarYCalcularFn(select);
+        });
+
+        tbody.addEventListener('input', function(event) {
+            var input = event.target.closest('.resultado-input');
+            if (!input || !input.closest('#tablaExamenes')) return;
+            var fila = input.closest('tr');
+            if (!fila) return;
+            var examenId = fila.getAttribute('data-examen-id');
+            var examenes = window.examenesOrden || [];
+            var examen = examenes.find(function(e) { return e.id === examenId; });
+            if (examen) {
+                examen.resultado = input.value;
+            }
+            _debounceValidarYCalcularFn(input);
+        });
+    }
+
     window.actualizarResultado = function(input) {
-        window.validarResultado(input);
         var fila = input.closest('tr');
         if (!fila) return;
         var examenId = fila.getAttribute('data-examen-id');
@@ -518,11 +587,7 @@
         if (examen) {
             examen.resultado = input.value;
         }
-        setTimeout(function() {
-            if (window.ejecutarCalculosAutomaticos) {
-                window.ejecutarCalculosAutomaticos();
-            }
-        }, 100);
+        _debounceValidarYCalcularFn(input);
     };
 
     window.validarResultado = function(input) {
@@ -765,9 +830,58 @@
         return String(new URLSearchParams(window.location.search).get('orden') || '').padStart(3, '0');
     };
 
-    window.refrescarSelect2Catalogos = function() {
+    function debounce(func, wait) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() { func.apply(context, args); }, wait);
+        };
+    }
+
+    var _select2Cache = {
+        inicializado: false,
+        ultimaFirmaCatalogo: '',
+        ultimaFirmaPerfiles: ''
+    };
+
+    function _firmaCatalogo() {
+        try {
+            var catalogo = window.App.catalogo || [];
+            var catalogoIds = catalogo.map(function(e) { return e.id; }).join('|');
+            return catalogo.length + ':' + catalogoIds.length;
+        } catch (e) {
+            return '0:0';
+        }
+    }
+
+    function _firmaPerfiles() {
+        try {
+            var perfiles = window.App.perfiles || {};
+            var keys = Object.keys(perfiles).sort().join('|');
+            return keys.length;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    window.refrescarSelect2Catalogos = debounce(function() {
         var select = $("#selectorExamenes");
         if (!select.length) return;
+
+        var firmaCatalogo = _firmaCatalogo();
+        var firmaPerfiles = _firmaPerfiles();
+
+        if (_select2Cache.inicializado &&
+            _select2Cache.ultimaFirmaCatalogo === firmaCatalogo &&
+            _select2Cache.ultimaFirmaPerfiles === firmaPerfiles) {
+            return;
+        }
+
+        _select2Cache.inicializado = true;
+        _select2Cache.ultimaFirmaCatalogo = firmaCatalogo;
+        _select2Cache.ultimaFirmaPerfiles = firmaPerfiles;
+
         if (select.hasClass("select2-hidden-accessible")) {
             select.select2("destroy");
         }
@@ -818,9 +932,10 @@
             theme: "bootstrap-5",
             placeholder: "Escriba para buscar examen...",
             allowClear: true,
-            width: "100%"
+            width: "100%",
+            maximumResultsToShow: 20
         });
-    };
+    }, 300);
 
     window.renderizarTablaExamenes = renderizarTablaExamenes;
 

@@ -130,7 +130,7 @@
     window.ejecutarCalculosAutomaticos = function() {
         var examenesOrden = window.examenesOrden || [];
         if (examenesOrden.length === 0) return;
-        var hayCambios = false;
+        var cambios = {};
         Object.keys(GRUPOS_CALCULO).forEach(function(grupoKey) {
             var grupo = GRUPOS_CALCULO[grupoKey];
             var resultados = grupo.calcular(examenesOrden);
@@ -142,14 +142,19 @@
                     var valorFormateado = typeof nuevoValor === 'number' ? nuevoValor.toFixed(2) : nuevoValor;
                     if (String(resultadoActual || '') !== String(valorFormateado)) {
                         if (guardarValor(examenesOrden, salidaId, valorFormateado)) {
-                            hayCambios = true;
+                            cambios[salidaId] = valorFormateado;
                         }
                     }
                 });
             }
         });
-        if (hayCambios) {
-            window.renderizarTablaExamenes();
+        var clavesCambio = Object.keys(cambios);
+        if (clavesCambio.length > 0) {
+            if (window.actualizarCeldasCalculadas) {
+                window.actualizarCeldasCalculadas(cambios);
+            } else if (window.renderizarTablaExamenes) {
+                window.renderizarTablaExamenes();
+            }
         }
     };
 

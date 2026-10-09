@@ -7,6 +7,15 @@
 (function() {
     'use strict';
 
+    function debounce(fn, delay) {
+        var timer;
+        return function() {
+            var ctx = this, args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(function() { fn.apply(ctx, args); }, delay);
+        };
+    }
+
     window.toggleItemsExamenTabla = function(examenId) {
         return window.abrirModalItemsExamen(examenId);
     };
@@ -98,6 +107,13 @@
     function inicializarCalculosEnVivoModal(body) {
         if (!body || body.dataset.calculosInicializados === 'true') return;
         body.dataset.calculosInicializados = 'true';
+        var _ultimoExamenId = null;
+        var debouncedCalcular = debounce(function() {
+            if (!_ultimoExamenId) return;
+            if (window.ejecutarCalculosAutomaticos) window.ejecutarCalculosAutomaticos();
+            actualizarInputsCalculados(_ultimoExamenId);
+        }, 250);
+
         body.addEventListener('input', function(event) {
             if (!event.target.matches('.tabla-item-input')) return;
 
@@ -109,8 +125,8 @@
 
             examen.resultado = JSON.stringify(leerDatosModal(examenId));
             examen.tipo = 'perfil';
-            if (window.ejecutarCalculosAutomaticos) window.ejecutarCalculosAutomaticos();
-            actualizarInputsCalculados(examenId);
+            _ultimoExamenId = examenId;
+            debouncedCalcular();
         });
     }
 
