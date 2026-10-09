@@ -2,6 +2,15 @@
 (function() {
     'use strict';
 
+    function debounce(fn, delay) {
+        var timer = null;
+        return function() {
+            var ctx = this, args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(function() { fn.apply(ctx, args); }, delay);
+        };
+    }
+
     var _paginacion = {
         pagina: 1,
         limit: 10,
@@ -209,10 +218,11 @@
                 mostrarNotificacion('Error inesperado: ' + err.message, 'danger');
             }
         });
-        document.getElementById('buscadorGlobal').addEventListener('input', function() {
-            renderizarCola(this.value);
-            window.buscarPaciente(this.value);
-        });
+        document.getElementById('buscadorGlobal').addEventListener('input', debounce(function() {
+            var termino = this.value;
+            renderizarCola(termino);
+            window.buscarPaciente(termino);
+        }, 300));
         document.getElementById('btnNuevaOrden').addEventListener('click', function() {
             var modal = bootstrap.Modal.getInstance(document.getElementById('modalDuplicado'));
             modal.hide();

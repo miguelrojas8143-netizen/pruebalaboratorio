@@ -1,10 +1,11 @@
 {
   "name": "mirolab-systems",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sistema de Laboratorio Clínico - Demo",
   "main": "main.js",
   "scripts": {
     "prestart": "npm run build:includes",
+    "prebuild": "npm run build:includes",
     "build:includes": "node scripts/build-includes.js",
     "start": "node scripts/start.js",
     "migrar:catalogo": "node scripts/migrar-catalogo.js",

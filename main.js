@@ -658,8 +658,10 @@ const ICONO_APP = path.join(__dirname, 'logo-mirolab.png');
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
+
+
 // --- CONFIGURACIÓN DE LA DEMO ---
-const DIAS_DEMO = 10;
+const DIAS_DEMO = 3;
 const NOMBRE_APP = 'MiroLab Systems';
 const CLAVE_SECRETA = 'MiroLab-Systems-demo-v1-secure-key';
 
@@ -785,7 +787,7 @@ function crearVentana(rutaArchivo, opciones = {}) {
     return win;
 }
 
-const TIEMPO_SPLASH_MS = 3000; // 3 segundos mínimo de splash
+const TIEMPO_SPLASH_MS = 4000; // 3 segundos mínimo de splash
 
 let mainWindow;
 
@@ -824,7 +826,8 @@ app.whenReady().then(() => {
             mainWindow.show();
             mainWindow.focus();
             // Abrir DevTools DESPUÉS de crear la ventana
-            mainWindow.webContents.openDevTools();
+           
+           // mainWindow.webContents.openDevTools();
         }
     };
 
