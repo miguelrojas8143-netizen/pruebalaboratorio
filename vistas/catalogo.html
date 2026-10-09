@@ -60,29 +60,21 @@
                     <input id="buscarExamenCatalogo" type="search" class="form-control"
                            placeholder="Buscar por código, nombre o categoría..." autocomplete="off">
                 </label>
+                <div class="catalogo-toolbar-acciones d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExpandirTodo">
+                        <i class="bi bi-chevron-down me-1"></i>Expandir
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnColapsarTodo">
+                        <i class="bi bi-chevron-up me-1"></i>Colapsar
+                    </button>
+                </div>
                 <span id="contadorExamenesCatalogo" class="text-muted small" aria-live="polite"></span>
             </div>
 
             <nav id="catalogoCategorias" class="catalogo-categorias" aria-label="Filtrar por categoría"></nav>
 
-            <div id="catalogoAcordeones" class="table-responsive">
-                <table class="table align-middle mb-0 catalogo-tabla">
-                    <thead>
-                        <tr>
-                            <th scope="col">Código</th>
-                            <th scope="col">Examen</th>
-                            <th scope="col">Categoría</th>
-                            <th scope="col">Unidad</th>
-                            <th scope="col">Tipo</th>
-                            <th scope="col">Referencia</th>
-                            <th scope="col">Estado</th>
-                            <th scope="col" class="text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaCatalogoExamenes">
-                        <tr><td colspan="8" class="text-center text-muted py-4">Cargando catálogo...</td></tr>
-                    </tbody>
-                </table>
+            <div id="catalogoAcordeones" class="accordion catalogo-acordeon" id="catalogoAcordeon">
+                <div class="catalogo-vacio text-center text-muted py-4">Cargando catálogo...</div>
             </div>
         </section>
 
@@ -161,8 +153,10 @@
                         </div>
                         <div id="catalogoFormularioError" class="alert alert-danger mt-3 mb-0 d-none" role="alert"></div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <div class="modal-footer catalogo-modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x me-1"></i>Cancelar
+                        </button>
                         <button type="submit" class="btn btn-primary" id="btnGuardarExamenCatalogo">
                             <i class="bi bi-save me-1"></i>Guardar examen
                         </button>

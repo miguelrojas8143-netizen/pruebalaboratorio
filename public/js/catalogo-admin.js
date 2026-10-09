@@ -149,9 +149,88 @@
         });
     }
 
-    function renderizarTabla() {
-        var tbody = elemento('tablaCatalogoExamenes');
-        tbody.textContent = '';
+    function slugify(texto) {
+        return String(texto).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+
+    function agruparPorCategoria(examenesFiltrados) {
+        var grupos = {};
+        var orden = [];
+        examenesFiltrados.forEach(function(examen) {
+            var cat = examen.categoria || 'Sin categoría';
+            if (!grupos[cat]) {
+                grupos[cat] = [];
+                orden.push(cat);
+            }
+            grupos[cat].push(examen);
+        });
+        return { grupos: grupos, orden: orden };
+    }
+
+    function crearTarjetaExamen(examen) {
+        var card = document.createElement('div');
+        card.className = 'catalogo-examen-card';
+        card.setAttribute('data-id', examen.id);
+
+        var info = document.createElement('div');
+        info.className = 'catalogo-examen-info';
+
+        var codeSpan = document.createElement('span');
+        codeSpan.className = 'catalogo-code';
+        codeSpan.textContent = examen.id;
+        info.appendChild(codeSpan);
+
+        var nombreSpan = document.createElement('span');
+        nombreSpan.className = 'catalogo-nombre';
+        nombreSpan.textContent = examen.nombre;
+        info.appendChild(nombreSpan);
+
+        var tipoValor = tipoDe(examen);
+        var tipoBadge = document.createElement('span');
+        tipoBadge.className = 'catalogo-type' + (tipoValor === 'texto' || tipoValor === 'heces' ? ' texto' : '');
+        tipoBadge.textContent = tipoLegible(tipoValor);
+        info.appendChild(tipoBadge);
+
+        if (examen.unidad) {
+            var unidadSpan = document.createElement('span');
+            unidadSpan.className = 'catalogo-unidad';
+            unidadSpan.textContent = examen.unidad;
+            info.appendChild(unidadSpan);
+        }
+
+        var refSpan = document.createElement('span');
+        refSpan.className = 'catalogo-ref';
+        refSpan.textContent = referenciaDe(examen);
+        info.appendChild(refSpan);
+
+        var estadoLabel = document.createElement('span');
+        estadoLabel.className = 'catalogo-status' + (examen.activo ? ' activo' : '');
+        estadoLabel.textContent = examen.activo ? 'Activo' : 'Inactivo';
+        info.appendChild(estadoLabel);
+
+        card.appendChild(info);
+
+        var botones = document.createElement('div');
+        botones.className = 'catalogo-examen-botones';
+        botones.appendChild(crearBoton('bi bi-pencil', 'Editar examen', 'btn-warning', 'editar', examen.id));
+        botones.appendChild(crearBoton(
+            examen.activo ? 'bi bi-toggle-on' : 'bi bi-toggle-off',
+            examen.activo ? 'Desactivar examen' : 'Activar examen',
+            examen.activo ? 'btn-success' : 'btn-secondary',
+            'estado',
+            examen.id
+        ));
+        if (examen.activo) {
+            botones.appendChild(crearBoton('bi bi-trash', 'Eliminar del catálogo', 'btn-danger', 'eliminar', examen.id));
+        }
+        card.appendChild(botones);
+
+        return card;
+    }
+
+    function renderizarAcordeon() {
+        var contenedor = elemento('catalogoAcordeones');
+        contenedor.textContent = '';
         var filtrados = filtrarExamenes().sort(function(a, b) {
             return a.nombre.localeCompare(b.nombre, 'es');
         });
@@ -159,57 +238,62 @@
             filtrados.length + (filtrados.length === 1 ? ' examen' : ' exámenes');
 
         if (filtrados.length === 0) {
-            var vacio = document.createElement('tr');
-            var mensaje = crearCelda('No se encontraron exámenes para este filtro.', 'text-center text-muted py-4');
-            mensaje.colSpan = 8;
-            vacio.appendChild(mensaje);
-            tbody.appendChild(vacio);
+            var vacio = document.createElement('div');
+            vacio.className = 'catalogo-vacio';
+            vacio.textContent = 'No se encontraron exámenes para este filtro.';
+            contenedor.appendChild(vacio);
             return;
         }
 
-        filtrados.forEach(function(examen) {
-            var fila = document.createElement('tr');
-            fila.setAttribute('data-id', examen.id);
-            var codigo = crearCelda('', '');
+        var agrupados = agruparPorCategoria(filtrados);
+
+        agrupados.orden.forEach(function(categoria) {
+            var examenesCat = agrupados.grupos[categoria];
+            var slug = slugify(categoria);
+
+            var item = document.createElement('div');
+            item.className = 'accordion-item catalogo-acordeon-item';
+
+            var header = document.createElement('h2');
+            header.className = 'accordion-header';
+            header.id = 'heading-' + slug;
+
+            var botonHeader = document.createElement('button');
+            botonHeader.className = 'accordion-button catalogo-acordeon-toggle';
+            botonHeader.type = 'button';
+            botonHeader.setAttribute('data-bs-toggle', 'collapse');
+            botonHeader.setAttribute('data-bs-target', '#collapse-' + slug);
+            botonHeader.setAttribute('aria-expanded', 'true');
+            botonHeader.setAttribute('aria-controls', 'collapse-' + slug);
+
+            var tituloSpan = document.createElement('span');
+            tituloSpan.className = 'catalogo-categoria-titulo';
+            tituloSpan.textContent = categoria;
+            botonHeader.appendChild(tituloSpan);
+
             var badge = document.createElement('span');
-            badge.className = 'catalogo-code';
-            badge.textContent = examen.id;
-            codigo.appendChild(badge);
-            fila.appendChild(codigo);
-            fila.appendChild(crearCelda(examen.nombre));
-            fila.appendChild(crearCelda(examen.categoria));
-            fila.appendChild(crearCelda(examen.unidad || '-'));
+            badge.className = 'badge bg-primary catalogo-acordeon-badge';
+            badge.textContent = String(examenesCat.length);
+            botonHeader.appendChild(badge);
 
-            var tipo = crearCelda('');
-            var tipoBadge = document.createElement('span');
-            var tipoValor = tipoDe(examen);
-            tipoBadge.className = 'catalogo-type' + (tipoValor === 'texto' || tipoValor === 'heces' ? ' texto' : '');
-            tipoBadge.textContent = tipoLegible(tipoValor);
-            tipo.appendChild(tipoBadge);
-            fila.appendChild(tipo);
-            fila.appendChild(crearCelda(referenciaDe(examen)));
+            header.appendChild(botonHeader);
+            item.appendChild(header);
 
-            var estado = crearCelda('');
-            var estadoLabel = document.createElement('span');
-            estadoLabel.className = 'catalogo-status' + (examen.activo ? ' activo' : '');
-            estadoLabel.textContent = examen.activo ? 'Activo' : 'Inactivo';
-            estado.appendChild(estadoLabel);
-            fila.appendChild(estado);
+            var collapse = document.createElement('div');
+            collapse.id = 'collapse-' + slug;
+            collapse.className = 'accordion-collapse collapse show';
+            collapse.setAttribute('aria-labelledby', 'heading-' + slug);
 
-            var acciones = crearCelda('', 'text-end text-nowrap');
-            acciones.appendChild(crearBoton('bi bi-pencil', 'Editar examen', 'btn-warning', 'editar', examen.id));
-            acciones.appendChild(crearBoton(
-                examen.activo ? 'bi bi-toggle-on' : 'bi bi-toggle-off',
-                examen.activo ? 'Desactivar examen' : 'Activar examen',
-                examen.activo ? 'btn-success' : 'btn-secondary',
-                'estado',
-                examen.id
-            ));
-            if (examen.activo) {
-                acciones.appendChild(crearBoton('bi bi-trash', 'Eliminar del catálogo', 'btn-danger', 'eliminar', examen.id));
-            }
-            fila.appendChild(acciones);
-            tbody.appendChild(fila);
+            var body = document.createElement('div');
+            body.className = 'accordion-body catalogo-acordeon-body';
+
+            examenesCat.forEach(function(examen) {
+                body.appendChild(crearTarjetaExamen(examen));
+            });
+
+            collapse.appendChild(body);
+            item.appendChild(collapse);
+            contenedor.appendChild(item);
         });
     }
 
@@ -269,7 +353,7 @@
 
     function renderizar() {
         renderizarCategorias();
-        renderizarTabla();
+        renderizarAcordeon();
         renderizarPerfiles();
     }
 
@@ -286,13 +370,12 @@
     }
 
     function mostrarErrorCarga(mensaje) {
-        var tbody = elemento('tablaCatalogoExamenes');
-        tbody.textContent = '';
-        var fila = document.createElement('tr');
-        var celda = crearCelda(mensaje, 'text-center text-danger py-4');
-        celda.colSpan = 8;
-        fila.appendChild(celda);
-        tbody.appendChild(fila);
+        var contenedor = elemento('catalogoAcordeones');
+        contenedor.textContent = '';
+        var vacio = document.createElement('div');
+        vacio.className = 'catalogo-vacio text-danger';
+        vacio.textContent = mensaje;
+        contenedor.appendChild(vacio);
     }
 
     function abrirFormulario(examen) {
@@ -430,15 +513,15 @@
 
     function instalarEventos() {
         elemento('btnNuevoExamen').addEventListener('click', function() { abrirFormulario(null); });
-        elemento('buscarExamenCatalogo').addEventListener('input', renderizarTabla);
+        elemento('buscarExamenCatalogo').addEventListener('input', renderizarAcordeon);
         elemento('catalogoCategorias').addEventListener('click', function(event) {
             var boton = event.target.closest('[data-categoria]');
             if (!boton) return;
             categoriaActiva = boton.getAttribute('data-categoria');
             renderizarCategorias();
-            renderizarTabla();
+            renderizarAcordeon();
         });
-        elemento('tablaCatalogoExamenes').addEventListener('click', function(event) {
+        elemento('catalogoAcordeones').addEventListener('click', function(event) {
             var boton = event.target.closest('[data-action]');
             if (!boton) return;
             var accion = boton.getAttribute('data-action');
@@ -448,6 +531,26 @@
             if (accion === 'estado' && examen) actualizarEstado(id, !examen.activo);
             if (accion === 'eliminar') eliminarExamen(id);
         });
+
+        var btnExpandir = elemento('btnExpandirTodo');
+        var btnColapsar = elemento('btnColapsarTodo');
+        if (btnExpandir) {
+            btnExpandir.addEventListener('click', function() {
+                document.querySelectorAll('.accordion-collapse').forEach(function(el) { el.classList.add('show'); });
+                document.querySelectorAll('.catalogo-acordeon-toggle').forEach(function(btn) {
+                    btn.setAttribute('aria-expanded', 'true');
+                });
+            });
+        }
+        if (btnColapsar) {
+            btnColapsar.addEventListener('click', function() {
+                document.querySelectorAll('.accordion-collapse').forEach(function(el) { el.classList.remove('show'); });
+                document.querySelectorAll('.catalogo-acordeon-toggle').forEach(function(btn) {
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+
         elemento('formExamenCatalogo').addEventListener('submit', guardarFormulario);
         elemento('catalogoNombre').addEventListener('input', function() {
             if (examenEditando || elemento('catalogoId').dataset.manuallyEdited === 'true') return;

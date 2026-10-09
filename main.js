@@ -661,7 +661,7 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 
 // --- CONFIGURACIÓN DE LA DEMO ---
-const DIAS_DEMO = 3;
+const DIAS_DEMO = 30;
 const NOMBRE_APP = 'MiroLab Systems';
 const CLAVE_SECRETA = 'MiroLab-Systems-demo-v1-secure-key';
 
