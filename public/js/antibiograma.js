@@ -5,18 +5,21 @@
 (function() {
     'use strict';
 
-    window.ANTIBIOTICOS_LISTA = [
-        { antibiotico: 'Ampicilina', resultado: 'Resistente', cmi: '> 16 µg/mL' },
-        { antibiotico: 'Amoxicilina/Ácido Clavulánico', resultado: 'Sensible', cmi: '4/2 µg/mL' },
-        { antibiotico: 'Cefazolina', resultado: 'Sensible', cmi: '≤ 2 µg/mL' },
-        { antibiotico: 'Ceftriaxona', resultado: 'Sensible', cmi: '≤ 1 µg/mL' },
-        { antibiotico: 'Ciprofloxacina', resultado: 'Resistente', cmi: '> 2 µg/mL' },
-        { antibiotico: 'Nitrofurantoína', resultado: 'Sensible', cmi: '≤ 16 µg/mL' },
-        { antibiotico: 'Fosfomicina', resultado: 'Sensible', cmi: '≤ 16 µg/mL' },
-        { antibiotico: 'Trimetoprima/Sulfametoxazol', resultado: 'Resistente', cmi: '> 4/76 µg/mL' }
-    ];
-
     var OBSERVACIONES_DEFAULT = 'La cepa aislada no es productora de Beta-lactamasas de Espectro Extendido (BLEE negativo). Favor de correlacionar el resultado con el cuadro clínico del paciente.';
+
+    /**
+     * Panel de antibióticos tomado del catálogo, no hardcodeado.
+     * `window.App.examenesDetallados.antibiograma` se hidrata desde
+     * `parametros_examen` (SQLite), así que el panel se edita desde el
+     * administrador del catálogo sin tocar este archivo.
+     */
+    function antibioticosPanel() {
+        var detalle = window.App && window.App.examenesDetallados
+            ? window.App.examenesDetallados.antibiograma
+            : null;
+        if (detalle && detalle.items && detalle.items.length) return detalle.items;
+        return [];
+    }
 
     window.abrirFormularioAntibiograma = function(examenId) {
         var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
@@ -37,22 +40,22 @@
         if (!tbody) return;
 
         var html = '';
-        window.ANTIBIOTICOS_LISTA.forEach(function(abx, idx) {
-            var existente = antibioticos.find(function(a) { return a.antibiotico === abx.antibiotico; });
-            var resultadoSel = existente ? existente.resultado : abx.resultado;
-            var cmiVal = existente ? existente.cmi : abx.cmi;
+        antibioticosPanel().forEach(function(abx, idx) {
+            var existente = antibioticos.find(function(a) { return a.antibiotico === abx.nombre; });
+            var resultadoSel = existente ? existente.resultado : abx.valorDefecto;
+            var cmiVal = existente ? existente.cmi : '';
 
             html += '<tr>';
-            html += '<td class="fw-semibold">' + abx.antibiotico + '</td>';
+            html += '<td class="fw-semibold">' + abx.nombre + '</td>';
             html += '<td><select class="form-select form-select-sm abx-resultado" data-idx="' + idx + '"><option value="Sensible">Sensible</option><option value="Resistente">Resistente</option><option value="Intermedio">Intermedio</option></select></td>';
             html += '<td><input type="text" class="form-control form-control-sm abx-cmi" data-idx="' + idx + '" value="' + (cmiVal || '') + '"></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
 
-        window.ANTIBIOTICOS_LISTA.forEach(function(abx, idx) {
-            var existente = antibioticos.find(function(a) { return a.antibiotico === abx.antibiotico; });
-            var resultadoSel = existente ? existente.resultado : abx.resultado;
+        antibioticosPanel().forEach(function(abx, idx) {
+            var existente = antibioticos.find(function(a) { return a.antibiotico === abx.nombre; });
+            var resultadoSel = existente ? existente.resultado : abx.valorDefecto;
             var select = tbody.querySelector('.abx-resultado[data-idx="' + idx + '"]');
             if (select) {
                 var optionToSelect = select.querySelector('option[value="' + resultadoSel + '"]') || select.querySelector('option[value="Sensible"]');
@@ -76,13 +79,13 @@
         if (!tbody) return;
 
         var antibioticos = [];
-        window.ANTIBIOTICOS_LISTA.forEach(function(abx, idx) {
+        antibioticosPanel().forEach(function(abx, idx) {
             var select = tbody.querySelector('.abx-resultado[data-idx="' + idx + '"]');
             var cmiInput = tbody.querySelector('.abx-cmi[data-idx="' + idx + '"]');
             var resultado = select ? select.value : '';
             var cmi = cmiInput ? cmiInput.value.trim() : '';
             antibioticos.push({
-                antibiotico: abx.antibiotico,
+                antibiotico: abx.nombre,
                 resultado: resultado,
                 cmi: cmi
             });

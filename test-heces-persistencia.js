@@ -68,6 +68,11 @@ const campos = {
     restosAlimentos: 'Escasos',
     floraBacteriana: 'Normal'
 };
+// El catálogo real se hidrata en db-catalogo.js desde SQLite; el mock reproduce
+// esa forma para que heces.js lea los parámetros de window.App sin respaldos.
+const CAMPOS_HECES_CATALOGO = Object.keys(campos).map(function(id) {
+    return { id: id, nombre: id, tipo: 'texto', grupo: 'General' };
+});
 const elements = {};
 Object.keys(campos).forEach(function(id) {
     elements[id] = { value: campos[id] };
@@ -82,7 +87,7 @@ const alerts = [];
 let shouldFail = false;
 let renderCount = 0;
 const window = {
-    App: {},
+    App: { examenesDetallados: { examen_heces: { nombre: 'Examen Directo de Heces', items: CAMPOS_HECES_CATALOGO } } },
     obtenerCatalogo: function() {
         return [{
             id: 'examen_heces',

@@ -116,3 +116,27 @@ window.App.examenesDetallados.examen_heces = {
         { id: 'floraBacteriana', nombre: 'Flora bacteriana', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Normal', grupo: 'Microscópico y parasitológico' }
     ]
 };
+
+/**
+ * Antibiograma: panel de antibióticos y sus opciones de lectura.
+ *
+ * El examen ya existe en `catalogo-base.js` con tipo `antibiograma`, y como
+ * `catalogo-base.js` se procesa antes que este archivo, la fila de `examenes`
+ * conserva su tipo y su `tipo_formulario`. Cada antibiótico es un parámetro de
+ * `parametros_examen`, así que el panel se edita desde el administrador del
+ * catálogo sin tocar el frontend. La CMI es un valor que captura el laboratorio
+ * en el formulario, por lo que no se siembra aquí.
+ */
+window.App.examenesDetallados.antibiograma = {
+    nombre: 'Antibiograma',
+    items: [
+        { id: 'ampicilina', nombre: 'Ampicilina', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Resistente' },
+        { id: 'amoxicilina_acido_clavulanico', nombre: 'Amoxicilina/Ácido Clavulánico', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Sensible' },
+        { id: 'cefazolina', nombre: 'Cefazolina', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Sensible' },
+        { id: 'ceftriaxona', nombre: 'Ceftriaxona', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Sensible' },
+        { id: 'ciprofloxacina', nombre: 'Ciprofloxacina', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Resistente' },
+        { id: 'nitrofurantoina', nombre: 'Nitrofurantoína', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Sensible' },
+        { id: 'fosfomicina', nombre: 'Fosfomicina', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Sensible' },
+        { id: 'trimetoprima_sulfametoxazol', nombre: 'Trimetoprima/Sulfametoxazol', area: 'Bacteriología', tipo: 'seleccion_unica', grupo: 'Antibióticos', opciones: ['Sensible', 'Resistente', 'Intermedio'], valorDefecto: 'Resistente' }
+    ]
+};

@@ -526,11 +526,6 @@
             }
             if (window.validarResultado) window.validarResultado(input);
         }
-        var botonSpan = fila.querySelector('td:nth-child(2)');
-        if (botonSpan && window.validarResultado) {
-            var fakeInput = input || { closest: function() { return fila; } };
-            if (input) window.validarResultado(input);
-        }
         return true;
     }
 

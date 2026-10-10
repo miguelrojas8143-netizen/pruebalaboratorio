@@ -1,36 +1,27 @@
 
 /**
  * Módulo para gestionar los exámenes de heces
- * 
+ *
  */
 (function() {
     'use strict';
-
-    /**
-     * Respaldo del orden de los campos si el catálogo no estuviera cargado.
-     * Las claves deben coincidir con `examenes-detallados.js`.
-     */
-    var ORDEN_CAMPOS_HECES = [
-        'consistencia', 'colorHeces', 'mocoFecal',
-        'phHeces', 'glucosaHeces', 'sustanciasReductoras',
-        'leucocitosPMN', 'leucocitosMononucleados', 'directoConcentracion',
-        'entamoebaColi', 'restosAlimentos', 'floraBacteriana'
-    ];
 
     /**
      * Parámetros del examen de heces tomados del catálogo, no hardcodeados.
      * `window.App.examenesDetallados.examen_heces` es la única fuente de verdad:
      * la misma definición que siembra SQLite y que usa el renderer del reporte,
      * así que agregar un campo no obliga a tocar el HTML ni el PDF.
+     *
+     * El catálogo se hidrata en `db-catalogo.js` antes de que este formulario
+     * se pueda abrir, por lo que aquí no se mantiene ningún respaldo estático:
+     * si llegara a faltar, el formulario queda vacío en lugar de inventar campos.
      */
     function camposHeces() {
         var detalle = window.App && window.App.examenesDetallados
             ? window.App.examenesDetallados.examen_heces
             : null;
         if (detalle && detalle.items && detalle.items.length) return detalle.items;
-        return ORDEN_CAMPOS_HECES.map(function(id) {
-            return { id: id, nombre: id, tipo: 'texto' };
-        });
+        return [];
     }
 
     function valorDeCampo(id) {

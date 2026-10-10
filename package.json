@@ -10,6 +10,7 @@
     "start": "node scripts/start.js",
     "migrar:catalogo": "node scripts/migrar-catalogo.js",
     "verificar:catalogo": "node scripts/migrar-catalogo.js --db=:memory: --sql-only",
+    "limpiar:muerto": "node scripts/cleanup-dead-code.js",
     "build": "electron-builder --win --x64 --publish never",
     "postbuild": "electron-builder install-app-deps",
     "postinstall": "electron-builder install-app-deps"

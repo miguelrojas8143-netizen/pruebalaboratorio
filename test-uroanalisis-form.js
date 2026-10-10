@@ -29,6 +29,22 @@ elements.formularioUroanalisis = {
 };
 
 const window = {
+    // El catálogo real se hidrata en db-catalogo.js desde SQLite; el mock
+    // reproduce esa forma para que el formulario lea los parámetros de
+    // window.App.examenesDetallados.examen_orina en lugar de una lista fija.
+    App: {
+        examenesDetallados: {
+            examen_orina: {
+                nombre: 'Examen General de Orina',
+                items: [
+                    { id: 'ur_aspecto', nombre: 'Aspecto', tipo: 'seleccion_unica', grupo: 'Macroscópico', opciones: ['Límpido', 'Turbio', 'Ligeramente turbio'] },
+                    { id: 'ur_color', nombre: 'Color', tipo: 'seleccion_unica', grupo: 'Macroscópico', opciones: ['Amarillo claro', 'Amarillo oscuro'] },
+                    { id: 'ur_ph', nombre: 'pH', tipo: 'numerico', grupo: 'Químico', refMin: 4.5, refMax: 8.0 },
+                    { id: 'ur_densidad', nombre: 'Densidad', tipo: 'numerico', grupo: 'Químico', refMin: 1.005, refMax: 1.030 }
+                ]
+            }
+        }
+    },
     examenesOrden: [exam],
     pacienteActivo: { orden: '001', examenes: [] },
     api: {
@@ -68,6 +84,21 @@ vm.runInNewContext(
 );
 
 async function main() {
+    // Los campos salen del catálogo (parametros_examen vía window.App), no de
+    // una lista fija en el frontend. El array se reconstruye en este realm
+    // porque deepStrictEqual compara prototipos y el original viene del vm.
+    var idsCampos = [];
+    window.UROANALISIS_FIELDS.forEach(function(f) { idsCampos.push(f.id); });
+    assert.deepStrictEqual(idsCampos, ['ur_aspecto', 'ur_color', 'ur_ph', 'ur_densidad']);
+    var campoPh = window.UROANALISIS_FIELDS.find(function(f) { return f.id === 'ur_ph'; });
+    assert.strictEqual(campoPh.nombre, 'pH');
+    assert.strictEqual(campoPh.tipo, 'numerico');
+    assert.strictEqual(campoPh.grupo, 'Químico');
+    assert.strictEqual(campoPh.refMin, 4.5);
+    assert.strictEqual(campoPh.refMax, 8.0);
+    var campoAspecto = window.UROANALISIS_FIELDS.find(function(f) { return f.id === 'ur_aspecto'; });
+    assert.strictEqual(campoAspecto.tipo, 'seleccion_unica');
+
     window.UROANALISIS_FIELDS.forEach(function(field) {
         elements['uro_' + field.id] = { value: '' };
     });

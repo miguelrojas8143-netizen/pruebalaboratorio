@@ -418,6 +418,40 @@ body.reactivos .dashboard-sidebar {
     padding: 0.9rem 1rem;
 }
 
+/* ============================================================
+   RECEPCIÓN: Layout de scroll fijo con footer siempre visible
+   ============================================================ */
+body.index-recepcion {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body.index-recepcion .dashboard-wrapper {
+    flex: 1;
+    min-height: 0;
+}
+
+body.index-recepcion .dashboard-shell {
+    flex: 1;
+}
+
+body.index-recepcion .dashboard-main {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 76px);
+    min-height: 0;
+}
+
+body.index-recepcion .footer-developer {
+    flex-shrink: 0;
+}
+
+/* Limitar la tabla de cola para scroll interno controlado */
+.index-recepcion .table-responsive {
+    max-height: calc(100vh - 260px);
+}
+
 @media (max-width: 768px) {
     .index-recepcion .card-body {
         padding: 0.75rem;
