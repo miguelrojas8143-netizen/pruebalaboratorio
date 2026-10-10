@@ -259,6 +259,101 @@ function guardarHistorialPaciente(db, orden, historial) {
     guardar();
 }
 
+function eliminarExamenesPaciente(db, orden, examenes) {
+    const objetivos = (examenes || []).map(function(examen) {
+        return {
+            id: String(examen.id || examen.examen_id || '').trim(),
+            nombre: String(examen.nombre || examen.nombre_examen || '').trim()
+        };
+    }).filter(function(examen) {
+        return examen.id || examen.nombre;
+    });
+
+    if (!objetivos.length) {
+        throw new Error('Debe indicar al menos un examen para eliminar.');
+    }
+
+    const ids = Array.from(new Set(objetivos.map(function(examen) { return examen.id; }).filter(Boolean)));
+    const consultarExamen = db.prepare('SELECT nombre FROM examenes WHERE id = ?');
+    const nombres = Array.from(new Set(objetivos.map(function(examen) {
+        const catalogo = examen.id ? consultarExamen.get(examen.id) : null;
+        return (examen.nombre || (catalogo && catalogo.nombre) || '').trim();
+    }).filter(Boolean)));
+    const codigos = ids.length
+        ? db.prepare(
+            'SELECT codigo FROM parametros_examen WHERE examen_id IN (' +
+            ids.map(function() { return '?'; }).join(', ') + ')'
+        ).all(...ids).map(function(fila) { return fila.codigo; })
+        : [];
+
+    if (!nombres.length && !codigos.length) {
+        throw new Error('No se pudo identificar el examen que se desea eliminar.');
+    }
+
+    const eliminar = db.transaction(function() {
+        const condicionesHistorial = [];
+        const parametrosHistorial = [orden];
+        if (codigos.length) {
+            condicionesHistorial.push('idresultado IN (' + codigos.map(function() { return '?'; }).join(', ') + ')');
+            parametrosHistorial.push(...codigos);
+        }
+        if (nombres.length) {
+            condicionesHistorial.push(
+                'TRIM(examen) IN (' + nombres.map(function() { return '?'; }).join(', ') + ')'
+            );
+            parametrosHistorial.push(...nombres);
+        }
+        const historialEliminado = db.prepare(
+            'DELETE FROM historial_examenes WHERE orden_paciente = ? AND (' +
+            condicionesHistorial.join(' OR ') + ')'
+        ).run(...parametrosHistorial);
+
+        const condicionesExamenes = [];
+        const parametrosExamenes = [orden];
+        if (ids.length) {
+            condicionesExamenes.push('examen_id IN (' + ids.map(function() { return '?'; }).join(', ') + ')');
+            parametrosExamenes.push(...ids);
+        }
+        if (codigos.length) {
+            condicionesExamenes.push('idresultado IN (' + codigos.map(function() { return '?'; }).join(', ') + ')');
+            parametrosExamenes.push(...codigos);
+        }
+        if (nombres.length) {
+            condicionesExamenes.push(
+                'TRIM(nombre_examen) IN (' + nombres.map(function() { return '?'; }).join(', ') + ')'
+            );
+            parametrosExamenes.push(...nombres);
+        }
+        const examenesEliminados = db.prepare(
+            'DELETE FROM paciente_examenes WHERE orden_paciente = ? AND (' +
+            condicionesExamenes.join(' OR ') + ')'
+        ).run(...parametrosExamenes);
+
+        const paciente = db.prepare('SELECT historial FROM pacientes WHERE orden = ?').get(orden);
+        if (paciente) {
+            const historialPaciente = JSON.parse(paciente.historial || '[]');
+            if (!Array.isArray(historialPaciente)) {
+                throw new Error('El historial guardado del paciente no tiene un formato válido.');
+            }
+            const idsSet = new Set(ids);
+            const nombresSet = new Set(nombres.map(function(nombre) { return nombre.toLocaleLowerCase(); }));
+            const historialFiltrado = historialPaciente.filter(function(registro) {
+                const id = String(registro.examen_id || registro.idresultado || '').trim();
+                const nombre = String(
+                    registro.examen_completo || registro.examen || registro.nombre_examen || registro.nombre || ''
+                ).trim().toLocaleLowerCase();
+                return !(idsSet.has(id) || nombresSet.has(nombre));
+            });
+            db.prepare('UPDATE pacientes SET historial = ? WHERE orden = ?')
+                .run(JSON.stringify(historialFiltrado), orden);
+        }
+
+        return historialEliminado.changes + examenesEliminados.changes;
+    });
+
+    return eliminar();
+}
+
 /**
  * Convierte filas del historial heredado (un JSON por orden) a una fila por
  * parámetro. Se ejecuta una sola vez, al abrir una base ya existente.
@@ -677,6 +772,7 @@ module.exports = {
     mapearExamenesGuardados,
     migrarExamenesPacienteLegados,
     guardarHistorialPaciente,
+    eliminarExamenesPaciente,
     migrarHistorialLegado,
     repararExamenesDePaciente,
     examenPorClaves

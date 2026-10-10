@@ -628,26 +628,83 @@
         }
     };
 
-    window.eliminarExamen = function(btn) {
-        if (!confirm('¿Está seguro de eliminar este examen de la orden?')) return;
-        var fila = btn.closest('tr');
-        var examenId = fila.getAttribute('data-examen-id');
-        window.examenesOrden = (window.examenesOrden || []).filter(function(e) { return e.id !== examenId; });
-        renderizarTablaExamenes();
-    };
+    async function persistirEliminacionExamenes(examenes) {
+        var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
+        try {
+            if (!orden || !window.api || typeof window.api.eliminarExamenesPaciente !== 'function') {
+                throw new Error('No se pudo conectar con la base de datos para eliminar el examen.');
+            }
+            var respuesta = await window.api.eliminarExamenesPaciente(orden, examenes);
+            if (!respuesta || !respuesta.success) {
+                throw new Error((respuesta && respuesta.error) || 'No se pudo eliminar el examen.');
+            }
+        } catch (err) {
+            console.error('[eliminarExamenesPaciente] Error:', err);
+            alert('Error al eliminar el examen: ' + err.message);
+            return false;
+        }
 
-    window.eliminarTipoSanguineo = function(btn) {
-        if (!confirm('¿Está seguro de eliminar este examen de la orden?')) return;
-        window.examenesOrden = (window.examenesOrden || []).filter(function(e) {
-            return e.id !== 'grupo_sanguineo_abo' && e.id !== 'factor_rh';
+        var ids = new Set(examenes.map(function(examen) { return String(examen.id || examen.examen_id || ''); }));
+        var nombres = new Set(examenes.map(function(examen) {
+            return String(examen.nombre || examen.nombre_examen || '').trim().toLocaleLowerCase();
+        }).filter(Boolean));
+        window.examenesOrden = (window.examenesOrden || []).filter(function(examen) {
+            return !ids.has(String(examen.id || '')) &&
+                !nombres.has(String(examen.nombre || '').trim().toLocaleLowerCase());
         });
+        if (window.pacienteActivo && Array.isArray(window.pacienteActivo.historial)) {
+            window.pacienteActivo.historial = window.pacienteActivo.historial.filter(function(registro) {
+                var nombre = String(
+                    registro.examen_completo || registro.examen || registro.nombre_examen || registro.nombre || ''
+                ).trim().toLocaleLowerCase();
+                return !nombres.has(nombre);
+            });
+        }
         renderizarTablaExamenes();
+        renderizarHistorial();
+        return true;
+    }
+
+    window.eliminarExamen = async function(btn) {
+        if (!confirm('¿Está seguro de eliminar este examen y sus resultados guardados?')) return;
+        var fila = btn.closest('tr');
+        var examenId = fila && fila.getAttribute('data-examen-id');
+        var examen = (window.examenesOrden || []).find(function(item) { return item.id === examenId; });
+        if (!examenId || !examen) {
+            alert('No se pudo identificar el examen que desea eliminar.');
+            return;
+        }
+        await persistirEliminacionExamenes([{
+            id: examen.id,
+            nombre: examen.nombre
+        }]);
     };
 
-    window.limpiarOrden = function() {
-        if (!confirm('¿Está seguro de eliminar todos los exámenes de la orden?')) return;
-        window.examenesOrden = [];
-        renderizarTablaExamenes();
+    window.eliminarTipoSanguineo = async function() {
+        if (!confirm('¿Está seguro de eliminar este examen y sus resultados guardados?')) return;
+        var examenesTipoSanguineo = (window.examenesOrden || []).filter(function(examen) {
+            return examen.id === 'grupo_sanguineo_abo' || examen.id === 'factor_rh';
+        }).map(function(examen) {
+            return { id: examen.id, nombre: examen.nombre };
+        });
+        if (!examenesTipoSanguineo.length) {
+            alert('No se encontró el examen de tipo sanguíneo que desea eliminar.');
+            return;
+        }
+        await persistirEliminacionExamenes(examenesTipoSanguineo);
+    };
+
+    window.limpiarOrden = async function() {
+        if (!confirm('¿Está seguro de eliminar todos los exámenes y sus resultados guardados de esta orden?')) return;
+        var examenes = (window.examenesOrden || []).map(function(examen) {
+            return { id: examen.id, nombre: examen.nombre };
+        });
+        if (!examenes.length) {
+            window.examenesOrden = [];
+            renderizarTablaExamenes();
+            return;
+        }
+        await persistirEliminacionExamenes(examenes);
     };
 
     window.borrarTodosLosDatos = async function() {

@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('api', {
     guardarExamenesPaciente: (orden, examenes) => ipcRenderer.invoke('guardar-examenes-paciente', { orden, examenes }),
     obtenerExamenesPaciente: (orden) => ipcRenderer.invoke('obtener-examenes-paciente', { orden }),
     guardarPacienteExamenes: (orden, examenes) => ipcRenderer.invoke('guardar-paciente-examenes', { orden, examenes }),
+    eliminarExamenesPaciente: (orden, examenes) => ipcRenderer.invoke('eliminar-examenes-paciente', { orden, examenes }),
     guardarRefAdaptadas: (orden, refAdaptadas) => ipcRenderer.invoke('guardar-ref-adaptadas', { orden, refAdaptadas }),
     guardarHistorialPaciente: (orden, historial) => ipcRenderer.invoke('guardar-historial-paciente', { orden, historial }),
     eliminarPaciente: (id) => ipcRenderer.invoke('eliminar-paciente', { id }),

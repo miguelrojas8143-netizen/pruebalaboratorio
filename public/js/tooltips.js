@@ -158,7 +158,11 @@
 
         if (window.bootstrap && window.bootstrap.Tooltip) {
             try {
-                var tip = new bootstrap.Tooltip(el, { container: 'body' });
+                var tip = new bootstrap.Tooltip(el, { container: 'body', trigger: 'manual' });
+                el.addEventListener('mouseenter', function () { tip.show(); });
+                el.addEventListener('mouseleave', function () { tip.hide(); });
+                el.addEventListener('focusin', function () { tip.show(); });
+                el.addEventListener('focusout', function () { tip.hide(); });
                 tip.enable();
             } catch (e) {
                 // ignorar errores de inicialización individual
@@ -186,6 +190,27 @@
         escanear(node);
     }
 
+    function cerrarTooltips() {
+        var elementos = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        for (var i = 0; i < elementos.length; i++) {
+            var tip = bootstrap.Tooltip.getInstance(elementos[i]);
+            if (tip) tip.hide();
+        }
+    }
+
+    function limpiarTooltips(node) {
+        if (!node || node.nodeType !== 1) return;
+        var elementos = [];
+        if (cumpleSelector(node, '[data-bs-toggle="tooltip"]')) elementos.push(node);
+        var descendientes = node.querySelectorAll('[data-bs-toggle="tooltip"]');
+        for (var i = 0; i < descendientes.length; i++) elementos.push(descendientes[i]);
+
+        for (var j = 0; j < elementos.length; j++) {
+            var tip = bootstrap.Tooltip.getInstance(elementos[j]);
+            if (tip) tip.dispose();
+        }
+    }
+
     function init() {
         if (initialized) return;
         initialized = true;
@@ -196,6 +221,7 @@
         }
 
         escanear(document);
+        document.addEventListener('click', cerrarTooltips, true);
 
         if (window.MutationObserver) {
             observer = new MutationObserver(function (mutations) {
@@ -203,6 +229,10 @@
                     var added = mutations[i].addedNodes;
                     for (var j = 0; j < added.length; j++) {
                         procesarNodo(added[j]);
+                    }
+                    var removed = mutations[i].removedNodes;
+                    for (var k = 0; k < removed.length; k++) {
+                        limpiarTooltips(removed[k]);
                     }
                 }
             });

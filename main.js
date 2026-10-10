@@ -7,7 +7,8 @@ const {
     inicializarCatalogoExamenes,
     guardarExamenesPaciente,
     mapearExamenesGuardados,
-    guardarHistorialPaciente
+    guardarHistorialPaciente,
+    eliminarExamenesPaciente
 } = require('./database/examenes');
 const {
     guardarExamenCatalogo,
@@ -335,6 +336,15 @@ function initDatabase() {
         try {
             guardarExamenesPaciente(db, data.orden, data.examenes || []);
             return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    ipcMain.handle('eliminar-examenes-paciente', (event, data) => {
+        try {
+            const eliminados = eliminarExamenesPaciente(db, data.orden, data.examenes);
+            return { success: true, eliminados: eliminados };
         } catch (err) {
             return { success: false, error: err.message };
         }
@@ -826,8 +836,7 @@ app.whenReady().then(() => {
             mainWindow.show();
             mainWindow.focus();
             // Abrir DevTools DESPUÉS de crear la ventana
-           
-           // mainWindow.webContents.openDevTools();
+            mainWindow.webContents.openDevTools();
         }
     };
 
