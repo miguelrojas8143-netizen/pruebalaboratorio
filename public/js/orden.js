@@ -69,7 +69,7 @@
         try {
             var result = await window.api.obtenerPacientePorOrden(ordenActual);
             if (!result.success || !result.paciente) {
-                alert('Paciente no encontrado para la orden: ' + ordenActual);
+                window.Notifications.error('Paciente no encontrado para la orden: ' + ordenActual);
                 window.location.href = '../index.html';
                 return;
             }
@@ -131,7 +131,7 @@
             }
         } catch (err) {
             console.error('[initOrden] Error:', err);
-            alert('Error cargando la orden: ' + err.message);
+            window.Notifications.error('Error cargando la orden: ' + err.message);
             window.location.href = '../index.html';
         }
     }
@@ -145,9 +145,16 @@
         }
     };
 
-    window.iniciarNuevaVisita = function() {
+    window.iniciarNuevaVisita = async function() {
         if (window.pacienteActivoTieneCambiosSinGuardar && window.pacienteActivoTieneCambiosSinGuardar()) {
-            if (!confirm('Hay exámenes sin guardar en la orden actual.\n\nSi continúa, los cambios no guardados se perderán y la orden actual se archivará con los datos guardados.\n\n¿Desea continuar de todos modos?')) {
+            var confirmado = await window.Notifications.confirm({
+                title: 'Cambios sin guardar',
+                message: 'Hay exámenes sin guardar en la orden actual.\n\nSi continúa, los cambios no guardados se perderán y la orden actual se archivará con los datos guardados.\n\n¿Desea continuar de todos modos?',
+                type: 'warning',
+                confirmText: 'Sí, continuar',
+                cancelText: 'No'
+            });
+            if (!confirmado) {
                 return;
             }
         }
@@ -383,7 +390,7 @@
     window.agregarExamen = function() {
         var examenId = $('#selectorExamenes').val();
         if (!examenId) {
-            alert('Por favor seleccione un examen.');
+            window.Notifications.warning('Por favor seleccione un examen.');
             return;
         }
         var catalogo = window.obtenerCatalogo();
@@ -394,7 +401,7 @@
             if (idsTipoSanguineo.some(function(id) {
                 return window.examenesOrden.some(function(e) { return e.id === id; });
             })) {
-                alert('Este examen ya está en la orden.');
+                window.Notifications.warning('Este examen ya está en la orden.');
                 return;
             }
             idsTipoSanguineo.forEach(function(id) {
@@ -419,7 +426,7 @@
 
             if (examenId === 'hematologia_completa') {
                 if (idsExistentes.indexOf(examenId) !== -1) {
-                    alert('Este examen ya está en la orden.');
+                    window.Notifications.warning('Este examen ya está en la orden.');
                     return;
                 }
                 var datosHematologia = catalogoMap[examenId] || perfil;
@@ -490,7 +497,7 @@
             return;
         }
         if (window.examenesOrden.some(function(e) { return e.id === examenId; })) {
-            alert('Este examen ya está en la orden.');
+            window.Notifications.warning('Este examen ya está en la orden.');
             return;
         }
         var datos = catalogo.find(function(e) { return e.id === examenId; });
@@ -640,7 +647,7 @@
             }
         } catch (err) {
             console.error('[eliminarExamenesPaciente] Error:', err);
-            alert('Error al eliminar el examen: ' + err.message);
+            window.Notifications.error('Error al eliminar el examen: ' + err.message);
             return false;
         }
 
@@ -666,12 +673,19 @@
     }
 
     window.eliminarExamen = async function(btn) {
-        if (!confirm('¿Está seguro de eliminar este examen y sus resultados guardados?')) return;
+        var confirmado = await window.Notifications.confirm({
+            title: 'Confirmar eliminación',
+            message: '¿Está seguro de eliminar este examen y sus resultados guardados?',
+            type: 'warning',
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
         var fila = btn.closest('tr');
         var examenId = fila && fila.getAttribute('data-examen-id');
         var examen = (window.examenesOrden || []).find(function(item) { return item.id === examenId; });
         if (!examenId || !examen) {
-            alert('No se pudo identificar el examen que desea eliminar.');
+            window.Notifications.error('No se pudo identificar el examen que desea eliminar.');
             return;
         }
         await persistirEliminacionExamenes([{
@@ -681,21 +695,35 @@
     };
 
     window.eliminarTipoSanguineo = async function() {
-        if (!confirm('¿Está seguro de eliminar este examen y sus resultados guardados?')) return;
+        var confirmado = await window.Notifications.confirm({
+            title: 'Confirmar eliminación',
+            message: '¿Está seguro de eliminar este examen y sus resultados guardados?',
+            type: 'warning',
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
         var examenesTipoSanguineo = (window.examenesOrden || []).filter(function(examen) {
             return examen.id === 'grupo_sanguineo_abo' || examen.id === 'factor_rh';
         }).map(function(examen) {
             return { id: examen.id, nombre: examen.nombre };
         });
         if (!examenesTipoSanguineo.length) {
-            alert('No se encontró el examen de tipo sanguíneo que desea eliminar.');
+            window.Notifications.error('No se encontró el examen de tipo sanguíneo que desea eliminar.');
             return;
         }
         await persistirEliminacionExamenes(examenesTipoSanguineo);
     };
 
     window.limpiarOrden = async function() {
-        if (!confirm('¿Está seguro de eliminar todos los exámenes y sus resultados guardados de esta orden?')) return;
+        var confirmado = await window.Notifications.confirm({
+            title: 'Confirmar limpieza',
+            message: '¿Está seguro de eliminar todos los exámenes y sus resultados guardados de esta orden?',
+            type: 'warning',
+            confirmText: 'Sí, limpiar',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
         var examenes = (window.examenesOrden || []).map(function(examen) {
             return { id: examen.id, nombre: examen.nombre };
         });
@@ -708,7 +736,14 @@
     };
 
     window.borrarTodosLosDatos = async function() {
-        if (!confirm('¿Eliminar TODOS los datos del laboratorio?\nEsta acción no se puede deshacer.')) return;
+        var confirmado = await window.Notifications.confirm({
+            title: '¡Atención!',
+            message: '¿Eliminar TODOS los datos del laboratorio?\nEsta acción no se puede deshacer.',
+            type: 'error',
+            confirmText: 'Sí, eliminar todo',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
         var localStorageKeys = ['pacientesLab', 'ultimoOrdenLab', 'ordenesDiariasLab', 'pacienteExistenteRefer', 'ultimaOrdenCreada', 'catalogoCustom', 'dbMigrado'];
         localStorageKeys.forEach(function(k) { localStorage.removeItem(k); });
         window.examenesOrden = [];
@@ -764,7 +799,7 @@
 
     window.guardarResultados = async function() {
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
-            alert('No hay exámenes en la orden para guardar.');
+            window.Notifications.error('No hay exámenes en la orden para guardar.');
             return;
         }
         var examenesConResultado = window.examenesOrden.filter(function(e) {
@@ -780,7 +815,7 @@
         });
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
         if (!orden) {
-            alert('Error: No se pudo determinar la orden.');
+            window.Notifications.error('Error: No se pudo determinar la orden.');
             return;
         }
         try {
@@ -810,24 +845,22 @@
             window.pacienteActivo.historial = historialCombinado;
             await window.api.guardarHistorialPaciente(orden, historialCombinado);
             if (examenesConResultado.length === 0) {
-                alert('Orden guardada sin resultados ingresados.');
-            } else {
-                alert('Resultados guardados exitosamente.');
+                window.Notifications.warning('Orden guardada sin resultados ingresados.');
             }
         } catch (err) {
             console.error('[guardarResultados] Error:', err);
-            alert('Error al guardar los resultados: ' + err.message);
+            window.Notifications.error('Error al guardar los resultados: ' + err.message);
         }
     };
 
     window.guardarSolicitud = async function() {
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
-            alert('Debe agregar al menos un examen a la orden antes de guardar la solicitud.');
+            window.Notifications.error('Debe agregar al menos un examen a la orden antes de guardar la solicitud.');
             return;
         }
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
         if (!orden) {
-            alert('Error: No se pudo determinar la orden.');
+            window.Notifications.error('Error: No se pudo determinar la orden.');
             return;
         }
         try {
@@ -837,11 +870,11 @@
                 window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
                 window.pacienteActivo.refAdaptadas = window.pacienteActivo.refAdaptadas || false;
             }
-            alert('Solicitud guardada. En espera de resultados.');
+            window.Notifications.success('Solicitud guardada. En espera de resultados.');
             window.location.href = '../index.html';
         } catch (err) {
             console.error('[guardarSolicitud] Error:', err);
-            alert('Error al guardar la solicitud: ' + err.message);
+            window.Notifications.error('Error al guardar la solicitud: ' + err.message);
         }
     };
 
@@ -987,7 +1020,32 @@
             width: "100%",
             maximumResultsToShow: 20
         });
+
+        // Select2 4.1.0-rc.0 no enfoca su campo de búsqueda al abrir el
+        // dropdown, así que todo lo que se teclea se pierde y el selector
+        // parece congelado. Se fuerza el foco cada vez que se abre; la función
+        // es inofensiva si una versión futura de Select2 ya lo hace.
+        select.off('select2:open', enfocarBuscadorSelect2)
+            .on('select2:open', enfocarBuscadorSelect2);
     }, 300);
+
+    /**
+     * Lleva el foco al campo de búsqueda de Select2.
+     *
+     * Reintenta unos instantes porque el campo se crea cuando el dropdown ya
+     * se está abriendo: enfocarlo antes de que exista no tiene efecto.
+     */
+    function enfocarBuscadorSelect2() {
+        var intentos = 0;
+        (function intentar() {
+            var campo = document.querySelector('.select2-search__field');
+            if (campo) {
+                campo.focus();
+                return;
+            }
+            if (intentos++ < 10) setTimeout(intentar, 20);
+        })();
+    }
 
     window.renderizarTablaExamenes = renderizarTablaExamenes;
 

@@ -7,6 +7,20 @@
     var REFERENCIAS_ADAPTATIVAS = window.App.referencias || {};
 
     // ============================================
+    // Parche Defensivo: Rescate de Foco en Electron
+    // ============================================
+    document.addEventListener('click', function(e) {
+        var target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+            try {
+                target.focus();
+            } catch (err) {
+                // Evita errores silenciosos si el nodo se desmonta
+            }
+        }
+    }, true); // Usando captura para interceptar antes de que se pierda
+
+    // ============================================
     // Event listeners para cambios en datos
     // ============================================
     if (!window._catalogoChangeListenersAttached) {
@@ -69,7 +83,7 @@
     var guardarResultadosOriginal = window.guardarResultados;
     window.guardarResultados = function() {
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
-            alert('No hay exámenes en la orden para guardar.');
+            window.Notifications.error('No hay exámenes en la orden para guardar.');
             return;
         }
         guardarResultadosOriginal();
@@ -78,7 +92,7 @@
     var guardarSolicitudOriginal = window.guardarSolicitud;
     window.guardarSolicitud = function() {
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
-            alert('Debe agregar al menos un examen a la orden antes de guardar la solicitud.');
+            window.Notifications.error('Debe agregar al menos un examen a la orden antes de guardar la solicitud.');
             return;
         }
         guardarSolicitudOriginal();
@@ -89,5 +103,5 @@
         irAImpresionOriginal();
     };
 
-    console.log('✅ App.js cargado con soporte IndexedDB');
+    console.log('✅ App.js cargado con parche de foco');
 })();

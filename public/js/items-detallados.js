@@ -67,7 +67,7 @@
             unidades: soloResultados
         }).then(function() {
             inicializarCalculosEnVivoModal(body);
-            new bootstrap.Modal(modalEl).show();
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
         }).catch(function(error) {
             console.error('[abrirModalItemsExamen] Error:', error);
         });
@@ -178,7 +178,7 @@
         modalEl.classList.add('modal-editor-individual');
         modalEl.setAttribute('data-examen-id', examenId);
         modalEl.setAttribute('data-editor-mode', 'simple');
-        new bootstrap.Modal(modalEl).show();
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
     };
 
     window.guardarItemsExamenModal = function() {

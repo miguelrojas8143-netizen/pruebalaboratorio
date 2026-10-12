@@ -48,7 +48,7 @@ window.abrirFormularioUroanalisis = function(examenId) {
 window.guardarFormularioUroanalisis = async function() {
         var examenId = window._uroEditando;
         if (!examenId) {
-            alert('No se encontró el examen de orina que se va a guardar.');
+            window.Notifications.error('No se encontró el examen de orina que se va a guardar.');
             return;
         }
 
@@ -61,16 +61,16 @@ window.guardarFormularioUroanalisis = async function() {
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });
         if (!examen) {
-            alert('No se encontró el examen de orina en la orden.');
+            window.Notifications.error('No se encontró el examen de orina en la orden.');
             return;
         }
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : (window.getOrden ? window.getOrden() : '');
         if (!orden) {
-            alert('Error: No se pudo determinar la orden.');
+            window.Notifications.error('Error: No se pudo determinar la orden.');
             return;
         }
         if (!window.api || typeof window.api.guardarPacienteExamenes !== 'function') {
-            alert('Error: No está disponible el guardado en la base de datos.');
+            window.Notifications.error('Error: No está disponible el guardado en la base de datos.');
             return;
         }
 
@@ -96,7 +96,7 @@ window.guardarFormularioUroanalisis = async function() {
             }
         } catch (error) {
             console.error('[guardarFormularioUroanalisis] Error:', error);
-            alert('Error al guardar los resultados: ' + error.message);
+            window.Notifications.error('Error al guardar los resultados: ' + error.message);
             return;
         }
 

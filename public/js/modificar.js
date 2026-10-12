@@ -40,7 +40,7 @@
         var telefono = document.getElementById('modTelefono').value.trim();
 
         if (!nombre || !sexo) {
-            alert('Nombre y sexo son obligatorios.');
+            window.Notifications.error('Nombre y sexo son obligatorios.');
             return;
         }
 
@@ -54,7 +54,7 @@
                     return p.orden !== paciente.orden && (p.cedula || '') === cedula;
                 });
                 if (existente) {
-                    alert('La cédula ' + cedula + ' ya está registrada para otro paciente (' + existente.nombre + ').');
+                    window.Notifications.error('La cédula ' + cedula + ' ya está registrada para otro paciente (' + existente.nombre + ').');
                     return;
                 }
             }
@@ -73,14 +73,14 @@
         try {
             var res = await window.api.actualizarPaciente(paciente);
             if (!res.success) {
-                alert('Error al guardar: ' + res.error);
+                window.Notifications.error('Error al guardar: ' + res.error);
                 return;
             }
-            alert('Datos del paciente actualizados correctamente.');
+            window.Notifications.success('Datos del paciente actualizados correctamente.');
             window.location.href = 'orden.html?orden=' + orden;
         } catch (err) {
             console.error('[guardarModificacion] Error:', err);
-            alert('Error al guardar los cambios: ' + err.message);
+            window.Notifications.error('Error al guardar los cambios: ' + err.message);
         }
     }
 
@@ -96,7 +96,7 @@
         try {
             var result = await window.api.obtenerPacientePorOrden(orden);
             if (!result.success || !result.paciente) {
-                alert('Paciente no encontrado para la orden: ' + orden);
+                window.Notifications.error('Paciente no encontrado para la orden: ' + orden);
                 window.location.href = '../index.html';
                 return;
             }
@@ -148,7 +148,7 @@
             }
         } catch (err) {
             console.error('[initModificador] Error:', err);
-            alert('Error cargando el paciente: ' + err.message);
+            window.Notifications.error('Error cargando el paciente: ' + err.message);
             window.location.href = '../index.html';
         }
     }

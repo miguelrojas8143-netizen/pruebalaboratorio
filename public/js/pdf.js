@@ -647,7 +647,7 @@
         var ordenNormalizado = String(orden || '').padStart(3, '0');
         var result = await window.api.obtenerPacientePorOrden(ordenNormalizado);
         if (!result.success || !result.paciente) {
-            alert('Paciente no encontrado.');
+            window.Notifications.error('Paciente no encontrado.');
             return;
         }
 
@@ -671,17 +671,17 @@
          paciente.perfiles = paciente.perfiles || [];
          paciente.telefono = paciente.telefono || '';
 
-         if (!window.jspdf || !window.jspdf.jsPDF) {
-            alert('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
-            return;
-        }
+          if (!window.jspdf || !window.jspdf.jsPDF) {
+             window.Notifications.error('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
+             return;
+         }
 
-        var ventanaImpresion = null;
-        if (accion === 'imprimir') {
-            ventanaImpresion = window.open('', '_blank');
-            if (!ventanaImpresion) {
-                alert('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
-                return;
+         var ventanaImpresion = null;
+         if (accion === 'imprimir') {
+             ventanaImpresion = window.open('', '_blank');
+             if (!ventanaImpresion) {
+                 window.Notifications.error('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
+                 return;
             }
             ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando documento para imprimir...</p>');
             ventanaImpresion.document.close();
@@ -1131,7 +1131,7 @@
 
     async function generarDesdePayload(payload, accion, nombreArchivo) {
         if (!window.jspdf || !window.jspdf.jsPDF) {
-            alert('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
+            window.Notifications.error('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
             return;
         }
 
@@ -1139,7 +1139,7 @@
         if (accion === 'imprimir') {
             ventanaImpresion = window.open('', '_blank');
             if (!ventanaImpresion) {
-                alert('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
+                window.Notifications.error('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
                 return;
             }
             ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando documento para imprimir...</p>');

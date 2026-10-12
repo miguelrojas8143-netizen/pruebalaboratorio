@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -18,20 +18,25 @@ const {
 const { actualizarOrdenPaciente } = require('./database/ordenes');
 const { prepararConsultasCatalogo } = require('./database/schema');
 
+// --- AJUSTES PARA EQUIPOS DE BAJOS RECURSOS ---
+// Se mantienen los que ya tenía el proyecto: evitan bloqueos visuales del
+// renderer en equipos sin GPU dedicada. NO se limita el heap de V8
+// (--max-old-space-size): un techo bajo provoca "JavaScript heap out of memory"
+// y cierra el proceso sin dejar ventana.
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+
 let db = null;
 let insertPacienteStmt = null;
 let consultasCatalogo = null;
 
 function initDatabase() {
-    // Usar la carpeta de datos del usuario (funciona en desarrollo y producción)
     const userDataPath = app.getPath('userData');
     const dbPath = path.join(userDataPath, 'datos.db');
     
     console.log('📁 Ruta de la base de datos:', dbPath);
     
     db = new Database(dbPath);
-    
-    // Habilitar WAL mode para mejor rendimiento
     db.pragma('journal_mode = WAL');
     
     db.exec(`
@@ -52,40 +57,15 @@ function initDatabase() {
         )
     `);
     
-    // Migración: agregar columnas si la tabla ya existía sin ellas
     const columnas = db.prepare('PRAGMA table_info(pacientes)').all();
-    const tieneFecha = columnas.some(function(c) { return c.name === 'fechaRegistro'; });
-    if (!tieneFecha) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN fechaRegistro TEXT');
-    }
-    const tieneFechaNac = columnas.some(function(c) { return c.name === 'fechaNac'; });
-    if (!tieneFechaNac) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN fechaNac TEXT');
-    }
-    const tieneTelefono = columnas.some(function(c) { return c.name === 'telefono'; });
-    if (!tieneTelefono) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN telefono TEXT');
-    }
-    const tieneId = columnas.some(function(c) { return c.name === 'id'; });
-    if (!tieneId) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN id INTEGER');
-    }
-    const tieneRefAdaptadas = columnas.some(function(c) { return c.name === 'refAdaptadas'; });
-    if (!tieneRefAdaptadas) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN refAdaptadas INTEGER DEFAULT 0');
-    }
-    const tienePerfiles = columnas.some(function(c) { return c.name === 'perfiles'; });
-    if (!tienePerfiles) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN perfiles TEXT DEFAULT \'[]\'');
-    }
-    const tieneHistorial = columnas.some(function(c) { return c.name === 'historial'; });
-    if (!tieneHistorial) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN historial TEXT DEFAULT \'[]\'');
-    }
-    const tieneVisitas = columnas.some(function(c) { return c.name === 'visitas'; });
-    if (!tieneVisitas) {
-        db.exec('ALTER TABLE pacientes ADD COLUMN visitas INTEGER DEFAULT 1');
-    }
+    if (!columnas.some(c => c.name === 'fechaRegistro')) db.exec('ALTER TABLE pacientes ADD COLUMN fechaRegistro TEXT');
+    if (!columnas.some(c => c.name === 'fechaNac')) db.exec('ALTER TABLE pacientes ADD COLUMN fechaNac TEXT');
+    if (!columnas.some(c => c.name === 'telefono')) db.exec('ALTER TABLE pacientes ADD COLUMN telefono TEXT');
+    if (!columnas.some(c => c.name === 'id')) db.exec('ALTER TABLE pacientes ADD COLUMN id INTEGER');
+    if (!columnas.some(c => c.name === 'refAdaptadas')) db.exec('ALTER TABLE pacientes ADD COLUMN refAdaptadas INTEGER DEFAULT 0');
+    if (!columnas.some(c => c.name === 'perfiles')) db.exec('ALTER TABLE pacientes ADD COLUMN perfiles TEXT DEFAULT \'[]\'');
+    if (!columnas.some(c => c.name === 'historial')) db.exec('ALTER TABLE pacientes ADD COLUMN historial TEXT DEFAULT \'[]\'');
+    if (!columnas.some(c => c.name === 'visitas')) db.exec('ALTER TABLE pacientes ADD COLUMN visitas INTEGER DEFAULT 1');
     
     db.exec(`
         CREATE TABLE IF NOT EXISTS paciente_examenes (
@@ -117,7 +97,6 @@ function initDatabase() {
     inicializarCatalogoExamenes(db, __dirname);
     consultasCatalogo = prepararConsultasCatalogo(db);
     
-    // Tabla para órdenes archivadas (cuando un paciente crea una nueva visita)
     db.exec(`
         CREATE TABLE IF NOT EXISTS ordenes_archivadas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,7 +112,6 @@ function initDatabase() {
         )
     `);
     
-    // Prepared statements para órdenes archivadas
     const insertOrdenArchivadaStmt = db.prepare(
         'INSERT INTO ordenes_archivadas (paciente_id, orden, fecha, examenes, refAdaptadas, perfiles, historial, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
@@ -167,7 +145,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Actualizar datos de un paciente existente (preserva refAdaptadas, perfiles, historial, visitas)
     const updatePacienteStmt = db.prepare(
         'UPDATE pacientes SET nombre = ?, cedula = ?, edad = ?, sexo = ?, fechaNac = ?, telefono = ? WHERE orden = ?'
     );
@@ -207,12 +184,6 @@ function initDatabase() {
         'SELECT id, orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia FROM paciente_examenes WHERE orden_paciente = ?'
     );
 
-    /**
-     * Resuelve cómo se identifica un examen al persistirlo. El id del catálogo
-     * es lo que permite reconstruir después el tipo de formulario (heces,
-     * uroanálisis, antibiograma) sin depender del nombre; el nombre se usa
-     * como etiqueta legible en el reporte.
-     */
     ipcMain.handle('guardar-examenes-paciente', (event, data) => {
         try {
             guardarExamenesPaciente(db, data.orden, data.examenes || []);
@@ -231,7 +202,6 @@ function initDatabase() {
         }
     });
     
-    // Actualizar selectPacientesStmt para incluir las nuevas columnas
     const selectPacientesCompletosStmt = db.prepare(
         'SELECT id, orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro, refAdaptadas, perfiles, historial, visitas FROM pacientes ORDER BY CAST(orden AS INTEGER)'
     );
@@ -252,11 +222,10 @@ function initDatabase() {
          ORDER BY h.fecha DESC, h.id DESC`
     );
     
-    // IPC: Obtener pacientes con exámenes (para renderizado de cola)
     ipcMain.handle('obtener-pacientes-completos', () => {
         try {
             const pacientes = selectPacientesCompletosStmt.all();
-            const result = pacientes.map(function(p) {
+            const result = pacientes.map(p => {
                 var examenes = selectExamenesStmt.all(p.orden);
                 return Object.assign({}, p, {
                     examenes: mapearExamenesGuardados(db, examenes),
@@ -271,7 +240,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Obtener paciente por orden con exámenes y historial
     ipcMain.handle('obtener-paciente-por-orden', (event, { orden }) => {
         try {
             var ordenStr = String(orden || '').padStart(3, '0');
@@ -297,7 +265,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Eliminar paciente por id o orden
     ipcMain.handle('eliminar-paciente', (event, { id, orden }) => {
         try {
             if (id !== undefined && id !== null) {
@@ -318,7 +285,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Eliminar todos los pacientes
     ipcMain.handle('eliminar-todos-pacientes', () => {
         try {
             db.exec('DELETE FROM paciente_examenes');
@@ -331,7 +297,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Guardar exámenes de un paciente (formato orden.js)
     ipcMain.handle('guardar-paciente-examenes', (event, data) => {
         try {
             guardarExamenesPaciente(db, data.orden, data.examenes || []);
@@ -350,7 +315,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Guardar refAdaptadas de un paciente
     ipcMain.handle('guardar-ref-adaptadas', (event, { orden, refAdaptadas }) => {
         try {
             db.prepare('UPDATE pacientes SET refAdaptadas = ? WHERE orden = ?').run(refAdaptadas ? 1 : 0, orden);
@@ -360,7 +324,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Guardar historial de exámenes
     ipcMain.handle('guardar-historial-paciente', (event, data) => {
         try {
             guardarHistorialPaciente(db, data.orden, data.historial || []);
@@ -370,7 +333,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Obtener el próximo número de orden disponible
     ipcMain.handle('obtener-proxima-orden', () => {
         try {
             var row = selectMaxOrdenStmt.get();
@@ -381,8 +343,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Crear nueva visita para paciente existente (archiva orden anterior)
-    // Parámetros: { pacienteId } o { cedula }
     ipcMain.handle('crear-nueva-visita', (event, data) => {
         try {
             var paciente;
@@ -394,12 +354,10 @@ function initDatabase() {
             if (!paciente) {
                 return { success: false, error: 'Paciente no encontrado', nuevaOrden: null };
             }
-            // Archivar órden anterior con sus exámenes
             var ordenAnterior = String(paciente.orden || '').padStart(3, '0');
             var examenes = selectExamenesStmt.all(ordenAnterior);
             var historial = selectHistorialStmt.all(ordenAnterior);
             const insertT = db.transaction(() => {
-                // Insertar orden archivada
                 insertOrdenArchivadaStmt.run(
                     paciente.id,
                     ordenAnterior,
@@ -410,25 +368,20 @@ function initDatabase() {
                     paciente.historial || '[]',
                     'archivada'
                 );
-                // Calcular nuevo número de orden
                 var row = selectMaxOrdenStmt.get();
                 var maxOrden = row ? parseInt(row.maxOrden || 0, 10) : 0;
                 var nuevaOrden = String(maxOrden + 1).padStart(3, '0');
-                // Actualizar paciente: nuevo orden, incrementar visitas, nueva fecha
                 actualizarOrdenPaciente(
                     db,
                     paciente.id,
                     nuevaOrden,
                     new Date().toLocaleDateString('es-ES')
                 );
-                // Limpiar exámenes de la nueva orden (no deben existir aún)
                 db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(nuevaOrden);
-                // Limpiar historial de exámenes para la nueva orden
                 db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(nuevaOrden);
                 return nuevaOrden;
             });
             var nuevaOrden = ejecutarConLlavesSuspendidas(db, insertT);
-            // Limpiar refAdaptadas, perfiles e historial para la nueva orden
             db.prepare('UPDATE pacientes SET refAdaptadas = 0, perfiles = ?, historial = ? WHERE orden = ?')
                 .run('[]', '[]', nuevaOrden);
             return {
@@ -451,7 +404,6 @@ function initDatabase() {
         }
     });
     
-    // IPC: Obtener órdenes archivadas de un paciente
     ipcMain.handle('obtener-ordenes-archivadas', (event, { pacienteId, cedula, id }) => {
         try {
             var pid = pacienteId || id;
@@ -462,15 +414,12 @@ function initDatabase() {
                 var rows = db.prepare('SELECT * FROM ordenes_archivadas WHERE paciente_id IN (SELECT id FROM pacientes WHERE cedula = ?) ORDER BY id DESC').all(cedula);
                 ordenes = rows;
             }
-            // Parsear JSON fields
-            ordenes = ordenes.map(function(o) {
-                return Object.assign({}, o, {
-                    examenes: o.examenes ? JSON.parse(o.examenes) : [],
-                    refAdaptadas: !!o.refAdaptadas,
-                    perfiles: o.perfiles ? JSON.parse(o.perfiles) : [],
-                    historial: o.historial ? JSON.parse(o.historial) : []
-                });
-            });
+            ordenes = ordenes.map(o => Object.assign({}, o, {
+                examenes: o.examenes ? JSON.parse(o.examenes) : [],
+                refAdaptadas: !!o.refAdaptadas,
+                perfiles: o.perfiles ? JSON.parse(o.perfiles) : [],
+                historial: o.historial ? JSON.parse(o.historial) : []
+            }));
             return { success: true, ordenes: ordenes };
         } catch (err) {
             return { success: false, error: err.message, ordenes: [] };
@@ -478,25 +427,9 @@ function initDatabase() {
     });
     
     registrarHandlersCatalogo();
-
     console.log('✅ Base de datos SQLite inicializada:', dbPath);
 }
 
-/**
- * Ejecuta una transacción con la verificación de llaves foráneas suspendida.
- *
- * Al crear una visita nueva el paciente cambia de número de orden, y ese
- * `orden` es la clave que referencian `paciente_examenes.orden_paciente` y
- * `historial_examenes.orden_paciente`. SQLite no propaga el cambio (ninguna de
- * esas llaves lleva ON UPDATE CASCADE) y aborta con
- * "FOREIGN KEY constraint failed".
- *
- * Las filas de la orden anterior deben SEGUIR apuntando a ese número: son los
- * resultados de la visita previa, ya copiados a `ordenes_archivadas`. Por eso no
- * sirve una cascada, que además las movería a la orden nueva y el DELETE de
- * limpieza las borraría. `PRAGMA foreign_keys` no cambia dentro de una
- * transacción, de ahí el envoltorio.
- */
 function ejecutarConLlavesSuspendidas(db, transaccion) {
     const activas = !!db.pragma('foreign_keys', { simple: true });
     if (activas) db.pragma('foreign_keys = OFF');
@@ -507,17 +440,10 @@ function ejecutarConLlavesSuspendidas(db, transaccion) {
     }
 }
 
-/**
- * Catálogo de exámenes servido desde SQLite.
- *
- * Todas las consultas usan prepared statements con parámetros vinculados, por
- * lo que ningún valor del renderer se concatena en el SQL. Los resultados se
- * arman en objetos planos listos para el renderer.
- */
 function registrarHandlersCatalogo() {
     function agruparPorClave(filas, clave) {
         const mapa = new Map();
-        filas.forEach(function(fila) {
+        filas.forEach(fila => {
             const valor = fila[clave];
             if (!mapa.has(valor)) mapa.set(valor, []);
             mapa.get(valor).push(fila);
@@ -536,19 +462,15 @@ function registrarHandlersCatalogo() {
         };
     }
 
-    /** SELECT * FROM parametros_examen WHERE examen_id = ? */
     ipcMain.handle('obtener-parametros-examen', envolver(function(examenId) {
         const id = String(examenId || '').trim();
         if (!id) return { success: true, parametros: [], opciones: [] };
         const parametros = consultasCatalogo.parametros.all(id);
-        const ids = new Set(parametros.map(function(p) { return p.id; }));
-        const opciones = consultasCatalogo.opcionesParametro.all().filter(function(fila) {
-            return ids.has(fila.parametro_id);
-        });
+        const ids = new Set(parametros.map(p => p.id));
+        const opciones = consultasCatalogo.opcionesParametro.all().filter(fila => ids.has(fila.parametro_id));
         return { success: true, parametros: parametros, opciones: opciones };
     }));
 
-    /** Un solo volcado con todo el catálogo; evita N consultas de red. */
     ipcMain.handle('obtener-catalogo', envolver(function() {
         const categorias = consultasCatalogo.categorias.all();
         const examenes = consultasCatalogo.examenes.all();
@@ -558,22 +480,20 @@ function registrarHandlersCatalogo() {
         const perfiles = consultasCatalogo.perfiles.all();
         const perfilesExamenes = agruparPorClave(consultasCatalogo.perfilesExamenes.all(), 'perfil_id');
 
-        const examenesPorId = new Map(examenes.map(function(e) { return [e.id, e]; }));
+        const examenesPorId = new Map(examenes.map(e => [e.id, e]));
 
-        examenes.forEach(function(examen) {
+        examenes.forEach(examen => {
             examen.opciones = valoresDe(opciones.get(examen.id));
             examen.parametros = parametrosPorExamen.get(examen.id) || [];
-            examen.parametros.forEach(function(parametro) {
+            examen.parametros.forEach(parametro => {
                 parametro.opciones = valoresDe(opcionesParametro.get(parametro.id));
             });
         });
 
         resolverPerfiles(perfiles, perfilesExamenes, examenesPorId);
-
         return { success: true, categorias: categorias, examenes: examenes, perfiles: perfiles };
     }));
 
-    /** Catálogo administrativo: incluye también los exámenes inactivos. */
     ipcMain.handle('obtener-catalogo-admin', envolver(function() {
         return {
             success: true,
@@ -596,12 +516,11 @@ function registrarHandlersCatalogo() {
         return { success: true, examen: resultado };
     }));
 
-    /** Rangos de referencia por sexo y franja etaria. */
     ipcMain.handle('obtener-referencias', envolver(function() {
         const rangos = consultasCatalogo.rangos.all();
         const porSexo = {};
         const compartidas = {};
-        rangos.forEach(function(rango) {
+        rangos.forEach(rango => {
             if (!rango.examen_id || rango.orden !== 1) return;
             if (rango.sexo !== 'ambos') {
                 if (!porSexo[rango.examen_id]) porSexo[rango.examen_id] = {};
@@ -622,18 +541,17 @@ function registrarHandlersCatalogo() {
         return { success: true, sexSpecific: porSexo, shared: compartidas };
     }));
 
-    /** Perfiles con la composición de sus exámenes. */
     ipcMain.handle('obtener-perfiles', envolver(function() {
         const perfiles = consultasCatalogo.perfiles.all();
-        const examenesPorId = new Map(consultasCatalogo.examenes.all().map(function(e) { return [e.id, e]; }));
+        const examenesPorId = new Map(consultasCatalogo.examenes.all().map(e => [e.id, e]));
         const perfilesExamenes = agruparPorClave(consultasCatalogo.perfilesExamenes.all(), 'perfil_id');
         resolverPerfiles(perfiles, perfilesExamenes, examenesPorId);
         return { success: true, perfiles: perfiles };
     }));
 
     function resolverPerfiles(perfiles, perfilesExamenes, examenesPorId) {
-        perfiles.forEach(function(perfil) {
-            perfil.examenes = (perfilesExamenes.get(perfil.id) || []).map(function(fila) {
+        perfiles.forEach(perfil => {
+            perfil.examenes = (perfilesExamenes.get(perfil.id) || []).map(fila => {
                 const examen = examenesPorId.get(fila.examen_id);
                 if (!examen) return { id: fila.examen_id, nombre: fila.examen_id };
                 return {
@@ -654,7 +572,7 @@ function registrarHandlersCatalogo() {
     }
 
     function valoresDe(filas) {
-        return (filas || []).map(function(fila) { return fila.valor; });
+        return (filas || []).map(fila => fila.valor);
     }
 }
 
@@ -664,14 +582,8 @@ app.on('before-quit', () => {
 
 const ICONO_APP = path.join(__dirname, 'logo-mirolab.png');
 
-// Algunos equipos presentan bloqueos visuales del renderer al usar la GPU.
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-renderer-backgrounding');
-
-
-
 // --- CONFIGURACIÓN DE LA DEMO ---
-const DIAS_DEMO = 30;
+const DIAS_DEMO = 5;
 const NOMBRE_APP = 'MiroLab Systems';
 const CLAVE_SECRETA = 'MiroLab-Systems-demo-v1-secure-key';
 
@@ -761,14 +673,25 @@ function crearVentana(rutaArchivo, opciones = {}) {
             preload: path.join(__dirname, 'preload.js')
         },
         autoHideMenuBar: true,
-        title: `${NOMBRE_APP} - Demo`
+        title: `${NOMBRE_APP} Demo`
     });
     
-    if (opciones.diasRestantes !== undefined) {
+    let tituloVentana;
+    if (!opciones.esValida) {
+        tituloVentana = `${NOMBRE_APP} Demo Expirada`;
+    } else if (opciones.diasRestantes !== undefined) {
         const textoDias = opciones.diasRestantes === 1 ? 'día' : 'días';
-        win.setTitle(`${NOMBRE_APP} - Demo (${opciones.diasRestantes} ${textoDias} restantes)`);
-    } else if (!opciones.esValida) {
-        win.setTitle(`${NOMBRE_APP} - Demo Expirada`);
+        tituloVentana = `${NOMBRE_APP} Demo (${opciones.diasRestantes} ${textoDias} restantes)`;
+    } else {
+        tituloVentana = `${NOMBRE_APP} Demo`;
+    }
+    win.setTitle(tituloVentana);
+
+    if (process.platform === 'win32' && app.isPackaged) {
+        win.webContents.on('page-title-updated', (event) => {
+            event.preventDefault();
+            win.setTitle(tituloVentana);
+        });
     }
     
     win.webContents.on('unresponsive', () => {
@@ -787,17 +710,20 @@ function crearVentana(rutaArchivo, opciones = {}) {
         console.error('[renderer] Fallo de carga:', errorCode, errorDescription, validatedURL);
     });
     
+    // Reenvía los errores y advertencias de la consola del renderer al terminal.
+    // Sin esto, una página que falla al cargar se ve como "la app no arranca"
+    // sin dar ninguna pista de por qué.
     win.webContents.on('console-message', (_event, nivel, mensaje, linea, origen) => {
         if (nivel >= 2) {
             console.error(`[renderer] ${origen}:${linea} ${mensaje}`);
         }
     });
     
-    win.loadFile(path.join(__dirname, rutaArchivo));
+    win.loadFile(path.join(__dirname, rutaArchivo)).catch((error) => {
+        console.error(`[renderer] No se pudo cargar ${rutaArchivo}:`, error && error.message);
+    });
     return win;
 }
-
-const TIEMPO_SPLASH_MS = 4000; // 3 segundos mínimo de splash
 
 let mainWindow;
 
@@ -805,66 +731,66 @@ app.whenReady().then(() => {
     // 0. Inicializar base de datos SQLite
     initDatabase();
     
-    // 1. Mostrar Splash Screen
+    const demoInfo = verificarDemo();
+    
+    // 1. Splash mientras carga la ventana principal
     const splash = crearSplashScreen();
     
-    // 2. Verificar estado de la demo
-    const resultadoDemo = verificarDemo();
-    
-    // 3. Determinar qué cargar
-    const rutaArchivo = resultadoDemo.esValida ? 'index.html' : 'expirado.html';
+    // 2. La demo expirada debe abrir su pantalla, no la app completa
+    const rutaArchivo = demoInfo.esValida ? 'index.html' : 'expirado.html';
     const opcionesVentana = {
-        esValida: resultadoDemo.esValida,
-        diasRestantes: resultadoDemo.diasRestantes
+        esValida: demoInfo.esValida,
+        diasRestantes: demoInfo.diasRestantes
     };
     
-    // 4. Crear ventana principal (oculta inicialmente)
-    mainWindow = crearVentana(rutaArchivo, opcionesVentana);
-    mainWindow.hide();
+    // 3. Si algo falla aquí, mostrar el error: una ventana que nunca se crea
+    //    se confunde con "npm start no funciona" y no deja ningún rastro.
+    try {
+        mainWindow = crearVentana(rutaArchivo, opcionesVentana);
+      
+         // mainWindow.webContents.openDevTools();
+       // if (demoInfo.esValida) {
+           
+           
+      //  }
+
+        
+    } catch (error) {
+        console.error('[arranque] No se pudo crear la ventana principal:', error);
+        dialog.showErrorBox(
+            'MiroLab Systems - Error al iniciar',
+            `No se pudo abrir la ventana principal.\n\n${error && error.message ? error.message : error}`
+        );
+        if (!splash.isDestroyed()) splash.destroy();
+        return;
+    }
     
-    // 5. Mostrar cuando la página esté lista y haya transcurrido el tiempo mínimo de splash
-    let windowReady = false;
+    // Splash con duración mínima: la ventana aparece a los 2s, o antes si
+    // `ready-to-show` llega después de ese plazo. Idempotente para que los dos
+    // caminos no se pisen.
+    const TIEMPO_SPLASH_MS = 2000;
+    let ventanaLista = false;
     let splashCompletado = false;
-    let splashTimeout;
-
-    const cerrarSplash = () => {
-        if (!splash.isDestroyed()) splash.close();
-    };
-
-    const mostrarVentanaPrincipal = () => {
+    let yaTransicionado = false;
+    
+    const transicionar = () => {
+        if (yaTransicionado) return;
+        yaTransicionado = true;
+        if (!splash.isDestroyed()) splash.destroy();
         if (!mainWindow.isDestroyed()) {
             mainWindow.show();
             mainWindow.focus();
-            // Abrir DevTools DESPUÉS de crear la ventana
-            mainWindow.webContents.openDevTools();
         }
     };
-
-    // El timeout es el gatekeeper: el splash permanece visible los N segundos
-    // mínimos aunque ready-to-show dispare antes, garantizando la duración.
-    const transicionar = () => {
-        if (windowReady && splashCompletado) {
-            cerrarSplash();
-            mostrarVentanaPrincipal();
-        }
-    };
-
-    splashTimeout = setTimeout(() => {
+    
+    setTimeout(() => {
         splashCompletado = true;
-        cerrarSplash();
         transicionar();
     }, TIEMPO_SPLASH_MS);
-
-    // Marca la ventana como lista, pero no muestra hasta que el tiempo mínimo
-    // de splash haya transcurrido (evita el race condition).
+    
     mainWindow.once('ready-to-show', () => {
-        windowReady = true;
-        transicionar();
-    });
-
-    // Si el splash se cierra manualmente, limpiar el timeout
-    splash.on('closed', () => {
-        if (splashTimeout) clearTimeout(splashTimeout);
+        ventanaLista = true;
+        if (splashCompletado) transicionar();
     });
 });
 
@@ -878,7 +804,9 @@ app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         const estadoDemo = verificarDemo();
         const ruta = estadoDemo.esValida ? 'index.html' : 'expirado.html';
-        const config = { esValida: estadoDemo.esValida, diasRestantes: estadoDemo.diasRestantes };
-        mainWindow = crearVentana(ruta, config);
+        mainWindow = crearVentana(ruta, {
+            esValida: estadoDemo.esValida,
+            diasRestantes: estadoDemo.diasRestantes
+        });
     }
 });

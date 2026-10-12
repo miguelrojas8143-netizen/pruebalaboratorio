@@ -55,7 +55,7 @@
     window.guardarFormularioHeces = async function() {
         var examenId = window._examenHecesEditando;
         if (!examenId) {
-            alert('No se encontró el examen de heces que se va a guardar.');
+            window.Notifications.error('No se encontró el examen de heces que se va a guardar.');
             return;
         }
         // Un objeto { clave: valor } recorrido en el orden del catálogo, con
@@ -70,17 +70,17 @@
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });
         if (!examen) {
-            alert('No se encontró el examen de heces en la orden.');
+            window.Notifications.error('No se encontró el examen de heces en la orden.');
             return;
         }
 
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : (window.getOrden ? window.getOrden() : '');
         if (!orden) {
-            alert('Error: No se pudo determinar la orden.');
+            window.Notifications.error('Error: No se pudo determinar la orden.');
             return;
         }
         if (!window.api || typeof window.api.guardarPacienteExamenes !== 'function') {
-            alert('Error: No está disponible el guardado en la base de datos.');
+            window.Notifications.error('Error: No está disponible el guardado en la base de datos.');
             return;
         }
 
@@ -106,7 +106,7 @@
             }
         } catch (error) {
             console.error('[guardarFormularioHeces] Error:', error);
-            alert('Error al guardar los resultados: ' + error.message);
+            window.Notifications.error('Error al guardar los resultados: ' + error.message);
             return;
         }
 

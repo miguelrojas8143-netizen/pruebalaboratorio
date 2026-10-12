@@ -209,7 +209,7 @@
                     window.guardarUltimaOrdenCreada(nuevoPaciente.orden);
                     refrescarPaginaActual();
                     renderizarMetricas();
-                    new bootstrap.Modal(document.getElementById('modal-orden')).show();
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-orden')).show();
                     self.reset();
                 } else {
                     mostrarNotificacion('Error al guardar el paciente: ' + result.error, 'danger');
@@ -332,7 +332,7 @@
 
     window.abrirGestionPacientes = function() {
         renderizarListaPacientesModal();
-        var modal = new bootstrap.Modal(document.getElementById('modalGestionPacientes'));
+        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGestionPacientes'));
         modal.show();
     };
 
@@ -353,8 +353,9 @@
         });
     }
 
-    window.eliminarPacienteIndividual = function(pacienteId) {
-        if (!confirm('¿Está seguro de eliminar este paciente?')) return;
+    window.eliminarPacienteIndividual = async function(pacienteId) {
+        var confirmado = await window.Notifications.confirm('¿Está seguro de eliminar este paciente?');
+        if (!confirmado) return;
         window.api.eliminarPaciente(pacienteId).then(function(r) {
             if (r && r.success) {
                 renderizarListaPacientesModal();
@@ -362,16 +363,17 @@
                 renderizarMetricas();
             } else {
                 console.error('[eliminarPacienteIndividual] Error:', r ? r.error : 'Unknown error');
-                alert('Error al eliminar el paciente: ' + (r ? r.error : 'Unknown error'));
+                window.Notifications.error('Error al eliminar el paciente: ' + (r ? r.error : 'Unknown error'));
             }
         }).catch(function(e) {
             console.error('[eliminarPacienteIndividual] Error:', e);
-            alert('Error al eliminar el paciente.');
+            window.Notifications.error('Error al eliminar el paciente.');
         });
     };
 
-    window.eliminarTodosPacientes = function() {
-        if (!confirm('¿Está seguro de eliminar TODOS los pacientes?\nEsta acción no se puede deshacer.')) return;
+    window.eliminarTodosPacientes = async function() {
+        var confirmado = await window.Notifications.confirm('¿Está seguro de eliminar TODOS los pacientes?\nEsta acción no se puede deshacer.');
+        if (!confirmado) return;
         window.api.eliminarTodosPacientes().then(function(r) {
             if (r && r.success) {
                 renderizarListaPacientesModal();
@@ -379,11 +381,11 @@
                 renderizarMetricas();
             } else {
                 console.error('[eliminarTodosPacientes] Error:', r ? r.error : 'Unknown error');
-                alert('Error al eliminar los pacientes: ' + (r ? r.error : 'Unknown error'));
+                window.Notifications.error('Error al eliminar los pacientes: ' + (r ? r.error : 'Unknown error'));
             }
         }).catch(function(e) {
             console.error('[eliminarTodosPacientes] Error:', e);
-            alert('Error al eliminar los pacientes.');
+            window.Notifications.error('Error al eliminar los pacientes.');
         });
     };
 

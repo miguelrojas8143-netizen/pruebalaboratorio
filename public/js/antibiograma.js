@@ -110,11 +110,12 @@
         window.cerrarFormularioAntibiograma();
     };
 
-    window.INSERTAR_OBSERVACION_DEFAULT = function() {
+    window.INSERTAR_OBSERVACION_DEFAULT = async function() {
         var obsInput = document.getElementById('antibiogramaObservaciones');
         if (!obsInput) return;
         if (obsInput.value.trim() !== '') {
-            if (!confirm('Esto reemplazará el texto actual. ¿Continuar?')) return;
+            var confirmado = await window.Notifications.confirm('Esto reemplazará el texto actual. ¿Continuar?');
+            if (!confirmado) return;
         }
         obsInput.value = OBSERVACIONES_DEFAULT;
         obsInput.focus();

@@ -242,7 +242,7 @@
 
             var confirmPromise = window.confirmar ?
                 window.confirmar(msgConfirmacion) :
-                Promise.resolve(confirm(msgConfirmacion));
+                window.Notifications.confirm(msgConfirmacion);
 
             confirmPromise.then(function(proceed) {
                 if (!proceed) {
@@ -260,12 +260,19 @@
                         ' examen(es) con resultados.\n\n' +
                         'Al continuar pasará al Historial del paciente y se generará una nueva orden #' + nuevoTemp + '.\n\n' +
                         '¿Desea continuar?';
-                    if (!confirm(msg)) {
-                        resolve(null);
-                        return;
-                    }
+                    window.Notifications.confirm(msg).then(function(seguir) {
+                        if (!seguir) {
+                            resolve(null);
+                            return;
+                        }
+                        crearVisitaYResolverse();
+                    });
+                } else {
+                    crearVisitaYResolverse();
                 }
+            });
 
+            function crearVisitaYResolverse() {
                 var data = { pacienteId: pacienteId };
                 if (!pacienteCache && opciones.actualizarPaciente) {
                     var refDatos = window.obtenerPacienteExistenteRefer();
@@ -277,7 +284,7 @@
 
                 window.api.crearNuevaVisita(data).then(function(result) {
                     if (!result.success) {
-                        alert('Error al crear nueva orden: ' + result.error);
+                        window.Notifications.error('Error al crear nueva orden: ' + result.error);
                         resolve(null);
                         return;
                     }
@@ -315,10 +322,10 @@
                     resolve(nuevaOrden);
                 }).catch(function(e) {
                     console.error('[crearNuevaVisita] Error:', e);
-                    alert('No se pudo crear la nueva orden. Intente nuevamente.');
+                    window.Notifications.error('No se pudo crear la nueva orden. Intente nuevamente.');
                     resolve(null);
                 });
-            });
+            }
         });
     }
 

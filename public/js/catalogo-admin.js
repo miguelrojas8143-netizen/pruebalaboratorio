@@ -481,7 +481,16 @@
     async function actualizarEstado(id, activo) {
         var examen = examenes.find(function(item) { return item.id === id; });
         if (!examen) return;
-        if (!activo && !confirm('¿Desactivar "' + examen.nombre + '"? Dejará de aparecer en nuevas órdenes, pero sus resultados históricos se conservarán.')) return;
+        if (!activo) {
+            var confirmado = await window.Notifications.confirm({
+                title: 'Confirmar',
+                message: '¿Desactivar "' + examen.nombre + '"? Dejará de aparecer en nuevas órdenes, pero sus resultados históricos se conservarán.',
+                type: 'warning',
+                confirmText: 'Sí, desactivar',
+                cancelText: 'Cancelar'
+            });
+            if (!confirmado) return;
+        }
         try {
             var respuesta = await window.api.actualizarEstadoExamenCatalogo({ id: id, activo: activo });
             if (!respuesta || !respuesta.success) {
@@ -497,7 +506,15 @@
 
     async function eliminarExamen(id) {
         var examen = examenes.find(function(item) { return item.id === id; });
-        if (!examen || !confirm('¿Retirar "' + examen.nombre + '" del catálogo? Sus órdenes e historial se conservarán y podrás reactivarlo después.')) return;
+        if (!examen) return;
+        var confirmado = await window.Notifications.confirm({
+            title: 'Confirmar',
+            message: '¿Retirar "' + examen.nombre + '" del catálogo? Sus órdenes e historial se conservarán y podrás reactivarlo después.',
+            type: 'warning',
+            confirmText: 'Sí, retirar',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
         try {
             var respuesta = await window.api.eliminarExamenCatalogo({ id: id });
             if (!respuesta || !respuesta.success) {

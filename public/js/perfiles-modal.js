@@ -8,7 +8,7 @@
     window.agregarExamenesPerfilSeleccionados = function() {
         var checkboxes = document.querySelectorAll('.perfil-examen-check:checked');
         if (checkboxes.length === 0) {
-            alert('Debe seleccionar al menos un examen del perfil.');
+            window.Notifications.error('Debe seleccionar al menos un examen del perfil.');
             return;
         }
 
@@ -39,7 +39,7 @@
         });
 
         if (agregados === 0) {
-            alert('Los exámenes seleccionados ya están en la orden o no se pudieron agregar.');
+            window.Notifications.warning('Los exámenes seleccionados ya están en la orden o no se pudieron agregar.');
             return;
         }
 

@@ -26,7 +26,7 @@
     window.guardarFormularioTipoSanguineo = function() {
         var resultado = window.determinarTipoSangre();
         if (!resultado) {
-            alert('Complete las reacciones Anti-A, Anti-B y Anti-D.');
+            window.Notifications.error('Complete las reacciones Anti-A, Anti-B y Anti-D.');
             return;
         }
         window.cerrarFormularioTipoSanguineo();

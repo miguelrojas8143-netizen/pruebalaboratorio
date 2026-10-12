@@ -17,7 +17,7 @@
                     ordenesDisponibles = res.pacientes.map(function(p) { return '# ' + p.orden + ' - ' + p.nombre; }).join('\n');
                 }
             } catch(e) {}
-            alert('Paciente no encontrado para la orden: ' + ordenNormalizado + '\n\nÓrdenes disponibles:\n' + (ordenesDisponibles || 'Ninguna'));
+            window.Notifications.error('Paciente no encontrado para la orden: ' + ordenNormalizado + '\n\nÓrdenes disponibles:\n' + (ordenesDisponibles || 'Ninguna'));
             window.location.href = '../index.html';
             return;
         }
