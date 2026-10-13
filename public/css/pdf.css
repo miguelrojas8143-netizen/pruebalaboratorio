@@ -373,7 +373,6 @@ sup {
     }
 
     .no-imprimir { display: none !important; }
-    .footer-developer { display: none !important; }
     .solo-imprimir { display: block !important; }
 
     /* La firma se repite como pie fijo en cada página impresa. */

@@ -583,7 +583,7 @@ app.on('before-quit', () => {
 const ICONO_APP = path.join(__dirname, 'logo-mirolab.png');
 
 // --- CONFIGURACIÓN DE LA DEMO ---
-const DIAS_DEMO = 5;
+const DIAS_DEMO = 15;
 const NOMBRE_APP = 'MiroLab Systems';
 const CLAVE_SECRETA = 'MiroLab-Systems-demo-v1-secure-key';
 

@@ -1,6 +1,6 @@
 {
   "name": "mirolab-systems",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Sistema de Laboratorio Clínico - Demo",
   "main": "main.js",
   "scripts": {
@@ -46,8 +46,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
-    "files": [
-      "**/*"
-    ]
+     "files": [
+    "**/*",
+    "!test-*.js",
+    "!test-*/**"
+  ]
   }
 }

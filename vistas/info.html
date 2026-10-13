@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" 
- content="default-src 'self'; img-src 'self' data:; style-src 'self'
-  'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  content="default-src 'self'; img-src 'self' data:; style-src 'self'
+   'unsafe-inline'; script-src 'self' 'unsafe-inline'">
   
     <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self' ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,76 +17,115 @@
     <link href="../public/lib/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <link href="../public/css/styles.css" rel="stylesheet">
 </head>
-<body class="bg-light py-5">
-   
-    <main class="container" style="max-width: 700px;">
-		  <div class="mb-3 no-imprimir">
-            <button class="btn btn-volver" onclick="window.location.href='../index.html'">
-                <i class="bi bi-arrow-left me-1"></i> Volver a Recepción
-            </button>
+<body class="index-recepcion">
+<nav class="navbar navbar-dark bg-primary shadow-sm mb-0 no-imprimir">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">
+            <img src="../public/imagen/portada.png" alt="Logo" class="logo-navbar me-2">
+            MiroLab Systems
+            <span class="navbar-text">-Demo Version 1</span>
+        </span>
+        <div class="d-flex align-items-center">
+            <span class="text-white small no-imprimir"><i class="bi bi-calendar3 me-1"></i> <span id="fechaHoy"></span></span>
         </div>
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-primary text-white text-center py-3">
-                <h1 class="h3 mb-0"><i class="bi bi-person-badge me-2"></i>Información del Desarrollador</h1>
+    </div>
+</nav>
+<div class="dashboard-wrapper">
+    <div class="dashboard-shell">
+        <aside class="dashboard-sidebar">
+            <nav class="sidebar-nav" aria-label="Navegación principal">
+                <a class="sidebar-link sidebar-info active" href="info.html"><i class="bi bi-info-circle"></i> info</a>
+                <a class="sidebar-link sidebar-primary" href="../index.html"><i class="bi bi-house-door-fill"></i> Recepción</a>
+                <a class="sidebar-link sidebar-success" href="catalogo.html"><i class="bi bi-journal-medical"></i> Catálogo</a>
+                <a class="sidebar-link sidebar-indigo" href="historial.html"><i class="bi bi-file-earmark-text"></i> Historial</a>
+                <a class="sidebar-link sidebar-cyan" href="pacientes-anteriores.html"><i class="bi bi-clock-history"></i> Pacientes Anteriores</a>
+                <!-- cspell:ignore mostrar mostrarEstadisticas Estadisticas abrirGestionPacientes -->
+                <a class="sidebar-link sidebar-warning" onclick="mostrarEstadisticas()" title="Estadísticas"><i class="bi bi-bar-chart-line"></i></a>
+                <!-- cspell:ignore abrir Gestion Pacientes -->
+                <a class="sidebar-link sidebar-danger" onclick="abrirGestionPacientes()" title="Eliminar Pacientes">
+                    <i class="bi bi-trash"></i></a>
+            </nav>
+        </aside>
+        <main class="dashboard-main">
+            <div class="container info-content">
+                <div class="mb-3 no-imprimir">
+                    <button class="btn btn-volver" onclick="window.location.href='../index.html'">
+                        <i class="bi bi-arrow-left me-1"></i> Volver a Recepción
+                    </button>
+                </div>
+                <div class="card shadow-sm border-0 info-card">
+                    <div class="card-header bg-primary text-white text-center py-3">
+                        <h1 class="h3 mb-0"><i class="bi bi-person-badge me-2"></i>Información del Desarrollador</h1>
+                    </div>
+                    <div class="card-body p-3">
+
+                        <!-- Datos Personales -->
+                        <section aria-labelledby="datos-personales" class="mb-3">
+                            <h2 id="datos-personales" class="h5 text-primary border-bottom pb-2">
+                                <i class="bi bi-person-fill me-2"></i>Datos Personales
+                            </h2>
+                            <ul class="list-unstyled ms-2 mb-0">
+                                <li class="mb-1"><strong>Nombre:</strong> Miguel Antonio Rojas Ramírez</li>
+                                <li class="mb-1"><strong>Rol:</strong> Desarrollador del sistema</li>
+                                <li class="mb-1"><strong>Ubicación:</strong> Barcelona, Anzoátegui, Venezuela</li>
+                            </ul>
+                        </section>
+
+                        <!-- Perfil Profesional -->
+                        <section aria-labelledby="perfil-profesional" class="mb-3">
+                            <h2 id="perfil-profesional" class="h5 text-primary border-bottom pb-2">
+                                <i class="bi bi-briefcase-fill me-2"></i>Perfil Profesional
+                            </h2>
+                            <p class="ms-2 mb-0 text-muted">
+                                Desarrollador responsable del análisis, diseño, implementación y mantenimiento de este sistema.
+                            </p>
+                        </section>
+
+                        <!-- Información de Contacto -->
+                        <section aria-labelledby="contacto" class="mb-3">
+                            <h2 id="contacto" class="h5 text-primary border-bottom pb-2">
+                                <i class="bi bi-envelope-paper-fill me-2"></i>Información de Contacto
+                            </h2>
+                            <ul class="list-unstyled ms-2 mb-0">
+                                <li class="mb-1">
+                                    <strong>Correo electrónico:</strong> 
+                                    <a href="mailto:miguelrojas8143@gmail.com" class="text-decoration-none">miguelrojas8143@gmail.com</a>
+                                </li>
+                                <li class="mb-1">
+                                    <strong>Teléfono:</strong> 
+                                    <a href="tel:+584122550437" class="text-decoration-none">+58 412 255 0437</a>
+                                </li>
+                            </ul>
+                        </section>
+
+                        <!-- Acerca del Sistema -->
+                        <section aria-labelledby="sistema">
+                            <h2 id="sistema" class="h5 text-primary border-bottom pb-2">
+                                <i class="bi bi-cpu-fill me-2"></i>Acerca del Sistema
+                            </h2>
+                            <ul class="list-unstyled ms-2 mb-0">
+                                <li class="mb-1"><strong>Proyecto:</strong> Prueba de laboratorio</li>
+                                <li class="mb-1"><strong>Versión:</strong> 1.0.0</li>
+                                <li class="mb-1"><strong>Fecha de desarrollo:</strong> <time datetime="2026">2026</time></li>
+                            </ul>
+                        </section>
+
+                    </div>
+                </div>
             </div>
-            
-            <div class="card-body p-4">
-                
-                <!-- Datos Personales -->
-                <section aria-labelledby="datos-personales" class="mb-4">
-                    <h2 id="datos-personales" class="h5 text-primary border-bottom pb-2">
-                        <i class="bi bi-person-fill me-2"></i>Datos Personales
-                    </h2>
-                    <ul class="list-unstyled ms-2 mb-0">
-                        <li class="mb-1"><strong>Nombre:</strong> Miguel Antonio Rojas Ramírez</li>
-                        <li class="mb-1"><strong>Rol:</strong> Desarrollador del sistema</li>
-                        <li class="mb-1"><strong>Ubicación:</strong> Barcelona, Anzoátegui, Venezuela</li>
-                    </ul>
-                </section>
-
-                <!-- Perfil Profesional -->
-                <section aria-labelledby="perfil-profesional" class="mb-4">
-                    <h2 id="perfil-profesional" class="h5 text-primary border-bottom pb-2">
-                        <i class="bi bi-briefcase-fill me-2"></i>Perfil Profesional
-                    </h2>
-                    <p class="ms-2 mb-0 text-muted">
-                        Desarrollador responsable del análisis, diseño, implementación y mantenimiento de este sistema.
-                    </p>
-                </section>
-
-                <!-- Información de Contacto -->
-                <section aria-labelledby="contacto" class="mb-4">
-                    <h2 id="contacto" class="h5 text-primary border-bottom pb-2">
-                        <i class="bi bi-envelope-paper-fill me-2"></i>Información de Contacto
-                    </h2>
-                    <ul class="list-unstyled ms-2 mb-0">
-                        <li class="mb-1">
-                            <strong>Correo electrónico:</strong> 
-                            <a href="mailto:miguelrojas8143@gmail.com" class="text-decoration-none">miguelrojas8143@gmail.com</a>
-                        </li>
-                        <li class="mb-1">
-                            <strong>Teléfono:</strong> 
-                            <a href="tel:+584122550437" class="text-decoration-none">+58 412 255 0437</a>
-                        </li>
-                    </ul>
-                </section>
-
-                <!-- Acerca del Sistema -->
-                <section aria-labelledby="sistema">
-                    <h2 id="sistema" class="h5 text-primary border-bottom pb-2">
-                        <i class="bi bi-cpu-fill me-2"></i>Acerca del Sistema
-                    </h2>
-                    <ul class="list-unstyled ms-2 mb-0">
-                        <li class="mb-1"><strong>Proyecto:</strong> Prueba de laboratorio</li>
-                        <li class="mb-1"><strong>Versión:</strong> 1.0.0</li>
-                        <li class="mb-1"><strong>Fecha de desarrollo:</strong> <time datetime="2026">2026</time></li>
-                    </ul>
-                </section>
-
-            </div>
-        </div>
-    </main>
-    <script src="../public/lib/bootstrap.bundle.min.js"></script>
-    <script src="../public/js/tooltips.js"></script>
+        </main>
+    </div>
+</div>
+<script src="../public/lib/jquery-3.6.0.min.js"></script>
+<script src="../public/lib/bootstrap.bundle.min.js"></script>
+<script src="../public/js/tooltips.js"></script>
+<script src="../public/js/db-catalogo.js"></script>
+<script src="../public/js/utils.js"></script>
+<script src="../public/js/storage.js"></script>
+<script src="../public/js/recepcion.js"></script>
+<script src="../public/js/orden.js"></script>
+<script src="../public/js/catalogo-admin.js"></script>
+<script src="../public/js/app.js"></script>
+<script src="../public/js/notifications.js"></script>
 </body>
 </html>
