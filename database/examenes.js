@@ -179,7 +179,7 @@ function insertarParametros(insertar, orden, fecha, examenId, valores, indice) {
     const referencias = valores.__referencias || {};
     let cantidad = 0;
     for (const codigo of Object.keys(valores)) {
-        if (codigo === '__referencias') continue;
+        if (codigo === '__referencias' || codigo === '__observaciones') continue;
         const item = indice.porId.get(codigo);
         const resultado = valores[codigo];
         if (!item || !item.pruebas.has(examenId)) continue;
@@ -455,7 +455,9 @@ function guardarExamenesPaciente(db, orden, examenes) {
 
             const codigos = new Set(parametros.map(function(parametro) { return parametro.codigo; }));
             const clavesDesconocidas = Object.keys(valores).filter(function(codigo) {
-                return codigo !== '__referencias' && !codigos.has(codigo);
+                return codigo !== '__referencias' &&
+                    codigo !== '__observaciones' &&
+                    !codigos.has(codigo);
             });
             if (clavesDesconocidas.length) {
                 throw new Error(
@@ -465,6 +467,17 @@ function guardarExamenesPaciente(db, orden, examenes) {
             }
 
             const referencias = valores.__referencias || {};
+            const observaciones = String(valores.__observaciones || '').trim();
+            if (observaciones) {
+                insertar.run(
+                    orden,
+                    nombre,
+                    observaciones,
+                    examenId,
+                    '__observaciones',
+                    null
+                );
+            }
             parametros.forEach(function(parametro) {
                 const resultado = valores[parametro.codigo];
                 const referencia = referencias[parametro.codigo];
@@ -593,9 +606,13 @@ function mapearExamenesGuardados(db, filas) {
         if (esParametroNormalizado || valoresLegados) {
             const grupo = obtenerGrupo(fila, examenId, nombre);
             if (esParametroNormalizado) {
-                grupo.valores[fila.idresultado] = fila.resultado == null ? '' : String(fila.resultado);
-                if (fila.referencia != null && String(fila.referencia).trim() !== '') {
-                    grupo.referencias[fila.idresultado] = String(fila.referencia);
+                if (fila.idresultado === '__observaciones') {
+                    grupo.valores.__observaciones = fila.resultado == null ? '' : String(fila.resultado);
+                } else {
+                    grupo.valores[fila.idresultado] = fila.resultado == null ? '' : String(fila.resultado);
+                    if (fila.referencia != null && String(fila.referencia).trim() !== '') {
+                        grupo.referencias[fila.idresultado] = String(fila.referencia);
+                    }
                 }
             } else {
                 Object.keys(valoresLegados).forEach(function(codigo) {

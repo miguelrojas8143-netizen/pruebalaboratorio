@@ -183,9 +183,10 @@ app.whenReady().then(() => {
     try {
         mainWindow = crearVentana(rutaArchivo, opcionesVentana);
       
-         // mainWindow.webContents.openDevTools();
+       
        // if (demoInfo.esValida) {
-           
+       
+             // mainWindow.webContents.openDevTools();
            
       //  }
 

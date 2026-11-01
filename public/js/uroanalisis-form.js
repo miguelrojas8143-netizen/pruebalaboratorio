@@ -41,6 +41,8 @@ window.abrirFormularioUroanalisis = function(examenId) {
             input.value = datos[f.id] !== undefined ? datos[f.id] : '';
         }
     });
+    var observaciones = document.getElementById('uro_observaciones');
+    if (observaciones) observaciones.value = datos.__observaciones || '';
 
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
@@ -57,6 +59,8 @@ window.guardarFormularioUroanalisis = async function() {
             var input = document.getElementById('uro_' + f.id);
             datos[f.id] = input ? String(input.value || '').trim() : '';
         });
+        var observaciones = document.getElementById('uro_observaciones');
+        datos.__observaciones = observaciones ? String(observaciones.value || '').trim() : '';
 
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });

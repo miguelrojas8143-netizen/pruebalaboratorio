@@ -45,6 +45,8 @@
                 var el = document.getElementById(campo.id);
                 if (el) el.value = datos[campo.id] != null ? datos[campo.id] : '';
             });
+            var observaciones = document.getElementById('heces_observaciones');
+            if (observaciones) observaciones.value = datos.__observaciones || '';
         } catch(e) {}
 
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -66,6 +68,8 @@
             var valor = valorDeCampo(campo.id);
             if (valor !== '') datos[campo.id] = valor;
         });
+        var observaciones = document.getElementById('heces_observaciones');
+        datos.__observaciones = observaciones ? String(observaciones.value || '').trim() : '';
 
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });

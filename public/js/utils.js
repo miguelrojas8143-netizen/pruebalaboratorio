@@ -49,7 +49,12 @@
             if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
                 try {
                     var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
+                    return Object.keys(datos).some(function(id) {
+                        return id !== '__referencias' &&
+                            (id !== '__observaciones' || e.tipoFormulario !== 'uroanalisis') &&
+                            datos[id] != null &&
+                            String(datos[id]).trim() !== '';
+                    });
                 } catch(err) {
                     return false;
                 }
@@ -145,7 +150,9 @@
     function tieneDatosUroanalisis(examen) {
         try {
             var datos = JSON.parse(examen.resultado || '{}');
-            return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return String(v).trim() !== ''; });
+            return Object.keys(datos).some(function(id) {
+                return id !== '__referencias' && datos[id] != null && String(datos[id]).trim() !== '';
+            });
         } catch(e) {
             return false;
         }

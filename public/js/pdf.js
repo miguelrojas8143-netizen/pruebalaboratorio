@@ -280,6 +280,9 @@
             });
         }
         var examenesAb = examenes.find(function(e) { return e.tipoFormulario === 'antibiograma'; });
+        var examenHematologia = examenes.find(function(e) {
+            return e.id === 'hematologia_completa';
+        });
         var examenesNormales = examenes.filter(function(e) {
             return e !== examenesHeces && e !== examenesUro && e !== examenesAb &&
                 e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' && e.tipoFormulario !== 'antibiograma';
@@ -381,9 +384,21 @@
             heces = {
                 datos: datosHeces,
                 grupos: gruposHeces.grupos,
-                ordenGrupos: gruposHeces.ordenGrupos
+                ordenGrupos: gruposHeces.ordenGrupos,
+                observaciones: datosHeces.__observaciones || ''
             };
         }
+
+        var datosHematologia = {};
+        try {
+            var resultadoHematologia = examenHematologia && examenHematologia.resultado;
+            datosHematologia = typeof resultadoHematologia === 'string'
+                ? JSON.parse(resultadoHematologia || '{}')
+                : (resultadoHematologia || {});
+        } catch (error) {}
+        var hematologiaObservaciones = datosHematologia && datosHematologia.__observaciones
+            ? datosHematologia.__observaciones
+            : '';
 
         var uro = null;
         if (examenesUro && window.tieneDatosUroanalisis(examenesUro)) {
@@ -394,7 +409,12 @@
             var itemsCatalogoUro = itemsDeExamen(uroCatalogoId);
             if (!itemsCatalogoUro.length && window.UROANALYSIS_FIELDS) itemsCatalogoUro = window.UROANALYSIS_FIELDS;
             var gruposUro = construirGruposDeExamen(datosUro, itemsCatalogoUro, uroCatalogoId);
-            uro = { datos: datosUro, grupos: gruposUro.grupos, ordenGrupos: gruposUro.ordenGrupos };
+            uro = {
+                datos: datosUro,
+                grupos: gruposUro.grupos,
+                ordenGrupos: gruposUro.ordenGrupos,
+                observaciones: datosUro.__observaciones || ''
+            };
         }
 
         var antibiograma = null;
@@ -416,6 +436,7 @@
             },
             secciones: secciones,
             heces: heces,
+            hematologiaObservaciones: hematologiaObservaciones,
             uro: uro,
             antibiograma: antibiograma,
             refAdaptadas: refAdaptadas,
@@ -540,17 +561,26 @@
 
     function renderHecesDom(heces) {
         if (!heces) return '';
-        return renderTablaParametrosDom('Examen de Heces', heces.grupos, heces.ordenGrupos, {
+        var html = renderTablaParametrosDom('Examen de Heces', heces.grupos, heces.ordenGrupos, {
             clase: 'pdf-heces'
         });
+        return html + renderObservacionesBioanalista(heces.observaciones);
+    }
+
+    function renderObservacionesBioanalista(texto) {
+        if (!texto || String(texto).trim() === '') return '';
+        return '<h6 class="reporte-subarea-titulo mt-3">OBSERVACIONES DEL BIOANALISTA</h6>' +
+            '<div class="alert alert-light border rounded mb-0" style="white-space: pre-wrap; line-height: 1.5; padding: 0.75rem 1rem;">' +
+            escapeHtml(texto) + '</div>';
     }
 
     function renderUroDom(uro) {
         if (!uro) return '';
-        return renderTablaParametrosDom('Examen de Orina / Uroanálisis', uro.grupos, uro.ordenGrupos, {
+        var html = renderTablaParametrosDom('Examen de Orina / Uroanálisis', uro.grupos, uro.ordenGrupos, {
             clase: 'pdf-uroanalisis',
             tituloColumnaReferencia: 'Valor de Referencia'
         });
+        return html + renderObservacionesBioanalista(uro.observaciones);
     }
 
     function renderAntibiogramaDom(ab) {
@@ -614,6 +644,9 @@
             var s = document.createElement('div');
             s.className = 'reporte-area-grupo';
             s.innerHTML = renderAreaDom(seccion);
+            if (seccion.nombre === 'Hematología') {
+                s.innerHTML += renderObservacionesBioanalista(payload.hematologiaObservaciones);
+            }
             if (contenedor) contenedor.appendChild(s);
         });
 
@@ -1024,6 +1057,34 @@
         doc.text('', pageWidth / 2, y, { align: 'center' });// espacio para posibles títulos de sección
         y += 6;// espacio después del título de sección
 
+        function escribirObservacionesBioanalista(texto) {
+            if (!texto || String(texto).trim() === '') return;
+            var lineas = doc.splitTextToSize(textoPlano(texto), pageWidth - 28);
+            if (y + 12 > pageHeight - 30) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(31, 78, 104);
+            doc.text('OBSERVACIONES DEL BIOANALISTA', 14, y + 4);
+            y += 8;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(25, 25, 25);
+            lineas.forEach(function(linea) {
+                if (y + 3.6 > pageHeight - 30) {
+                    doc.addPage();
+                    encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                    y = yDespuesEncabezado;
+                }
+                doc.text(linea, 14, y);
+                y += 3.6;
+            });
+            y += 2;
+        }
+
         
         payload.secciones.forEach(function(seccion) {
             seccion.subareas.forEach(function(sub) {
@@ -1047,6 +1108,9 @@
                 }
             });
             y += 2;
+            if (seccion.nombre === 'Hematología') {
+                escribirObservacionesBioanalista(payload.hematologiaObservaciones);
+            }
         });
 
         if (payload.antibiograma) {
@@ -1096,6 +1160,7 @@
                 didDrawPage: encabezadoPagina,
                 startY: yDespuesEncabezado
             });
+            escribirObservacionesBioanalista(payload.heces.observaciones);
         }
         if (payload.uro) {
             if (payload.secciones.length > 0 || payload.antibiograma || payload.heces) {
@@ -1117,6 +1182,7 @@
                 }));
             });
             y = agregarResultadosTexto(doc, 'EXAMEN DE ORINA', uroFilas, { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
+            escribirObservacionesBioanalista(payload.uro.observaciones);
         }
 
         return doc;

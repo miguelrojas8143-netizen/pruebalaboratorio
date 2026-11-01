@@ -254,7 +254,9 @@
         try {
             var datos = JSON.parse(examen.resultado || '{}');
             return Object.keys(datos).some(function(id) {
-                return id !== '__referencias' && datos[id] != null && String(datos[id]).trim() !== '';
+                return id !== '__referencias' &&
+                    datos[id] != null &&
+                    String(datos[id]).trim() !== '';
             });
         } catch (e) {
             return false;
@@ -491,9 +493,6 @@
                 if (!window.pacienteActivo.perfiles.includes(examenId)) window.pacienteActivo.perfiles.push(examenId);
             }
             renderizarTablaExamenes();
-            if (examenId === 'uroanalisis' || examenId === 'examen_orina') {
-                window.abrirFormularioUroanalisis(examenId);
-            }
             return;
         }
         if (window.examenesOrden.some(function(e) { return e.id === examenId; })) {
@@ -505,12 +504,6 @@
         window.examenesOrden.push(crearExamenDesdeCatalogo(datos));
         $('#selectorExamenes').val(null).trigger('change');
         renderizarTablaExamenes();
-        if (datos.tipo === 'heces' || examenId === 'feces') {
-            window.abrirFormularioHeces(examenId);
-        }
-        if (examenId === 'uroanalisis' || examenId === 'examen_orina') {
-            window.abrirFormularioUroanalisis(examenId);
-        }
         if (examenId === 'antibiograma') {
             window.abrirFormularioAntibiograma(examenId);
         }
@@ -677,7 +670,7 @@
             title: 'Confirmar eliminación',
             message: '¿Está seguro de eliminar este examen y sus resultados guardados?',
             type: 'warning',
-            confirmText: 'Sí, eliminar',
+            confirmText: 'Sí',
             cancelText: 'Cancelar'
         });
         if (!confirmado) return;
@@ -699,7 +692,7 @@
             title: 'Confirmar eliminación',
             message: '¿Está seguro de eliminar este examen y sus resultados guardados?',
             type: 'warning',
-            confirmText: 'Sí, eliminar',
+            confirmText: 'Sí',
             cancelText: 'Cancelar'
         });
         if (!confirmado) return;
@@ -806,7 +799,12 @@
             if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
                 try {
                     var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
+                    return Object.keys(datos).some(function(id) {
+                        return id !== '__referencias' &&
+                            (id !== '__observaciones' || e.tipoFormulario !== 'uroanalisis') &&
+                            datos[id] != null &&
+                            String(datos[id]).trim() !== '';
+                    });
                 } catch(e) {
                     return false;
                 }

@@ -31,6 +31,24 @@
         return guardados;
     }
 
+    function agregarCampoObservaciones(body, valor) {
+        var contenedor = document.createElement('div');
+        contenedor.className = 'mt-3';
+        var label = document.createElement('label');
+        label.className = 'form-label fw-semibold';
+        label.htmlFor = 'hematologia_observaciones';
+        label.textContent = 'Observaciones del bioanalista:';
+        var textarea = document.createElement('textarea');
+        textarea.id = 'hematologia_observaciones';
+        textarea.className = 'form-control observaciones-bioanalista-input';
+        textarea.rows = 3;
+        textarea.placeholder = 'Escriba las observaciones de hematología completa...';
+        textarea.value = valor || '';
+        contenedor.appendChild(label);
+        contenedor.appendChild(textarea);
+        body.appendChild(contenedor);
+    }
+
     /**
      * Abre el modal de ítems detallados dibujando el formulario con los datos
      * que devuelve SQLite (SELECT * FROM parametros_examen WHERE examen_id = ?).
@@ -55,7 +73,8 @@
             return item.tipo !== 'seleccion_unica' && item.tipo !== 'multiselect_cantidad';
         });
 
-        return window.renderizarParametrosDesdeSQLite(body, examenId, valoresGuardadosDe(examen), {
+        var valoresGuardados = valoresGuardadosDe(examen);
+        return window.renderizarParametrosDesdeSQLite(body, examenId, valoresGuardados, {
             prefijo: 'modalItem_',
             agrupar: !esHematologia,
             grupoUnico: esHematologia ? 'Hematología' : null,
@@ -66,6 +85,7 @@
             cabecera: soloResultados,
             unidades: soloResultados
         }).then(function() {
+            if (esHematologia) agregarCampoObservaciones(body, valoresGuardados.__observaciones);
             inicializarCalculosEnVivoModal(body);
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         }).catch(function(error) {
@@ -84,6 +104,8 @@
             referencias[input.getAttribute('data-item-id')] = input.value.trim();
         });
         if (Object.keys(referencias).length > 0) datos.__referencias = referencias;
+        var observaciones = document.getElementById('hematologia_observaciones');
+        if (observaciones) datos.__observaciones = observaciones.value.trim();
         return datos;
     }
 
@@ -115,7 +137,8 @@
         }, 250);
 
         body.addEventListener('input', function(event) {
-            if (!event.target.matches('.tabla-item-input')) return;
+            var esObservacion = event.target.matches('.observaciones-bioanalista-input');
+            if (!esObservacion && !event.target.matches('.tabla-item-input')) return;
 
             var modalEl = document.getElementById('modalItemsExamen');
             if (!modalEl || modalEl.getAttribute('data-editor-mode') !== 'detallado') return;
@@ -125,8 +148,10 @@
 
             examen.resultado = JSON.stringify(leerDatosModal(examenId));
             examen.tipo = 'perfil';
-            _ultimoExamenId = examenId;
-            debouncedCalcular();
+            if (!esObservacion) {
+                _ultimoExamenId = examenId;
+                debouncedCalcular();
+            }
         });
     }
 
@@ -198,20 +223,7 @@
             return;
         }
 
-        var inputs = document.querySelectorAll('#modalItemsExamenBody .tabla-item-input');
-        var datos = {};
-        var referencias = {};
-
-        inputs.forEach(function(input) {
-            var itemId = input.getAttribute('data-item-id');
-            datos[itemId] = input.value.trim();
-        });
-
-        document.querySelectorAll('#modalItemsExamenBody .referencia-item-input').forEach(function(input) {
-            referencias[input.getAttribute('data-item-id')] = input.value.trim();
-        });
-        if (Object.keys(referencias).length > 0) datos.__referencias = referencias;
-
+        var datos = leerDatosModal(examenId);
         examen.resultado = JSON.stringify(datos);
         examen.tipo = 'perfil';
         if (window.ejecutarCalculosAutomaticos) window.ejecutarCalculosAutomaticos();

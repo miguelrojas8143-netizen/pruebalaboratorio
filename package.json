@@ -1,6 +1,6 @@
 {
   "name": "mirolab-systems",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Sistema de Laboratorio Clínico - Demo",
   "main": "main.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "postbuild": "electron-builder install-app-deps",
     "postinstall": "electron-builder install-app-deps"
   },
-  "author": "Ing. Miguel Rojas",
+  "author": "Ing. Miguel Antonio Rojas Ramírez",
   "license": "MIT",
   "dependencies": {
     "better-sqlite3": "^8.7.0"
@@ -28,15 +28,21 @@
   },
   "build": {
     "appId": "com.mirolab.systems",
-    "productName": "mirolab-systems",
+    "productName": "MiroLabSystems",
     "directories": {
       "output": "dist"
     },
+    "asar": true,
     "asarUnpack": [
       "node_modules/better-sqlite3"
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
       "icon": "icono.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
@@ -44,12 +50,18 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "MiroLab Systems",
+      "installerIcon": "icono.ico",
+      "uninstallerIcon": "icono.ico",
+      "uninstallDisplayName": "MiroLab Systems",
+      "runAfterFinish": true,
+      "perMachine": false
     },
-     "files": [
-    "**/*",
-    "!test-*.js",
-    "!test-*/**"
-  ]
+    "files": [
+      "**/*",
+      "!test-*.js",
+      "!test-*/**"
+    ]
   }
 }
