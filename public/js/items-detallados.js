@@ -37,7 +37,7 @@
         var label = document.createElement('label');
         label.className = 'form-label fw-semibold';
         label.htmlFor = 'hematologia_observaciones';
-        label.textContent = 'Observaciones del bioanalista:';
+        label.textContent = 'OBSERVACIONES';
         var textarea = document.createElement('textarea');
         textarea.id = 'hematologia_observaciones';
         textarea.className = 'form-control observaciones-bioanalista-input';

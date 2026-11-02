@@ -148,8 +148,7 @@ window.App.perfiles.hematologia_completa = {
         { id: 'plaquetas', nombre: 'Plaquetas', area: 'Hematología', unidad: 'x10³/µL', refMin: 150, refMax: 450, grupo: 'Hemograma' },
         { id: 'vpm', nombre: 'V.P.M.', area: 'Hematología', unidad: 'fL', refMin: 6.5, refMax: 13.5, grupo: 'Hemograma' },
         { id: 'pdw', nombre: 'P.D.W.', area: 'Hematología', unidad: '%', refMin: 0, refMax: 16.8, refTexto: '<16.8', grupo: 'Hemograma' },
-        { id: 'plcr', nombre: 'P.LCR', area: 'Hematología', unidad: '%', refMin: 0, refMax: 42.3, refTexto: '<42.3', grupo: 'Hemograma' },
-        { id: 'vsg', nombre: 'V.S.G. 1 Hora', area: 'Hematología', unidad: 'mm/h', refMin: 3, refMax: 20, refTexto: 'Niño: 3 - 13 mm/h | Mujer: < 20', grupo: 'Hemograma' }
+        { id: 'plcr', nombre: 'P.LCR', area: 'Hematología', unidad: '%', refMin: 0, refMax: 42.3, refTexto: '<42.3', grupo: 'Hemograma' }
     ]
 };
 

@@ -127,6 +127,7 @@
         var tieneResultado = String(examen.resultado ?? '').trim() !== '';
         var numResultado = parseFloat(examen.resultado);
         var clase = 'resultado-normal-texto';
+        var indicador = '';
         var texto = '-';
 
         if (examen.tipo === 'multiselect_cantidad') {
@@ -155,15 +156,15 @@
             } else if (tieneResultado && !isNaN(numResultado)) {
                 if (numResultado < examen.refMin) {
                     clase = 'resultado-bajo-texto';
-                    texto = examen.resultado + ' ↓';
+                    indicador = 'bajo';
                 } else if (numResultado > examen.refMax) {
                     clase = 'resultado-alto-texto';
-                    texto = examen.resultado + ' ↑';
+                    indicador = 'alto';
                 }
             }
         }
 
-        return { texto: texto, clase: clase };
+        return { texto: texto, clase: clase, indicador: indicador };
     }
 
     function clasificarFila(examen) {
@@ -177,6 +178,7 @@
             nombre: valorImprimible(examen.nombre || examen.id),
             texto: valorImprimible(r.texto),
             clase: r.clase,
+            indicador: r.indicador,
             unidad: valorImprimible(examen.unidad),
             refTexto: valorImprimible(refTexto),
             esSecrecionVaginal: examen.area === 'Secreción Vaginal'
@@ -185,6 +187,22 @@
 
     function clasificarFilas(examenes) {
         return examenes.map(clasificarFila);
+    }
+
+    function dibujarIndicadorDireccion(doc, indicador, x, y) {
+        if (indicador !== 'alto' && indicador !== 'bajo') return;
+        var centro = x + 1.5;
+        doc.setDrawColor(25, 25, 25);
+        doc.setLineWidth(0.35);
+        if (indicador === 'alto') {
+            doc.line(centro, y - 0.2, centro, y - 2.4);
+            doc.line(centro, y - 2.4, centro - 0.8, y - 1.6);
+            doc.line(centro, y - 2.4, centro + 0.8, y - 1.6);
+        } else {
+            doc.line(centro, y - 2.4, centro, y - 0.2);
+            doc.line(centro, y - 0.2, centro - 0.8, y - 1);
+            doc.line(centro, y - 0.2, centro + 0.8, y - 1);
+        }
     }
 
     function expandirExamenesDetallados(examenes) {
@@ -348,6 +366,7 @@
         var secciones = [];
         Object.keys(porArea).sort().forEach(function(area) {
             var subareas = [];
+            var filasVSG = [];
 
             if (area === 'Uroanálisis') {
                 var gruposU = window.agruparUroanalisisPorGrupo(porArea[area]);
@@ -365,15 +384,21 @@
                 if (notasFrotis && String(notasFrotis.resultado || '').trim() !== '') {
                     subareas.push({ notas: notasFrotis.resultado || '' });
                 }
-            }
-             else if (area === 'Hematología') {
+            } else if (area === 'Hematología') {
                 var sep = window.separarVSG(porArea[area]);
-                     subareas.push({ rows: clasificarFilas(sep.otros.concat(sep.vsg)) });
+                if (sep.otros.length) subareas.push({ rows: clasificarFilas(sep.otros) });
+                filasVSG = sep.vsg;
             } else {
                 subareas.push({ rows: clasificarFilas(porArea[area]) });
             }
 
-            secciones.push({ nombre: area, subareas: subareas });
+            if (subareas.length) secciones.push({ nombre: area, subareas: subareas });
+            if (filasVSG.length) {
+                secciones.push({
+                    nombre: 'V.S.G. 1 Hora',
+                    subareas: [{ rows: clasificarFilas(filasVSG) }]
+                });
+            }
         });
 
         var heces = null;
@@ -472,8 +497,11 @@
         var html = '<div class="table-responsive"><table class="table table-bordered"><thead>' + headers + '</thead><tbody>';
 
         rows.forEach(function(row) {
+            var indicadorHtml = row.indicador === 'alto'
+                ? '<span aria-hidden="true">↑</span> '
+                : (row.indicador === 'bajo' ? '<span aria-hidden="true">↓</span> ' : '');
             if (esSecrecionVaginal) {
-                html += '<tr><td class="fw-semibold">' + row.nombre + '</td><td class="' + row.clase + '">' + row.texto + '</td></tr>';
+                html += '<tr><td class="fw-semibold">' + row.nombre + '</td><td class="' + row.clase + '">' + indicadorHtml + row.texto + '</td></tr>';
             } else {
                 var nombre = row.nombre;
                 var clase = row.clase;
@@ -485,9 +513,9 @@
                 var esTrigliceridos = nombre && nombre.toLowerCase() === 'triglicéridos';
                 
                 if (esTrigliceridos) {
-                    html += '<tr><td class="fw-semibold">' + nombre + '</td><td class="' + clase + '">' + texto + '</td><td class="text-muted">' + unidad + '</td><td>' + refTexto + '</td></tr>';
+                    html += '<tr><td class="fw-semibold">' + nombre + '</td><td class="' + clase + '">' + indicadorHtml + texto + '</td><td class="text-muted">' + unidad + '</td><td>' + refTexto + '</td></tr>';
                 } else {
-                    html += '<tr><td class="fw-semibold">' + nombre + '</td><td class="' + clase + '">' + texto + '</td><td class="text-muted">' + unidad + '</td><td>' + refTexto + '</td></tr>';
+                    html += '<tr><td class="fw-semibold">' + nombre + '</td><td class="' + clase + '">' + indicadorHtml + texto + '</td><td class="text-muted">' + unidad + '</td><td>' + refTexto + '</td></tr>';
                 }
             }
         });
@@ -569,7 +597,7 @@
 
     function renderObservacionesBioanalista(texto) {
         if (!texto || String(texto).trim() === '') return '';
-        return '<h6 class="reporte-subarea-titulo mt-3">OBSERVACIONES DEL BIOANALISTA</h6>' +
+        return '<h6 class="reporte-subarea-titulo mt-3">OBSERVACIONES</h6>' +
             '<div class="alert alert-light border rounded mb-0" style="white-space: pre-wrap; line-height: 1.5; padding: 0.75rem 1rem;">' +
             escapeHtml(texto) + '</div>';
     }
@@ -799,10 +827,11 @@
         var margenInferior = 30;
         var margenIzquierdo = 14;
         var ancho = doc.internal.pageSize.getWidth() - 28;
+        var altoLinea = 7.5 * 25.4 / 72 * 0.9;
         var columnas = {
-            prueba: { x: margenIzquierdo, ancho: 78 },
-            resultado: { x: margenIzquierdo + 78, ancho: 48 },
-            referencia: { x: margenIzquierdo + 126, ancho: ancho - 126 }
+            prueba: { x: margenIzquierdo, ancho: 72 },
+            resultado: { x: margenIzquierdo + 72, ancho: 45 },
+            referencia: { x: margenIzquierdo + 117, ancho: ancho - 117 }
         };
         var y = opciones.y || 20;
 
@@ -835,21 +864,28 @@
         }
 
         function escribirFila(resultado) {
+            var tieneIndicador = resultado.indicador === 'alto' || resultado.indicador === 'bajo';
+            var columnaResultado = tieneIndicador
+                ? { x: columnas.resultado.x + 4, ancho: columnas.resultado.ancho - 4 }
+                : columnas.resultado;
             var nombre = textoCelda(resultado.nombre || 'Examen', columnas.prueba);
-            var valor = textoCelda(resultado.resultado, columnas.resultado);
+            var valor = textoCelda(resultado.resultado, columnaResultado);
             var referencia = textoCelda(resultado.referencia, columnas.referencia);
-            var alto = Math.max(nombre.length, valor.length, referencia.length) * 3.6 + 3;
+            var alto = Math.max(nombre.length, valor.length, referencia.length) * altoLinea + 1.5;
             if (y + alto > pageHeight - margenInferior) {
                 y = nuevaPagina();
                 escribirEncabezados();
             }
 
-            doc.setFont('helvetica', 'normal');
+            doc.setFont('helvetica', 'bold');
             doc.setFontSize(7.5);
             doc.setTextColor(25, 25, 25);
-            doc.text(nombre, columnas.prueba.x, y);
-            doc.text(valor, columnas.resultado.x, y);
-            doc.text(referencia, columnas.referencia.x, y);
+            if (tieneIndicador) {
+                dibujarIndicadorDireccion(doc, resultado.indicador, columnas.resultado.x, y);
+            }
+            doc.text(nombre, columnas.prueba.x, y, { lineHeightFactor: 0.9 });
+            doc.text(valor, columnaResultado.x, y, { lineHeightFactor: 0.9 });
+            doc.text(referencia, columnas.referencia.x, y, { lineHeightFactor: 0.9 });
             y += alto;
         }
 
@@ -893,11 +929,12 @@
         var margenIzquierdo = 14;
         var margenInferior = 30;
         var ancho = doc.internal.pageSize.getWidth() - 28;
+        var altoLinea = 7.5 * 25.4 / 72 * 0.9;
         var columnas = {
-            parametro: { x: margenIzquierdo, ancho: 55 },
-            resultado: { x: margenIzquierdo + 55, ancho: 45 },
-            unidad: { x: margenIzquierdo + 100, ancho: 25 },
-            referencia: { x: margenIzquierdo + 125, ancho: ancho - 125 }
+            parametro: { x: margenIzquierdo, ancho: 51 },
+            resultado: { x: margenIzquierdo + 51, ancho: 43 },
+            unidad: { x: margenIzquierdo + 94, ancho: 23 },
+            referencia: { x: margenIzquierdo + 117, ancho: ancho - 117 }
         };
         var y = opciones.y || 20;
 
@@ -963,18 +1000,18 @@
                     doc.splitTextToSize(valorImprimible(fila.unidad), columnas.unidad.ancho - 4),
                     doc.splitTextToSize(referenciaDe(fila), columnas.referencia.ancho - 4)
                 ];
-                var alto = Math.max.apply(null, celdas.map(function(c) { return c.length; })) * 3.6 + 2.5;
+                var alto = Math.max.apply(null, celdas.map(function(c) { return c.length; })) * altoLinea + 1.5;
                 if (y + alto > pageHeight - margenInferior) {
                     nuevaPagina();
                     escribirTituloGrupo(grupo);
                 }
-                doc.setFont('helvetica', 'normal');
+                doc.setFont('helvetica', 'bold');
                 doc.setFontSize(7.5);
                 doc.setTextColor(25, 25, 25);
-                doc.text(celdas[0], columnas.parametro.x + 2, y);
-                doc.text(celdas[1], columnas.resultado.x + 2, y);
-                doc.text(celdas[2], columnas.unidad.x + 2, y);
-                doc.text(celdas[3], columnas.referencia.x + 2, y);
+                doc.text(celdas[0], columnas.parametro.x + 2, y, { lineHeightFactor: 0.9 });
+                doc.text(celdas[1], columnas.resultado.x + 2, y, { lineHeightFactor: 0.9 });
+                doc.text(celdas[2], columnas.unidad.x + 2, y, { lineHeightFactor: 0.9 });
+                doc.text(celdas[3], columnas.referencia.x + 2, y, { lineHeightFactor: 0.9 });
                 doc.setDrawColor(210, 215, 220);
                 doc.setLineWidth(0.2);
                 doc.line(margenIzquierdo, y + alto - 1.5, margenIzquierdo + ancho, y + alto - 1.5);
@@ -1068,7 +1105,7 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(31, 78, 104);
-            doc.text('OBSERVACIONES DEL BIOANALISTA', 14, y + 4);
+            doc.text('OBSERVACIONES', 14, y + 4);
             y += 8;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
@@ -1094,7 +1131,8 @@
                         return {
                             nombre: row.nombre,
                             resultado: row.unidad && row.unidad !== '-' ? row.texto + ' ' + row.unidad : row.texto,
-                            referencia: row.refTexto
+                            referencia: row.refTexto,
+                            indicador: row.indicador
                         };
                     }), { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
                 }

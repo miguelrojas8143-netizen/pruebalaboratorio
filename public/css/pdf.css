@@ -133,8 +133,15 @@
 
 .reporte-tabla table {
     font-size: 0.75rem;
+    line-height: 1;
     width: 100%;
     border-collapse: collapse;
+}
+
+.reporte-tabla tbody td,
+.pdf-reporte-tabla tbody td {
+    font-weight: 700;
+    line-height: 1;
 }
 
 .reporte-tabla thead {
@@ -189,6 +196,7 @@
     border-collapse: collapse;
     table-layout: fixed;
     font-size: 0.75rem;
+    line-height: 1;
     margin: 0;
 }
 

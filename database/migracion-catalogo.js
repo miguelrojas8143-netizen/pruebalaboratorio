@@ -40,7 +40,7 @@ const ORDENES_RENDER = {
         'neutrofilos_num', 'linfocitos_num', 'eosinofilos_num', 'monocitos_num', 'basofilos_num',
         'neutrofilos_por', 'linfocitos_por', 'eosinofilos_por', 'monocitos_por', 'basofilos_por',
         'plaquetas', 'globulos_rojos', 'hemoglobina', 'hematocrito', 'vcm', 'hcm', 'chcm',
-        'rdw_cv', 'vpm', 'pdw', 'plcr', 'vsg'
+        'rdw_cv', 'vpm', 'pdw', 'plcr'
     ]
 };
 
