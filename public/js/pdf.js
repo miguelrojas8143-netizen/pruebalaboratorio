@@ -91,19 +91,21 @@
      * @param {string} examenId id del catálogo, para aplicar decoradores
      * @returns {{grupos: Object, ordenGrupos: string[]}}
      */
-    function construirGruposDeExamen(datos, items, examenId) {
+    function construirGruposDeExamen(datos, items, examenId, omitirVacios) {
         var grupos = {};
         var ordenGrupos = [];
         var decoradores = DECORADORES_RESULTADO[examenId] || {};
         var valores = (datos && typeof datos === 'object') ? datos : {};
 
         items.forEach(function(item) {
+            var bruto = valores[item.id];
+            if (omitirVacios && valorImprimible(bruto) === '-') return;
+
             var grupo = item.grupo || 'General';
             if (!grupos[grupo]) {
                 grupos[grupo] = [];
                 ordenGrupos.push(grupo);
             }
-            var bruto = valores[item.id];
             var decorado = decoradores[item.id];
             if (decorado && bruto != null && String(bruto).trim() !== '') {
                 bruto = decorado(String(bruto));
@@ -433,7 +435,7 @@
                 : 'examen_orina';
             var itemsCatalogoUro = itemsDeExamen(uroCatalogoId);
             if (!itemsCatalogoUro.length && window.UROANALYSIS_FIELDS) itemsCatalogoUro = window.UROANALYSIS_FIELDS;
-            var gruposUro = construirGruposDeExamen(datosUro, itemsCatalogoUro, uroCatalogoId);
+            var gruposUro = construirGruposDeExamen(datosUro, itemsCatalogoUro, uroCatalogoId, true);
             uro = {
                 datos: datosUro,
                 grupos: gruposUro.grupos,
@@ -703,6 +705,20 @@
      */
 
     /* ---------- Acciones ---------- */
+    function nombreArchivoReporte(nombre, orden, respaldo) {
+        function limpiar(valor) {
+            return String(valor == null ? '' : valor).trim()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9_-]+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_+|_+$/g, '');
+        }
+
+        var paciente = (limpiar(nombre) || 'Paciente').substring(0, 100);
+        var numeroOrden = (limpiar(orden) || limpiar(respaldo) || 'Sin_Orden').substring(0, 30);
+        return paciente + '_Orden_' + numeroOrden;
+    }
+
     async function generarPDF(accion) {
         var orden = new URLSearchParams(window.location.search).get('orden') || '';
         var ordenNormalizado = String(orden || '').padStart(3, '0');
@@ -748,11 +764,7 @@
             ventanaImpresion.document.close();
         }
 
-        var nombreSanitizado = (paciente.orden || paciente.nombre || 'reporte')
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9_-]/g, '_')
-            .replace(/_+/g, '_')
-            .substring(0, 100);
+        var nombreSanitizado = nombreArchivoReporte(paciente.nombre, paciente.orden || orden);
 
         var logoData = await cargarLogoPDF();
         var doc = construirPDF(buildPayload(paciente), logoData);
@@ -760,6 +772,7 @@
             if (ventanaImpresion) ventanaImpresion.close();
             return;
         }
+        doc.setProperties({ title: nombreSanitizado, subject: 'Resultados de laboratorio' });
 
         if (accion === 'imprimir') {
             doc.autoPrint();
@@ -1012,9 +1025,11 @@
                 doc.text(celdas[1], columnas.resultado.x + 2, y, { lineHeightFactor: 0.9 });
                 doc.text(celdas[2], columnas.unidad.x + 2, y, { lineHeightFactor: 0.9 });
                 doc.text(celdas[3], columnas.referencia.x + 2, y, { lineHeightFactor: 0.9 });
-                doc.setDrawColor(210, 215, 220);
-                doc.setLineWidth(0.2);
-                doc.line(margenIzquierdo, y + alto - 1.5, margenIzquierdo + ancho, y + alto - 1.5);
+                if (opciones.mostrarLineasFilas !== false) {
+                    doc.setDrawColor(210, 215, 220);
+                    doc.setLineWidth(0.2);
+                    doc.line(margenIzquierdo, y + alto - 1.5, margenIzquierdo + ancho, y + alto - 1.5);
+                }
                 y += alto;
             });
         });
@@ -1206,20 +1221,12 @@
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
             }
-            var uroFilas = [];
-            payload.uro.ordenGrupos.forEach(function(grupo) {
-                if (!payload.uro.grupos[grupo]) return;
-                uroFilas = uroFilas.concat(payload.uro.grupos[grupo].map(function(campo) {
-                    return {
-                        nombre: valorImprimible(campo.nombre),
-                        resultado: valorImprimible(campo.unidad) !== '-'
-                            ? valorImprimible(campo.resultado) + ' ' + valorImprimible(campo.unidad)
-                            : valorImprimible(campo.resultado),
-                        referencia: referenciaDe(campo)
-                    };
-                }));
+            y = agregarGruposPDF(doc, 'EXAMEN DE ORINA', payload.uro.grupos, payload.uro.ordenGrupos, {
+                y: y,
+                didDrawPage: encabezadoPagina,
+                startY: yDespuesEncabezado,
+                mostrarLineasFilas: false
             });
-            y = agregarResultadosTexto(doc, 'EXAMEN DE ORINA', uroFilas, { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
             escribirObservacionesBioanalista(payload.uro.observaciones);
         }
 
@@ -1257,11 +1264,8 @@
             return;
         }
 
-        var nombreFinal = nombreArchivo || payload.header.orden || 'reporte';
-        nombreFinal = nombreFinal.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9_-]/g, '_')
-            .replace(/_+/g, '_')
-            .substring(0, 100);
+        var nombreFinal = nombreArchivoReporte(payload.header.nombre, payload.header.orden, nombreArchivo);
+        doc.setProperties({ title: nombreFinal, subject: 'Resultados de laboratorio' });
 
         if (accion === 'imprimir') {
             doc.autoPrint();

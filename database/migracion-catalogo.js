@@ -588,6 +588,102 @@ function asegurarCatalogoPoblado(db, raizProyecto) {
     return migrarCatalogoDesdeArchivos(db, raizProyecto, { silencioso: true });
 }
 
+/**
+ * Añade al catálogo existente los parámetros del uroanálisis que falten.
+ * Es aditivo para no borrar parámetros ni opciones personalizados en bases
+ * que ya contienen resultados.
+ */
+function asegurarParametrosUroanalisis(db, raizProyecto) {
+    const configuracion = leerConfiguracionDesdeArchivos(raizProyecto);
+    const detalle = configuracion.examenesDetallados && configuracion.examenesDetallados.examen_orina;
+    const items = detalle && Array.isArray(detalle.items) ? detalle.items : [];
+    if (items.length === 0) {
+        throw new Error('No se encontraron parámetros configurados para el examen de orina.');
+    }
+
+    const examenExiste = db.prepare('SELECT 1 FROM examenes WHERE id = ?').get('examen_orina');
+    if (!examenExiste) {
+        throw new Error('No existe el examen_orina en el catálogo SQLite.');
+    }
+
+    const insertarParametro = db.prepare(`
+        INSERT INTO parametros_examen
+            (examen_id, codigo, nombre, tipo_dato, tipo_interfaz, unidad, grupo,
+             valor_defecto, ref_min, ref_max, ref_texto, obligatorio, orden, orden_render)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(examen_id, codigo) DO NOTHING
+    `);
+    const insertarOpcionSiFalta = db.prepare(`
+        INSERT INTO opciones_parametro (parametro_id, orden, valor)
+        SELECT ?, ?, ?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM opciones_parametro WHERE parametro_id = ? AND valor = ?
+        )
+        ON CONFLICT(parametro_id, orden) DO NOTHING
+    `);
+    const buscarParametro = db.prepare(
+        'SELECT id FROM parametros_examen WHERE examen_id = ? AND codigo = ?'
+    );
+    const buscarOpcion = db.prepare(
+        'SELECT 1 FROM opciones_parametro WHERE parametro_id = ? AND valor = ?'
+    );
+    const siguienteOrden = db.prepare(
+        'SELECT COALESCE(MAX(orden), -1) + 1 AS siguiente FROM parametros_examen WHERE examen_id = ?'
+    );
+    const siguienteOrdenRender = db.prepare(
+        'SELECT COALESCE(MAX(orden_render), -1) + 1 AS siguiente FROM parametros_examen WHERE examen_id = ?'
+    );
+    const siguienteOrdenOpcion = db.prepare(
+        'SELECT COALESCE(MAX(orden), -1) + 1 AS siguiente FROM opciones_parametro WHERE parametro_id = ?'
+    );
+
+    const sincronizar = db.transaction(function() {
+        let agregados = 0;
+        let orden = siguienteOrden.get('examen_orina').siguiente;
+        let ordenRender = siguienteOrdenRender.get('examen_orina').siguiente;
+
+        items.forEach(function(item) {
+            if (!item || !item.id) return;
+            const insercion = insertarParametro.run(
+                'examen_orina',
+                item.id,
+                item.nombre || item.id,
+                tipoDatoDe(item.tipo),
+                item.tipo || 'numerico',
+                item.unidad || '',
+                item.grupo || 'General',
+                item.valorDefecto === undefined ? null : item.valorDefecto,
+                aNumero(item.refMin),
+                aNumero(item.refMax),
+                item.refTexto || '',
+                item.obligatorio ? 1 : 0,
+                orden,
+                ordenRender
+            );
+            if (insercion.changes > 0) {
+                agregados += 1;
+                orden += 1;
+                ordenRender += 1;
+            }
+
+            const parametro = buscarParametro.get('examen_orina', item.id);
+            if (!parametro || !Array.isArray(item.opciones)) return;
+            let ordenOpcion = siguienteOrdenOpcion.get(parametro.id).siguiente;
+            item.opciones.forEach(function(valor) {
+                if (valor === null || valor === undefined || valor === '') return;
+                const opcion = String(valor);
+                const existe = buscarOpcion.get(parametro.id, opcion);
+                if (existe) return;
+                insertarOpcionSiFalta.run(parametro.id, ordenOpcion, opcion, parametro.id, opcion);
+                ordenOpcion += 1;
+            });
+        });
+        return agregados;
+    });
+
+    return sincronizar();
+}
+
 module.exports = {
     ARCHIVOS_FUENTE,
     ORDENES_RENDER,
@@ -596,6 +692,7 @@ module.exports = {
     normalizarConfiguracion,
     migrarCatalogoDesdeArchivos,
     asegurarCatalogoPoblado,
+    asegurarParametrosUroanalisis,
     aSlug,
     aEntero
 };

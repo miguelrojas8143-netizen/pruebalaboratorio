@@ -748,6 +748,7 @@ td.grupo-header-clickable:hover {
 .formulario-flotante-uroanalisis {
     width: min(600px, calc(100vw - 1rem));
     max-height: calc(100vh - 1rem);
+    overflow-y: auto;
 }
 
 .formulario-flotante-uroanalisis .card-body {
@@ -984,16 +985,13 @@ td.grupo-header-clickable:hover {
    FORMULARIO DE URÓLISIS (vista Orden)
    ============================================================ */
 
-#formularioUroanalisis { overflow: hidden; }
 #formularioUroanalisis .card-header { font-size: 1.1rem; }
 #formularioUroanalisis .form-label { margin-bottom: 4px; }
 #formularioUroanalisis .form-control,
 #formularioUroanalisis .form-select { border-radius: 6px; }
 
 @media (max-width: 768px) {
-    #formularioUroanalisis .row.g-3 > [class*="col-"] {
-        margin-bottom: 10px;
-    }
+    #formularioUroanalisis .row.g-2 > [class*="col-"] { margin-bottom: 6px; }
 }
 
 /* ============================================================

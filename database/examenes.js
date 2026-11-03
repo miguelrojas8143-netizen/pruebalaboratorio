@@ -9,7 +9,10 @@
  * `database/migracion-catalogo.js`.
  */
 
-const { asegurarCatalogoPoblado } = require('./migracion-catalogo');
+const {
+    asegurarCatalogoPoblado,
+    asegurarParametrosUroanalisis
+} = require('./migracion-catalogo');
 const { columnasDe, existeTabla } = require('./schema');
 
 /** Añade una columna si falta (bases creadas por versiones anteriores). */
@@ -761,6 +764,10 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     const sembrado = asegurarCatalogoPoblado(db, raizProyecto);
     if (sembrado) {
         console.log('🌱 Catálogo de exámenes sembrado desde los archivos de configuración:', sembrado);
+    }
+    const parametrosUroanalisis = asegurarParametrosUroanalisis(db, raizProyecto);
+    if (parametrosUroanalisis > 0) {
+        console.log('🧪 Parámetros de uroanálisis agregados al catálogo:', parametrosUroanalisis);
     }
     const resultadosLegados = migrarExamenesPacienteLegados(db);
     if (resultadosLegados > 0) {

@@ -444,8 +444,18 @@
                                 </select>
                             </div>
                             <div class="col-6 col-md-4">
-                                <label class="form-label fw-semibold small">Eritrocitos:</label>
+                                <label class="form-label fw-semibold small">Eritrocitos dismórficos:</label>
                                 <select id="uro_ur_eritrocitos" class="form-select form-select-sm">
+                                    <option value="">...</option>
+                                    <option value="0-1 por campo">0-1 por campo</option>
+                                    <option value="2-5 por campo">2-5 por campo</option>
+                                    <option value="6-10 por campo">6-10 por campo</option>
+                                    <option value="> 10 por campo">> 10 por campo</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-semibold small">Eritrocitos isomórficos:</label>
+                                <select id="uro_ur_eritrocitos_isomorfos" class="form-select form-select-sm">
                                     <option value="">...</option>
                                     <option value="0-1 por campo">0-1 por campo</option>
                                     <option value="2-5 por campo">2-5 por campo</option>
@@ -493,8 +503,8 @@
                         <textarea id="uro_observaciones" class="form-control" rows="3" placeholder="Escriba las observaciones del examen de orina..."></textarea>
                     </div>
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
-                        <button type="button" class="btn btn-secondary" onclick="cerrarFormularioUroanalisis()" title="Cerrar formulario"><i class="bi bi-x-lg"></i></button>
-                        <button type="button" class="btn btn-primary" onclick="guardarFormularioUroanalisis()" title="Guardar Resultados"><i class="bi bi-save me-1"></i></button>
+                        <button type="button" class="btn btn-secondary" onclick="cerrarFormularioUroanalisis()" title="Cerrar formulario"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="guardarFormularioUroanalisis()" title="Guardar Resultados"><i class="bi bi-save me-1"></i>Guardar Resultados</button>
                     </div>
                 </div>
             </div>
