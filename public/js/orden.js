@@ -198,11 +198,6 @@
                     nuevoExamen.opciones = itemCatalogo.opciones;
                 }
             }
-            var opciones = nuevoExamen.opciones || [];
-            var indiceNoObs = opciones.findIndex(function(op) { return op.toLowerCase().indexOf('no se observaron') !== -1; });
-            if (indiceNoObs !== -1) {
-                nuevoExamen.resultado = opciones[indiceNoObs];
-            }
         }
         if (datos.tipo === 'multiselect_cantidad') {
             nuevoExamen.tipo = 'multiselect_cantidad';
@@ -237,30 +232,11 @@
             nuevoExamen.tipo = 'perfil';
             nuevoExamen.resultado = '{}';
         }
-        if (datos.valorDefecto !== undefined && datos.valorDefecto !== null) {
-            if (nuevoExamen.tipo === 'seleccion_unica') {
-                var opts = nuevoExamen.opciones || [];
-                if (opts.indexOf(datos.valorDefecto) !== -1) {
-                    nuevoExamen.resultado = datos.valorDefecto;
-                }
-            } else if (!nuevoExamen.tipo || nuevoExamen.tipo === 'numerico' || nuevoExamen.tipo === 'texto' || nuevoExamen.tipo === 'tipo_sanguineo') {
-                nuevoExamen.resultado = datos.valorDefecto;
-            }
-        }
         return nuevoExamen;
     }
 
     function tieneResultadosFormulario(examen) {
-        try {
-            var datos = JSON.parse(examen.resultado || '{}');
-            return Object.keys(datos).some(function(id) {
-                return id !== '__referencias' &&
-                    datos[id] != null &&
-                    String(datos[id]).trim() !== '';
-            });
-        } catch (e) {
-            return false;
-        }
+        return window.examenTieneResultados(examen);
     }
 
     function renderizarTablaExamenes() {
@@ -795,22 +771,7 @@
             window.Notifications.error('No hay exámenes en la orden para guardar.');
             return;
         }
-        var examenesConResultado = window.examenesOrden.filter(function(e) {
-            if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
-                try {
-                    var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).some(function(id) {
-                        return id !== '__referencias' &&
-                            (id !== '__observaciones' || e.tipoFormulario !== 'uroanalisis') &&
-                            datos[id] != null &&
-                            String(datos[id]).trim() !== '';
-                    });
-                } catch(e) {
-                    return false;
-                }
-            }
-            return String(e.resultado || '').trim() !== '';
-        });
+        var examenesConResultado = window.examenesOrden.filter(window.examenTieneResultados);
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
         if (!orden) {
             window.Notifications.error('Error: No se pudo determinar la orden.');
@@ -891,17 +852,7 @@
         } catch (err) {
             console.error('[irAImpresion] Error:', err);
         }
-        var examenesConResultados = (window.pacienteActivo.examenes || []).filter(function(e) {
-            if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
-                try {
-                    var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
-                } catch(e) {
-                    return false;
-                }
-            }
-            return String(e.resultado || '').trim() !== '';
-        });
+        var examenesConResultados = (window.pacienteActivo.examenes || []).filter(window.examenTieneResultados);
         if (examenesConResultados.length === 0) {
             window.location.href = 'reporte.html?orden=' + orden + '&vacio=1';
             return;

@@ -16,15 +16,7 @@
 
     function tieneResultadosOrden(examenes) {
         if (!examenes || examenes.length === 0) return false;
-        return examenes.some(function(e) {
-            if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
-                try {
-                    var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).length > 0 && Object.values(datos).some(function(v) { return v !== ''; });
-                } catch(err) { return false; }
-            }
-            return String(e.resultado || '').trim() !== '';
-        });
+        return examenes.some(window.examenTieneResultados);
     }
 
     function formatearResultado(examen) {

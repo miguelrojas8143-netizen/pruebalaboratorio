@@ -5,8 +5,8 @@
         {
             nombre: 'Examen Físico',
             items: [
-                { id: 'ur_color', nombre: 'Color', refTexto: 'Incoloro / Amarillo', opciones: ['Incoloro', 'Amarillo', 'Ámbar', 'Rosado', 'Rojo', 'Naranja', 'Verde', 'Marrón'] },
-                { id: 'ur_olor', nombre: 'Olor', opciones: ['Característico', 'Amoniacal', 'Medicamento'] }
+                { id: 'ur_color', nombre: 'Color', refTexto: ' Amarillo', opciones: ['Amarillo', 'Ámbar', 'Rosado', 'Rojo', 'Naranja', 'Verde', 'Marrón'] },
+                { id: 'ur_olor', nombre: 'Olor', refTexto: 'Característico', opciones: ['Característico', 'Amoniacal', 'Medicamento'] }
             ]
         },
         {
@@ -17,24 +17,24 @@
                 { id: 'ur_urobilinogeno', nombre: 'Urobilinógeno', refTexto: 'Normal', opciones: ['Negativo', 'Positivo 1+', 'Positivo 2+', 'Positivo 3+'] },
                 { id: 'ur_bilirrubina', nombre: 'Bilirrubina', refTexto: 'Negativo', opciones: ['Negativo', 'Positivo 1+', 'Positivo 2+', 'Positivo 3+'] },
                 { id: 'ur_proteinas', nombre: 'Proteínas', refTexto: 'Negativo', opciones: ['Negativo', 'Positivo 1+', 'Positivo 2+', 'Positivo 3+'] },
-                { id: 'ur_ph', nombre: 'pH', refTexto: '6.0 - 7.0', opciones: ['5', '6', '6,5', '7', '8', '9'] },
+                { id: 'ur_ph', nombre: 'pH', refTexto: '5.0 - 6.0', opciones: ['5', '6', '6,5', '7', '8', '9'] },
                 { id: 'ur_reaccion', nombre: 'Reacción', opciones: ['Ácida', 'Neutra', 'Alcalina'] },
-                { id: 'ur_hemoglobina', nombre: 'Hemoglobina', refTexto: 'Negativo', opciones: ['Negativo', '1+', '2+', '3+'] },
-                { id: 'ur_densidad', nombre: 'Densidad', refTexto: '1.015 - 1.020', opciones: ['1,000', '1,005', '1,010', '1,015', '1,020', '1,025', '1,030'] },
-                { id: 'ur_cetonas', nombre: 'Cuerpos cetónicos', refTexto: 'Negativo', opciones: ['Negativo', '1+', '2+', '3+'] },
+                { id: 'ur_hemoglobina', nombre: 'Hemoglobina', refTexto: 'Negativo', opciones: ['Negativo', 'Positivo 1+', 'Positivo 2+', 'Positivo 3+'] },
+                { id: 'ur_densidad', nombre: 'Densidad', refTexto: '1.020- 1.025', opciones: ['1,000', '1,005', '1,010', '1,015', '1,020', '1,025', '1,030'] },
+                { id: 'ur_cetonas', nombre: 'Cuerpos cetónicos', refTexto: 'Negativo', opciones: ['Negativo', 'Positivo 1+', 'Positivo 2+', 'Positivo 3+'] },
                 { id: 'ur_glucosa', nombre: 'Glucosa', refTexto: 'Negativo', opciones: ['Negativo', 'Positivo 1+', 'Positivo 2+', 'Positivo 3+'] }
             ]
         },
         {
             nombre: 'Examen Microscópico',
             items: [
-                { id: 'ur_celulas_epiteliales', nombre: 'Células epiteliales', refTexto: 'Escasas / Moderadas', opciones: ['0-1', '1-3', '3-5'] },
-                { id: 'ur_leucocitos_micro', nombre: 'Leucocitos', refTexto: '0 - 5 X CGA', opciones: ['0-1 X cpo', '1-3 X cpo', '3-5 X cpo', '5-10 X cpo', '10-15 X cpo', '20-30 X cpo', '30-40 X cpo', '40-50 X cpo', '50-100 X cpo'] },
-                { id: 'ur_eritrocitos', nombre: 'Eritrocitos dismórficos', refTexto: '0 - 3 X CGA', opciones: ['0-1 X cpo', '1-3 X cpo', '3-5 X cpo', '5-10 X cpo', '10-15 X cpo', '20-30 X cpo', '30-40 X cpo', '40-50 X cpo', '50-100 X cpo'] },
-                { id: 'ur_eritrocitos_isomorfos', nombre: 'Eritrocitos isomórficos', refTexto: '0 - 3 X CGA', opciones: ['0-1 X cpo', '1-3 X cpo', '3-5 X cpo', '5-10 X cpo', '10-15 X cpo', '20-30 X cpo', '30-40 X cpo', '40-50 X cpo', '50-100 X cpo'] },
-                { id: 'ur_bacterias', nombre: 'Bacterias', refTexto: 'Ausente / Escasas', opciones: ['Escasas', 'Moderadas', 'Abundantes'] },
-                { id: 'ur_cristales', nombre: 'Cristales', refTexto: 'Ausente / Variable', opciones: ['0-1', '1-3', '3-5', '5-10', '10-15', '15-20'] },
-                { id: 'ur_cilindros', nombre: 'Cilindros', refTexto: 'Ausente XCBA', tipo: 'texto' },
+                { id: 'ur_celulas_epiteliales', nombre: 'Células epiteliales', opciones: ['0-1', '1-3', '3-5'] },
+                { id: 'ur_leucocitos_micro', nombre: 'Leucocitos', refTexto: '0 - 5 X cpo', opciones: ['0-1 X cpo', '1-3 X cpo', '3-5 X cpo', '5-10 X cpo', '10-15 X cpo', '20-30 X cpo', '30-40 X cpo', '40-50 X cpo', '50-100 X cpo'] },
+                { id: 'ur_eritrocitos', nombre: 'Eritrocitos dismórficos', refTexto: '0 - 3 X cpo', opciones: ['0-1 X cpo', '1-3 X cpo', '3-5 X cpo', '5-10 X cpo', '10-15 X cpo', '20-30 X cpo', '30-40 X cpo', '40-50 X cpo', '50-100 X cpo'] },
+                { id: 'ur_eritrocitos_isomorfos', nombre: 'Eritrocitos isomórficos', refTexto: '0 - 3 X cpo', opciones: ['0-1 X cpo', '1-3 X cpo', '3-5 X cpo', '5-10 X cpo', '10-15 X cpo', '20-30 X cpo', '30-40 X cpo', '40-50 X cpo', '50-100 X cpo'] },
+                { id: 'ur_bacterias', nombre: 'Bacterias', refTexto: 'Escasas', opciones: ['Escasas', 'Moderadas', 'Abundantes'] },
+                { id: 'ur_cristales', nombre: 'Cristales', refTexto: 'Ausente', opciones: ['0-1', '1-3', '3-5', '5-10', '10-15', '15-20'] },
+                { id: 'ur_cilindros', nombre: 'Cilindros', refTexto: 'Ausente', tipo: 'texto' },
                 { id: 'ur_otros', nombre: 'Otros', tipo: 'texto' }
             ]
         }

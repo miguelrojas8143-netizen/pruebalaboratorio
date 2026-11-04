@@ -41,26 +41,48 @@
         return examenes.map(function(e) { return enriquecerExamenDesdeCatalogo(JSON.parse(JSON.stringify(e))); });
     }
     
+    function examenTieneResultados(examen) {
+        if (!examen) return false;
+        var resultado = examen.resultado;
+
+        if (typeof resultado === 'string') {
+            resultado = resultado.trim();
+            if (!resultado) return false;
+            if (resultado.charAt(0) === '{' || resultado.charAt(0) === '[') {
+                try {
+                    resultado = JSON.parse(resultado);
+                } catch (error) {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+        }
+
+        function tieneContenido(valor) {
+            if (valor == null) return false;
+            if (typeof valor === 'string') return valor.trim() !== '';
+            if (typeof valor !== 'object') return true;
+            return Object.keys(valor).some(function(clave) {
+                return tieneContenido(valor[clave]);
+            });
+        }
+
+        if (resultado && typeof resultado === 'object' && !Array.isArray(resultado)) {
+            return Object.keys(resultado).some(function(id) {
+                return id !== '__referencias' &&
+                    (id !== '__observaciones' || examen.tipoFormulario !== 'uroanalisis') &&
+                    tieneContenido(resultado[id]);
+            });
+        }
+        return tieneContenido(resultado);
+    }
+
     // Función para calcular el estado del paciente según sus exámenes
     function calcularEstadoPaciente(paciente) {
         var examenes = (paciente.examenes || []).map(normalizarExamen);
         if (examenes.length === 0) return 'en_espera';
-        var conResultado = examenes.filter(function(e) {
-            if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
-                try {
-                    var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).some(function(id) {
-                        return id !== '__referencias' &&
-                            (id !== '__observaciones' || e.tipoFormulario !== 'uroanalisis') &&
-                            datos[id] != null &&
-                            String(datos[id]).trim() !== '';
-                    });
-                } catch(err) {
-                    return false;
-                }
-            }
-            return String(e.resultado || '').trim() !== '';
-        });
+        var conResultado = examenes.filter(examenTieneResultados);
         if (conResultado.length === 0) return 'en_espera';
         if (conResultado.length < examenes.length) return 'parcial';
         return 'completo';
@@ -181,6 +203,7 @@
     window.normalizarExamen = normalizarExamen;
     window.enriquecerExamenDesdeCatalogo = enriquecerExamenDesdeCatalogo;
     window.enriquecerExamenesDesdeCatalogo = enriquecerExamenesDesdeCatalogo;
+    window.examenTieneResultados = examenTieneResultados;
     window.calcularEstadoPaciente = calcularEstadoPaciente;
     window.textoEstado = textoEstado;
     window.calcularEdad = calcularEdad;

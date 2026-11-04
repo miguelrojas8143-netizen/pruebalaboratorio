@@ -543,8 +543,8 @@
      * Renderer universal de tablas de resultados.
      *
      * Recibe los grupos ya normalizados por `construirGruposDeExamen` y produce
-     * siempre el mismo esqueleto — Parámetro | Resultado | Unidad | Valores de
-     * Referencia — con un `<tr>` por parámetro y una fila de subtítulo por grupo.
+     * usa el esqueleto Parámetro | Resultado | Unidad | Valores de Referencia,
+     * salvo que el examen solicite omitir la unidad.
      *
      * Al no conocer la prueba, este es el único punto que hay que tocar para que
      * un examen nuevo se imprima con el formato limpio: basta con darle un id de
@@ -553,16 +553,20 @@
      * @param {string} titulo      encabezado del bloque (ej. 'Examen de Heces')
      * @param {Object} grupos      { grupo: [filas] }
      * @param {string[]} ordenGrupos orden de impresión de los grupos
-     * @param {Object} [opciones]  { clase, tituloColumnaReferencia, colspan }
+     * @param {Object} [opciones]  { clase, tituloColumnaReferencia, omitirUnidad }
      */
     function renderTablaParametrosDom(titulo, grupos, ordenGrupos, opciones) {
         opciones = opciones || {};
-        var columnas = opciones.columnas === false ? 2 : 4;
+        var omitirUnidad = opciones.omitirUnidad === true;
+        var columnas = omitirUnidad ? 3 : (opciones.columnas === false ? 2 : 4);
         var tituloRef = opciones.tituloColumnaReferencia || 'Valores de Referencia';
 
         var encabezados = '<th width="35%">Parámetro</th><th width="20%">Resultado</th>';
         if (columnas === 4) {
             encabezados += '<th width="15%">Unidad</th><th width="30%">' + escapeHtml(tituloRef) + '</th>';
+        } else if (omitirUnidad) {
+            encabezados = '<th width="35%">Parámetro</th><th width="25%">Resultado</th>' +
+                '<th width="40%">' + escapeHtml(tituloRef) + '</th>';
         }
 
         var html = '<div class="pdf-bloque ' + escapeHtml(opciones.clase || '') + '">';
@@ -581,6 +585,8 @@
                 if (columnas === 4) {
                     html += '<td class="text-muted">' + escapeHtml(valorImprimible(fila.unidad)) + '</td>' +
                         '<td>' + escapeHtml(referenciaDe(fila)) + '</td>';
+                } else if (omitirUnidad) {
+                    html += '<td>' + escapeHtml(referenciaDe(fila)) + '</td>';
                 }
                 html += '</tr>';
             });
@@ -606,9 +612,10 @@
 
     function renderUroDom(uro) {
         if (!uro) return '';
-        var html = renderTablaParametrosDom('Examen de Orina / Uroanálisis', uro.grupos, uro.ordenGrupos, {
+        var html = renderTablaParametrosDom('Examen de Orina', uro.grupos, uro.ordenGrupos, {
             clase: 'pdf-uroanalisis',
-            tituloColumnaReferencia: 'Valor de Referencia'
+            tituloColumnaReferencia: 'Valor de Referencia',
+            omitirUnidad: true
         });
         return html + renderObservacionesBioanalista(uro.observaciones);
     }
@@ -943,11 +950,15 @@
         var margenInferior = 30;
         var ancho = doc.internal.pageSize.getWidth() - 28;
         var altoLinea = 7.5 * 25.4 / 72 * 0.9;
+        var omitirUnidad = opciones.omitirUnidad === true;
         var columnas = {
-            parametro: { x: margenIzquierdo, ancho: 51 },
-            resultado: { x: margenIzquierdo + 51, ancho: 43 },
+            parametro: { x: margenIzquierdo, ancho: omitirUnidad ? 58 : 51 },
+            resultado: { x: margenIzquierdo + (omitirUnidad ? 58 : 51), ancho: omitirUnidad ? 46 : 43 },
             unidad: { x: margenIzquierdo + 94, ancho: 23 },
-            referencia: { x: margenIzquierdo + 117, ancho: ancho - 117 }
+            referencia: {
+                x: margenIzquierdo + (omitirUnidad ? 104 : 117),
+                ancho: ancho - (omitirUnidad ? 104 : 117)
+            }
         };
         var y = opciones.y || 20;
 
@@ -968,7 +979,7 @@
             doc.rect(margenIzquierdo, y - 3, ancho, 5.5, 'F');
             doc.text('PARÁMETRO', columnas.parametro.x + 2, y);
             doc.text('RESULTADO', columnas.resultado.x + 2, y);
-            doc.text('UNIDAD', columnas.unidad.x + 2, y);
+            if (!omitirUnidad) doc.text('UNIDAD', columnas.unidad.x + 2, y);
             doc.text('VALOR DE REFERENCIA', columnas.referencia.x + 2, y);
             y += 5;
         }
@@ -1009,10 +1020,12 @@
                 // quitar etiquetas perdería el dato clínico.
                 var celdas = [
                     doc.splitTextToSize(valorImprimible(fila.nombre), columnas.parametro.ancho - 6),
-                    doc.splitTextToSize(valorImprimible(fila.resultado), columnas.resultado.ancho - 4),
-                    doc.splitTextToSize(valorImprimible(fila.unidad), columnas.unidad.ancho - 4),
-                    doc.splitTextToSize(referenciaDe(fila), columnas.referencia.ancho - 4)
+                    doc.splitTextToSize(valorImprimible(fila.resultado), columnas.resultado.ancho - 4)
                 ];
+                if (!omitirUnidad) {
+                    celdas.push(doc.splitTextToSize(valorImprimible(fila.unidad), columnas.unidad.ancho - 4));
+                }
+                celdas.push(doc.splitTextToSize(referenciaDe(fila), columnas.referencia.ancho - 4));
                 var alto = Math.max.apply(null, celdas.map(function(c) { return c.length; })) * altoLinea + 1.5;
                 if (y + alto > pageHeight - margenInferior) {
                     nuevaPagina();
@@ -1023,8 +1036,10 @@
                 doc.setTextColor(25, 25, 25);
                 doc.text(celdas[0], columnas.parametro.x + 2, y, { lineHeightFactor: 0.9 });
                 doc.text(celdas[1], columnas.resultado.x + 2, y, { lineHeightFactor: 0.9 });
-                doc.text(celdas[2], columnas.unidad.x + 2, y, { lineHeightFactor: 0.9 });
-                doc.text(celdas[3], columnas.referencia.x + 2, y, { lineHeightFactor: 0.9 });
+                if (!omitirUnidad) {
+                    doc.text(celdas[2], columnas.unidad.x + 2, y, { lineHeightFactor: 0.9 });
+                }
+                doc.text(celdas[omitirUnidad ? 2 : 3], columnas.referencia.x + 2, y, { lineHeightFactor: 0.9 });
                 if (opciones.mostrarLineasFilas !== false) {
                     doc.setDrawColor(210, 215, 220);
                     doc.setLineWidth(0.2);
@@ -1225,7 +1240,8 @@
                 y: y,
                 didDrawPage: encabezadoPagina,
                 startY: yDespuesEncabezado,
-                mostrarLineasFilas: false
+                mostrarLineasFilas: false,
+                omitirUnidad: true
             });
             escribirObservacionesBioanalista(payload.uro.observaciones);
         }

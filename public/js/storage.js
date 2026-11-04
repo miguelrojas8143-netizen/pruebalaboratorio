@@ -186,20 +186,7 @@
 
     function tieneResultadosEnExamenes(examenes) {
         if (!examenes || examenes.length === 0) return false;
-        return examenes.some(function(e) {
-            if (e.tipoFormulario === 'heces' || e.tipoFormulario === 'uroanalisis' || e.tipoFormulario === 'antibiograma' || e.tipo === 'multiselect_cantidad') {
-                try {
-                    var datos = JSON.parse(e.resultado || '{}');
-                    return Object.keys(datos).some(function(id) {
-                        return id !== '__referencias' &&
-                            (id !== '__observaciones' || e.tipoFormulario !== 'uroanalisis') &&
-                            datos[id] != null &&
-                            String(datos[id]).trim() !== '';
-                    });
-                } catch (err) { return false; }
-            }
-            return String(e.resultado || '').trim() !== '';
-        });
+        return examenes.some(window.examenTieneResultados);
     }
 
     function archivarOrdenAnterior(paciente) {
