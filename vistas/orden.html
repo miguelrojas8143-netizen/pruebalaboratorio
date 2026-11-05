@@ -158,117 +158,16 @@
 
                 <!-- Formulario de Examenes de Heces -->
                 <div id="formularioHeces" style="display:none;" class="formulario-flotante formulario-flotante-heces">
-                    <div class="card border-success">
-                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-droplet-fill me-2"></i> EXAMEN DE HECES</span>
                             <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioHeces()" title="Cerrar formulario"></button>
                         </div>
                         <div class="card-body p-4">
-                            <form id="formHeces">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Moco Fecal:</label>
-                                        <select id="mocoFecal" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Ausente">Ausente</option>
-                                            <option value="Escaso">Escaso</option>
-                                            <option value="Moderado">Moderado</option>
-                                            <option value="Abundante">Abundante</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">pH Heces:</label>
-                                        <input type="number" step="0.01" id="phHeces" class="form-control" placeholder="Ej: 6.5">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Glucosa Heces:</label>
-                                        <select id="glucosaHeces" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Negativa">Negativa</option>
-                                            <option value="1+">1+</option>
-                                            <option value="2+">2+</option>
-                                            <option value="3+">3+</option>
-                                            <option value="4+">4+</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Leucocitos PMN:</label>
-                                        <input type="text" id="leucocitosPMN" class="form-control" placeholder="Ej: Presentes/Ausentes">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Leucocitos Mononucleados:</label>
-                                        <input type="text" id="leucocitosMononucleados" class="form-control" placeholder="Ej: Presentes/Ausentes">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Sustancias Reductoras:</label>
-                                        <input type="number" step="0.01" id="sustanciasReductoras" class="form-control" placeholder="Ej: 0.30" onkeyup="validarSustanciasReductoras(this.value)">
-                                        <div id="interpretacionReductoras" class="mt-1"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Consistencia:</label>
-                                        <select id="consistencia" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Liquida">Líquida</option>
-                                            <option value="Semiliquida">Semilíquida</option>
-                                            <option value="Blanda">Blanda</option>
-                                            <option value="Pastosa">Pastosa</option>
-                                            <option value="Dura">Dura</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Color de Heces:</label>
-                                        <select id="colorHeces" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Marrón">Marrón</option>
-                                            <option value="Amarillo">Amarillo</option>
-                                            <option value="Verde">Verde</option>
-                                            <option value="Blanco">Blanco</option>
-                                            <option value="Rojo">Rojo</option>
-                                            <option value="Negro">Negro</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Directo Concentración:</label>
-                                        <select id="directoConcentracion" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Negativa">Negativa</option>
-                                            <option value="1+">1+</option>
-                                            <option value="2+">2+</option>
-                                            <option value="3+">3+</option>
-                                            <option value="4+">4+</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Entamoeba coli:</label>
-                                        <select id="entamoebaColi" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Ausente">Ausente</option>
-                                            <option value="Presente">Presente</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Restos Alimentos:</label>
-                                        <input type="text" id="restosAlimentos" class="form-control" placeholder="Ej: Si/No/Algunos">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Flora Bacteriana:</label>
-                                        <select id="floraBacteriana" class="form-select">
-                                            <option value="">Seleccionar...</option>
-                                            <option value="Normal">Normal</option>
-                                            <option value="Discreta disminución">Discreta disminución</option>
-                                            <option value="Disminución">Disminución</option>
-                                            <option value="Absente">Absente</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </form>
-                            <div class="mt-3">
-                                <label for="heces_observaciones" class="form-label fw-semibold">OBSERVACIONES</label>
-                                <textarea id="heces_observaciones" class="form-control" rows="3" placeholder="Escriba las observaciones del examen de heces..."></textarea>
-                            </div>
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                            <form id="formHeces"></form>
+                            <div class="heces-form-actions d-grid gap-2 d-md-flex justify-content-md-end mt-3">
                                 <button type="button" class="btn btn-secondary" onclick="cerrarFormularioHeces()"><i class="bi bi-x-lg"></i> Cancelar</button>
-                                <button type="button" class="btn btn-success" onclick="guardarFormularioHeces()"><i class="bi bi-save me-1"></i> Guardar Resultados</button>
+                                <button type="button" class="btn btn-primary" onclick="guardarFormularioHeces()"><i class="bi bi-save me-1"></i> Guardar Resultados</button>
                             </div>
                         </div>
                     </div>
@@ -680,6 +579,7 @@
     <script src="../public/js/orden.js"></script>
     <script src="../public/js/perfiles-modal.js"></script>
     <script src="../public/js/items-detallados.js"></script>
+    <script src="../public/js/heces-form.js"></script>
     <script src="../public/js/heces.js"></script>
     <script src="../public/js/frotis.js"></script>
     <script src="../public/js/antibiograma.js"></script>

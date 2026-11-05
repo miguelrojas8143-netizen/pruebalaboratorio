@@ -89,30 +89,27 @@ window.App.examenesDetallados.depuracion_creatinina = {
 /**
  * Examen Directo de Heces.
  *
- * Los ids son las claves que escribe `heces.js` en el formulario, por eso no
- * deben renombrarse sin actualizar también `public/js/heces.js`.
- * `grupo` es lo que usa el renderer para imprimir los subtítulos
- * Macroscópico / Químico / Microscópico y parasitológico.
+ * Los ids son las claves que escribe `heces-form.js` en el formulario, por eso
+ * deben mantenerse alineados con ese módulo. `grupo` genera los subtítulos
+ * Macroscópico / Microscópico del reporte.
  * `area` fija la categoría en SQLite; el examen ya existe en `catalogo-base.js`
  * con tipo `heces`, así que la fila de `examenes` no se duplica.
  */
 window.App.examenesDetallados.examen_heces = {
     nombre: 'Examen Directo de Heces',
     items: [
-        { id: 'consistencia', nombre: 'Consistencia', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Blanda, formada', grupo: 'Macroscópico' },
-        { id: 'colorHeces', nombre: 'Color de las heces', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Marrón', grupo: 'Macroscópico' },
-        { id: 'mocoFecal', nombre: 'Moco Fecal', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Ausente', grupo: 'Macroscópico' },
-
-        { id: 'phHeces', nombre: 'pH', area: 'Coproanálisis', unidad: '', tipo: 'numerico', refMin: 5.5, refMax: 8.0, grupo: 'Químico' },
-        { id: 'glucosaHeces', nombre: 'Glucosa', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Negativa', grupo: 'Químico' },
-        { id: 'sustanciasReductoras', nombre: 'Sustancias reductoras', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Negativas', grupo: 'Químico' },
-
-        { id: 'leucocitosPMN', nombre: 'Leucocitos PMN', area: 'Coproanálisis', unidad: 'cpo/campo', tipo: 'texto', refTexto: 'Ausentes', grupo: 'Microscópico y parasitológico' },
-        { id: 'leucocitosMononucleados', nombre: 'Leucocitos mononucleados', area: 'Coproanálisis', unidad: 'cpo/campo', tipo: 'texto', refTexto: 'Ausentes', grupo: 'Microscópico y parasitológico' },
-        { id: 'directoConcentracion', nombre: 'Examen directo por concentración', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Sin parásitos', grupo: 'Microscópico y parasitológico' },
-        { id: 'entamoebaColi', nombre: 'Entamoeba coli', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Ausente', grupo: 'Microscópico y parasitológico' },
-        { id: 'restosAlimentos', nombre: 'Restos de alimentos', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Ausentes', grupo: 'Microscópico y parasitológico' },
-        { id: 'floraBacteriana', nombre: 'Flora bacteriana', area: 'Coproanálisis', unidad: '', tipo: 'texto', refTexto: 'Normal', grupo: 'Microscópico y parasitológico' }
+        { id: 'colorHeces', nombre: 'Color', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Marrón', 'Amarillo', 'Rojo', 'Negro', 'Verde'], grupo: 'Examen Macroscópico' },
+        { id: 'aspectoHeces', nombre: 'Aspecto', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Homogéneo', 'Heterogéneo'], grupo: 'Examen Macroscópico' },
+        { id: 'consistencia', nombre: 'Consistencia', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Líquidas', 'Blandas', 'Pastosa', 'Duras'], refTexto: 'Blandas/Pastosas', grupo: 'Examen Macroscópico' },
+        { id: 'restosAlimentos', nombre: 'Restos de Alimentos', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], grupo: 'Examen Macroscópico' },
+        { id: 'mocoFecal', nombre: 'Moco', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Macroscópico' },
+        { id: 'sangreHeces', nombre: 'Sangre', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Macroscópico' },
+        { id: 'reaccion', nombre: 'Reacción', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Ácida', 'Alcalina', 'Neutra'], grupo: 'Examen Macroscópico' },
+        { id: 'eritrocitosHeces', nombre: 'Eritrocitos', area: 'Coproanálisis', unidad: '', tipo: 'numerico', refTexto: '0 xcpo', grupo: 'Examen Microscópico' },
+        { id: 'leucocitosHeces', nombre: 'Leucocitos', area: 'Coproanálisis', unidad: '', tipo: 'numerico', refTexto: '0 xcpo', grupo: 'Examen Microscópico' },
+        { id: 'helmintos', nombre: 'Helmintos', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Microscópico' },
+        { id: 'protozoarios', nombre: 'Protozoarios', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Microscópico' },
+        { id: 'otrosHeces', nombre: 'Otros', area: 'Coproanálisis', unidad: '', tipo: 'texto', grupo: 'Examen Microscópico' }
     ]
 };
 

@@ -219,6 +219,27 @@
     overflow-wrap: anywhere;
 }
 
+.pdf-heces .pdf-reporte-tabla thead th,
+.pdf-heces .pdf-reporte-tabla tbody td,
+.pdf-heces .pdf-grupo-fila th {
+    border: 0;
+}
+
+.pdf-heces .pdf-reporte-tabla th:nth-child(1),
+.pdf-heces .pdf-reporte-tabla td:nth-child(1) {
+    width: 35%;
+}
+
+.pdf-heces .pdf-reporte-tabla th:nth-child(2),
+.pdf-heces .pdf-reporte-tabla td:nth-child(2) {
+    width: 25%;
+}
+
+.pdf-heces .pdf-reporte-tabla th:nth-child(3),
+.pdf-heces .pdf-reporte-tabla td:nth-child(3) {
+    width: 40%;
+}
+
 .pdf-reporte-tabla tbody tr:nth-child(even) td {
     background-color: #fafafa;
 }

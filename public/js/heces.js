@@ -6,49 +6,36 @@
 (function() {
     'use strict';
 
-    /**
-     * Parámetros del examen de heces tomados del catálogo, no hardcodeados.
-     * `window.App.examenesDetallados.examen_heces` es la única fuente de verdad:
-     * la misma definición que siembra SQLite y que usa el renderer del reporte,
-     * así que agregar un campo no obliga a tocar el HTML ni el PDF.
-     *
-     * El catálogo se hidrata en `db-catalogo.js` antes de que este formulario
-     * se pueda abrir, por lo que aquí no se mantiene ningún respaldo estático:
-     * si llegara a faltar, el formulario queda vacío en lugar de inventar campos.
-     */
-    function camposHeces() {
-        var detalle = window.App && window.App.examenesDetallados
-            ? window.App.examenesDetallados.examen_heces
-            : null;
-        if (detalle && detalle.items && detalle.items.length) return detalle.items;
-        return [];
-    }
-
-    function valorDeCampo(id) {
-        var el = document.getElementById(id);
-        return el ? String(el.value || '').trim() : '';
+    function leerDatos(examen) {
+        if (!examen || !examen.resultado) return {};
+        return typeof examen.resultado === 'string'
+            ? JSON.parse(examen.resultado || '{}')
+            : examen.resultado;
     }
 
 // Sección de exámenes de heces
     window.abrirFormularioHeces = function(examenId) {
         var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
         if (!examen) return;
-        // Guardar el examenId en una variable global para usarlo al guardar
-        window._examenHecesEditando = examenId;
 
         var form = document.getElementById('formularioHeces');
         if (!form) return;
-        form.style.display = 'block';
+        var datos;
         try {
-            var datos = JSON.parse(examen.resultado || '{}');
-            camposHeces().forEach(function(campo) {
-                var el = document.getElementById(campo.id);
-                if (el) el.value = datos[campo.id] != null ? datos[campo.id] : '';
-            });
-            var observaciones = document.getElementById('heces_observaciones');
-            if (observaciones) observaciones.value = datos.__observaciones || '';
-        } catch(e) {}
+            datos = leerDatos(examen);
+        } catch (error) {
+            window.Notifications.error('No se pudieron leer los resultados guardados del examen de heces: ' + error.message);
+            return;
+        }
 
+        if (!window.HecesForm || !window.HecesForm.construir()) {
+            window.Notifications.error('No se encontraron los parámetros del examen de heces en el catálogo.');
+            return;
+        }
+        window.HecesForm.cargar(datos);
+
+        window._examenHecesEditando = examenId;
+        form.style.display = 'block';
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
@@ -60,23 +47,26 @@
             window.Notifications.error('No se encontró el examen de heces que se va a guardar.');
             return;
         }
-        // Un objeto { clave: valor } recorrido en el orden del catálogo, con
-        // las claves vacías descartadas: así la base de datos recibe una fila
-        // por parámetro con contenido real y no una fila con el JSON entero.
-        var datos = {};
-        camposHeces().forEach(function(campo) {
-            var valor = valorDeCampo(campo.id);
-            if (valor !== '') datos[campo.id] = valor;
-        });
-        var observaciones = document.getElementById('heces_observaciones');
-        datos.__observaciones = observaciones ? String(observaciones.value || '').trim() : '';
-
         var examenes = window.examenesOrden || [];
         var examen = examenes.find(function(e) { return e.id === examenId; });
         if (!examen) {
             window.Notifications.error('No se encontró el examen de heces en la orden.');
             return;
         }
+
+        var datos;
+        try {
+            datos = Object.assign({}, leerDatos(examen));
+        } catch (error) {
+            window.Notifications.error('No se pudieron leer los resultados guardados del examen de heces: ' + error.message);
+            return;
+        }
+        if (!window.HecesForm) {
+            window.Notifications.error('No está disponible el formulario de heces.');
+            return;
+        }
+        datos = window.HecesForm.obtenerResultados(datos);
+        if (!datos) return;
 
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : (window.getOrden ? window.getOrden() : '');
         if (!orden) {
@@ -128,22 +118,6 @@
         var form = document.getElementById('formularioHeces');
         if (form) form.style.display = 'none';
         window._examenHecesEditando = null;
-    };
-
-    window.validarSustanciasReductoras = function(valor) {
-        var div = document.getElementById('interpretacionReductoras');
-        if (!div) return;
-        var num = parseFloat(valor);
-        if (isNaN(num) || valor === '') {
-            div.innerHTML = '';
-            return;
-        }
-        var resultado = window.interpretarSustanciasReductoras(valor);
-        if (resultado.texto) {
-            div.innerHTML = '<span class="badge ' + resultado.clase + '">' + resultado.texto + '</span>';
-        } else {
-            div.innerHTML = '';
-        }
     };
 
 })();

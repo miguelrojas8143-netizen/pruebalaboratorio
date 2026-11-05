@@ -589,21 +589,21 @@ function asegurarCatalogoPoblado(db, raizProyecto) {
 }
 
 /**
- * Añade al catálogo existente los parámetros del uroanálisis que falten.
+ * Añade al catálogo existente los parámetros de un examen compuesto que falten.
  * Es aditivo para no borrar parámetros ni opciones personalizados en bases
  * que ya contienen resultados.
  */
-function asegurarParametrosUroanalisis(db, raizProyecto) {
+function asegurarParametrosExamen(db, raizProyecto, examenId, nombreExamen) {
     const configuracion = leerConfiguracionDesdeArchivos(raizProyecto);
-    const detalle = configuracion.examenesDetallados && configuracion.examenesDetallados.examen_orina;
+    const detalle = configuracion.examenesDetallados && configuracion.examenesDetallados[examenId];
     const items = detalle && Array.isArray(detalle.items) ? detalle.items : [];
     if (items.length === 0) {
-        throw new Error('No se encontraron parámetros configurados para el examen de orina.');
+        throw new Error('No se encontraron parámetros configurados para ' + nombreExamen + '.');
     }
 
-    const examenExiste = db.prepare('SELECT 1 FROM examenes WHERE id = ?').get('examen_orina');
+    const examenExiste = db.prepare('SELECT 1 FROM examenes WHERE id = ?').get(examenId);
     if (!examenExiste) {
-        throw new Error('No existe el examen_orina en el catálogo SQLite.');
+        throw new Error('No existe ' + examenId + ' en el catálogo SQLite.');
     }
 
     const insertarParametro = db.prepare(`
@@ -624,6 +624,11 @@ function asegurarParametrosUroanalisis(db, raizProyecto) {
     const buscarParametro = db.prepare(
         'SELECT id FROM parametros_examen WHERE examen_id = ? AND codigo = ?'
     );
+    const actualizarParametroLegado = db.prepare(`
+        UPDATE parametros_examen
+        SET nombre = ?, tipo_dato = ?, tipo_interfaz = ?, unidad = ?, grupo = ?
+        WHERE examen_id = ? AND codigo = ? AND tipo_interfaz = 'texto'
+    `);
     const buscarOpcion = db.prepare(
         'SELECT 1 FROM opciones_parametro WHERE parametro_id = ? AND valor = ?'
     );
@@ -639,13 +644,13 @@ function asegurarParametrosUroanalisis(db, raizProyecto) {
 
     const sincronizar = db.transaction(function() {
         let agregados = 0;
-        let orden = siguienteOrden.get('examen_orina').siguiente;
-        let ordenRender = siguienteOrdenRender.get('examen_orina').siguiente;
+        let orden = siguienteOrden.get(examenId).siguiente;
+        let ordenRender = siguienteOrdenRender.get(examenId).siguiente;
 
         items.forEach(function(item) {
             if (!item || !item.id) return;
             const insercion = insertarParametro.run(
-                'examen_orina',
+                examenId,
                 item.id,
                 item.nombre || item.id,
                 tipoDatoDe(item.tipo),
@@ -664,9 +669,19 @@ function asegurarParametrosUroanalisis(db, raizProyecto) {
                 agregados += 1;
                 orden += 1;
                 ordenRender += 1;
+            } else if (item.tipo === 'seleccion_unica') {
+                actualizarParametroLegado.run(
+                    item.nombre || item.id,
+                    tipoDatoDe(item.tipo),
+                    item.tipo,
+                    item.unidad || '',
+                    item.grupo || 'General',
+                    examenId,
+                    item.id
+                );
             }
 
-            const parametro = buscarParametro.get('examen_orina', item.id);
+            const parametro = buscarParametro.get(examenId, item.id);
             if (!parametro || !Array.isArray(item.opciones)) return;
             let ordenOpcion = siguienteOrdenOpcion.get(parametro.id).siguiente;
             item.opciones.forEach(function(valor) {
@@ -684,6 +699,14 @@ function asegurarParametrosUroanalisis(db, raizProyecto) {
     return sincronizar();
 }
 
+function asegurarParametrosUroanalisis(db, raizProyecto) {
+    return asegurarParametrosExamen(db, raizProyecto, 'examen_orina', 'el examen de orina');
+}
+
+function asegurarParametrosHeces(db, raizProyecto) {
+    return asegurarParametrosExamen(db, raizProyecto, 'examen_heces', 'el examen de heces');
+}
+
 module.exports = {
     ARCHIVOS_FUENTE,
     ORDENES_RENDER,
@@ -693,6 +716,7 @@ module.exports = {
     migrarCatalogoDesdeArchivos,
     asegurarCatalogoPoblado,
     asegurarParametrosUroanalisis,
+    asegurarParametrosHeces,
     aSlug,
     aEntero
 };

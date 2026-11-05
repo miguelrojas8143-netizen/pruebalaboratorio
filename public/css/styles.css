@@ -954,11 +954,21 @@ td.grupo-header-clickable:hover {
     z-index: 1;
 }
 
-#formularioHeces { overflow: hidden; }
+#formularioHeces {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
 #formularioHeces .card-header { font-size: 1.1rem; }
 #formularioHeces .form-label { margin-bottom: 4px; }
 #formularioHeces .form-control,
 #formularioHeces .form-select { border-radius: 6px; }
+#formularioHeces .heces-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: 0.75rem 0 0.25rem;
+    background: #fff;
+}
 
 /* En móvil separa las columnas del formulario de heces */
 @media (max-width: 768px) {

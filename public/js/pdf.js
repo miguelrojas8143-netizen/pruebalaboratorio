@@ -22,6 +22,7 @@
     /** Referencia legible de un parámetro, con el rango numérico como respaldo. */
     function referenciaDe(item) {
         if (!item) return '-';
+        if (item.sinReferencia) return '';
         if (item.refTexto !== undefined && item.refTexto !== null && String(item.refTexto).trim() !== '') {
             return String(item.refTexto).trim();
         }
@@ -72,13 +73,15 @@
      * Ajustes de presentación que dependen del parámetro. Se mantiene fuera del
      * recorrido genérico para que agregar un examen no toque esta función.
      */
+    function agregarUnidadCpo(valor) {
+        var texto = String(valor).trim();
+        return /^\d+$/.test(texto) ? texto + ' xcpo' : texto;
+    }
+
     var DECORADORES_RESULTADO = {
         'examen_heces': {
-            'sustanciasReductoras': function(valor) {
-                if (!window.interpretarSustanciasReductoras) return valor;
-                var interpretacion = window.interpretarSustanciasReductoras(valor).texto;
-                return interpretacion ? valor + ' (' + interpretacion + ')' : valor;
-            }
+            'eritrocitosHeces': agregarUnidadCpo,
+            'leucocitosHeces': agregarUnidadCpo
         }
     };
 
@@ -116,6 +119,8 @@
                 resultado: valorImprimible(bruto),
                 unidad: valorImprimible(item.unidad),
                 refTexto: referenciaDe(item),
+                sinReferencia: examenId === 'examen_heces' &&
+                    !item.refTexto && item.refMin == null && item.refMax == null,
                 refMin: item.refMin,
                 refMax: item.refMax
             });
@@ -406,13 +411,17 @@
         var heces = null;
         if (examenesHeces && window.tieneDatosHeces(examenesHeces)) {
             var datosHeces = JSON.parse(examenesHeces.resultado || '{}');
-            var itemsHeces = itemsDeExamen('examen_heces');
-            var gruposHeces = construirGruposDeExamen(datosHeces, itemsHeces, 'examen_heces');
+            var itemsHeces = window.HecesForm && window.HecesForm.obtenerCampos
+                ? window.HecesForm.obtenerCampos()
+                : [];
+            var gruposHeces = construirGruposDeExamen(datosHeces, itemsHeces, 'examen_heces', true);
             heces = {
                 datos: datosHeces,
                 grupos: gruposHeces.grupos,
                 ordenGrupos: gruposHeces.ordenGrupos,
-                observaciones: datosHeces.__observaciones || ''
+                observaciones: datosHeces.__observaciones && String(datosHeces.__observaciones).trim()
+                    ? datosHeces.__observaciones
+                    : 'No se observaron formas parasitarias en la muestra observada.'
             };
         }
 
@@ -598,7 +607,9 @@
     function renderHecesDom(heces) {
         if (!heces) return '';
         var html = renderTablaParametrosDom('Examen de Heces', heces.grupos, heces.ordenGrupos, {
-            clase: 'pdf-heces'
+            clase: 'pdf-heces',
+            tituloColumnaReferencia: 'Valor de Referencia',
+            omitirUnidad: true
         });
         return html + renderObservacionesBioanalista(heces.observaciones);
     }
@@ -1226,7 +1237,9 @@
             y = agregarGruposPDF(doc, 'Examen de Heces', payload.heces.grupos, payload.heces.ordenGrupos, {
                 y: y,
                 didDrawPage: encabezadoPagina,
-                startY: yDespuesEncabezado
+                startY: yDespuesEncabezado,
+                mostrarLineasFilas: false,
+                omitirUnidad: true
             });
             escribirObservacionesBioanalista(payload.heces.observaciones);
         }

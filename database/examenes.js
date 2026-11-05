@@ -11,7 +11,8 @@
 
 const {
     asegurarCatalogoPoblado,
-    asegurarParametrosUroanalisis
+    asegurarParametrosUroanalisis,
+    asegurarParametrosHeces
 } = require('./migracion-catalogo');
 const { columnasDe, existeTabla } = require('./schema');
 
@@ -768,6 +769,10 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     const parametrosUroanalisis = asegurarParametrosUroanalisis(db, raizProyecto);
     if (parametrosUroanalisis > 0) {
         console.log('🧪 Parámetros de uroanálisis agregados al catálogo:', parametrosUroanalisis);
+    }
+    const parametrosHeces = asegurarParametrosHeces(db, raizProyecto);
+    if (parametrosHeces > 0) {
+        console.log('🧪 Parámetros de heces agregados al catálogo:', parametrosHeces);
     }
     const resultadosLegados = migrarExamenesPacienteLegados(db);
     if (resultadosLegados > 0) {

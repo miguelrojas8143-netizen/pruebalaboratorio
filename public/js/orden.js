@@ -225,6 +225,11 @@
             nuevoExamen.tipo = 'antibiograma';
             nuevoExamen.resultado = '{}';
         }
+        if (datos.id === 'examen_heces' || datos.id === 'feces') {
+            nuevoExamen.tipoFormulario = 'heces';
+            nuevoExamen.tipo = 'heces';
+            nuevoExamen.resultado = nuevoExamen.resultado || '{}';
+        }
         if (datos.grupo) {
             nuevoExamen.grupo = datos.grupo;
         }
@@ -233,6 +238,15 @@
             nuevoExamen.resultado = '{}';
         }
         return nuevoExamen;
+    }
+
+    function esFormularioHeces(examen) {
+        return !!examen && (
+            examen.tipoFormulario === 'heces' ||
+            examen.tipo === 'heces' ||
+            examen.id === 'examen_heces' ||
+            examen.id === 'feces'
+        );
     }
 
     function tieneResultadosFormulario(examen) {
@@ -279,10 +293,14 @@
             fila.className = 'examen-row';
             fila.setAttribute('data-examen-id', examen.id);
             fila.setAttribute('data-grupo-id', grupoId - 1);
+            if (esFormularioHeces(examen)) {
+                examen.tipoFormulario = 'heces';
+                examen.tipo = 'heces';
+            }
             if (examen.tipo === 'tipo_sanguineo') {
                 fila.classList.add('tipificacion-row');
             }
-            if (examen.tipoFormulario === 'heces') {
+            if (esFormularioHeces(examen)) {
                 var accionHeces = tieneResultadosFormulario(examen) ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="btn btn-outline-success btn-sm" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionHeces + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipoFormulario === 'uroanalisis') {
@@ -477,7 +495,8 @@
         }
         var datos = catalogo.find(function(e) { return e.id === examenId; });
         if (!datos) return;
-        window.examenesOrden.push(crearExamenDesdeCatalogo(datos));
+        var nuevoExamen = crearExamenDesdeCatalogo(datos);
+        window.examenesOrden.push(nuevoExamen);
         $('#selectorExamenes').val(null).trigger('change');
         renderizarTablaExamenes();
         if (examenId === 'antibiograma') {
