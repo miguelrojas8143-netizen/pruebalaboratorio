@@ -128,9 +128,11 @@
                         '</div>' +
                         '<div class="modal-footer">' +
                             '<button type="button" class="btn btn-secondary modal-cancel" data-result="false">' +
+                                '<i class="bi bi-x-lg me-1" aria-hidden="true"></i>' +
                                 (options.cancelText || 'Cancelar') +
                             '</button>' +
                             '<button type="button" class="btn btn-primary modal-confirm" data-result="true">' +
+                                '<i class="bi bi-check-lg me-1" aria-hidden="true"></i>' +
                                 (options.confirmText || 'Aceptar') +
                             '</button>' +
                         '</div>' +

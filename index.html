@@ -218,7 +218,9 @@
                     <p class="mb-0"><small class="text-muted">Edad: </small><strong id="pacienteExistenteEdad"></strong></p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" title="Cancelar" aria-label="Cancelar">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
                     <button type="button" class="btn btn-primary" id="btnIrOrdenExistente" onclick="window.location.href='vistas/orden.html?orden='+window.obtenerOrdenNavegar()"><i class="bi bi-arrow-right-circle me-1"></i> Ir a su Orden</button>
                     <button type="button" class="btn btn-success" id="btnNuevaOrden"><i class="bi bi-plus-circle me-1"></i> Nueva Orden</button>
                 </div>

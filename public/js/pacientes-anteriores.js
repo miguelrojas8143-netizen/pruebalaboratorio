@@ -152,6 +152,12 @@
         window.location.href = prefijo + 'historial.html?id=' + id;
     };
 
+    window.reimprimirPacienteAnterior = function(id) {
+        var enVistas = window.location.pathname.indexOf('/vistas/') !== -1;
+        var prefijo = enVistas ? '' : 'vistas/';
+        window.location.href = prefijo + 'historial.html?id=' + id + '&reimprimir=1';
+    };
+
     function renderizarTabla(pacientes) {
         var tbody = document.getElementById('tablaAnteriores');
         if (!tbody) return;
@@ -181,6 +187,7 @@
                 '<div class="btn-group btn-group-sm" role="group">' +
                 '<button class="btn btn-outline-primary" onclick="window.irAOrdenAnterior(' + "'" + p.orden + "'" + ')" title="Ir a Orden"><i class="bi bi-arrow-right-circle"></i></button>' +
                 '<button class="btn btn-outline-success" onclick="window.nuevaOrdenAnterior(' + p.id + ')" title="Nueva Orden"><i class="bi bi-plus-circle"></i></button>' +
+                '<button class="btn btn-outline-success" onclick="window.reimprimirPacienteAnterior(' + p.id + ')" title="Seleccionar examen para reimprimir"><i class="bi bi-printer"></i></button>' +
                 '<button class="btn btn-outline-info" onclick="window.verHistorialAnterior(' + p.id + ')" title="Historial"><i class="bi bi-clock-history"></i></button>' +
                 '</div></td>';
             tbody.appendChild(fila);

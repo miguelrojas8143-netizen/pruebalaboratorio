@@ -66,6 +66,162 @@
         return 'resultado-normal';
     }
 
+    var examenReimpresionActual = null;
+    var pacienteReimpresionActual = null;
+    var modalReimpresion = null;
+
+    function notificarError(mensaje) {
+        if (window.Notifications && window.Notifications.error) {
+            window.Notifications.error(mensaje);
+        } else {
+            alert(mensaje);
+        }
+    }
+
+    function actualizarContadorReimpresion() {
+        var lista = document.getElementById('listaExamenesReimpresion');
+        var contador = document.getElementById('contadorExamenesReimpresion');
+        if (!lista || !contador) return;
+        var seleccionados = lista.querySelectorAll('input[type="checkbox"]:checked').length;
+        var disponibles = lista.querySelectorAll('input[type="checkbox"]:not(:disabled)').length;
+        contador.textContent = 'Seleccionados: ' + seleccionados + ' de ' + disponibles;
+    }
+
+    function crearModalReimpresion() {
+        var elemento = document.createElement('div');
+        elemento.className = 'modal fade';
+        elemento.id = 'modalReimpresionExamenes';
+        elemento.tabIndex = -1;
+        elemento.setAttribute('aria-labelledby', 'tituloModalReimpresion');
+        elemento.setAttribute('aria-hidden', 'true');
+        elemento.innerHTML =
+            '<div class="modal-dialog modal-dialog-centered">' +
+                '<div class="modal-content">' +
+                    '<div class="modal-header">' +
+                        '<h5 class="modal-title" id="tituloModalReimpresion">Seleccionar exámenes para reimprimir</h5>' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>' +
+                    '</div>' +
+                    '<div class="modal-body">' +
+                        '<p class="text-muted">Marque únicamente los exámenes que necesita volver a imprimir. Los resultados guardados no se modificarán.</p>' +
+                        '<div class="d-flex gap-2 mb-2">' +
+                            '<button type="button" class="btn btn-sm btn-outline-primary" id="seleccionarTodosReimpresion" title="Seleccionar todos" aria-label="Seleccionar todos"><i class="bi bi-check2-all" aria-hidden="true"></i></button>' +
+                            '<button type="button" class="btn btn-sm btn-outline-secondary" id="deseleccionarTodosReimpresion" title="Deseleccionar todos" aria-label="Deseleccionar todos"><i class="bi bi-x-square" aria-hidden="true"></i></button>' +
+                        '</div>' +
+                        '<div id="listaExamenesReimpresion" class="list-group"></div>' +
+                        '<div id="contadorExamenesReimpresion" class="small text-muted mt-2"></div>' +
+                    '</div>' +
+                    '<div class="modal-footer">' +
+                        '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="Cancelar" aria-label="Cancelar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>' +
+                        '<button type="button" class="btn btn-success" id="confirmarReimpresion" title="Reimprimir seleccionados" aria-label="Reimprimir seleccionados"><i class="bi bi-printer" aria-hidden="true"></i></button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(elemento);
+        modalReimpresion = window.bootstrap.Modal.getOrCreateInstance(elemento);
+
+        elemento.querySelector('#seleccionarTodosReimpresion').addEventListener('click', function() {
+            elemento.querySelectorAll('#listaExamenesReimpresion input:not(:disabled)').forEach(function(input) {
+                input.checked = true;
+            });
+            actualizarContadorReimpresion();
+        });
+        elemento.querySelector('#deseleccionarTodosReimpresion').addEventListener('click', function() {
+            elemento.querySelectorAll('#listaExamenesReimpresion input').forEach(function(input) {
+                input.checked = false;
+            });
+            actualizarContadorReimpresion();
+        });
+        elemento.querySelector('#confirmarReimpresion').addEventListener('click', async function() {
+            var lista = elemento.querySelector('#listaExamenesReimpresion');
+            var indices = Array.prototype.map.call(
+                lista.querySelectorAll('input[type="checkbox"]:checked'),
+                function(input) { return Number(input.value); }
+            );
+            if (indices.length === 0) {
+                notificarError('Seleccione al menos un examen con resultados para reimprimir.');
+                return;
+            }
+
+            var pacienteSeleccionado = Object.assign({}, pacienteReimpresionActual, {
+                examenes: indices.map(function(indice) { return examenReimpresionActual[indice]; })
+            });
+            var payload = window.PdfReport.buildPayload(pacienteSeleccionado);
+            if (!payload.hayResultados) {
+                notificarError('Los exámenes seleccionados no tienen resultados registrados para imprimir.');
+                return;
+            }
+
+            modalReimpresion.hide();
+            var nombreArchivo = 'orden_' + pacienteSeleccionado.orden + '_' + pacienteSeleccionado.nombre;
+            try {
+                await window.PdfReport.generarDesdePayload(payload, 'imprimir', nombreArchivo);
+            } catch (error) {
+                console.error('[reimpresion] Error generando PDF:', error);
+                notificarError('No se pudo generar la reimpresión: ' + error.message);
+            }
+        });
+        return elemento;
+    }
+
+    function abrirSelectorReimpresion(paciente) {
+        if (!window.PdfReport || !window.PdfReport.buildPayload ||
+            !window.bootstrap || !window.bootstrap.Modal) {
+            notificarError('No se pudo cargar el selector de reimpresión.');
+            return;
+        }
+
+        var examenes = paciente.examenes || [];
+        if (!examenes.length) {
+            notificarError('Esta orden no tiene exámenes registrados.');
+            return;
+        }
+        if (!examenes.some(window.examenTieneResultados)) {
+            notificarError('Esta orden no tiene resultados registrados para imprimir.');
+            return;
+        }
+
+        examenReimpresionActual = examenes;
+        pacienteReimpresionActual = paciente;
+        var elemento = document.getElementById('modalReimpresionExamenes') || crearModalReimpresion();
+        var lista = elemento.querySelector('#listaExamenesReimpresion');
+        var titulo = elemento.querySelector('#tituloModalReimpresion');
+        lista.replaceChildren();
+        titulo.textContent = 'Seleccionar exámenes para reimprimir · Orden #' + paciente.orden;
+
+        examenes.forEach(function(examen, indice) {
+            var tieneResultado = window.examenTieneResultados(examen);
+            var etiqueta = document.createElement('label');
+            etiqueta.className = 'list-group-item d-flex align-items-center gap-2';
+            var casilla = document.createElement('input');
+            casilla.type = 'checkbox';
+            casilla.className = 'form-check-input mt-0';
+            casilla.value = String(indice);
+            casilla.checked = false;
+            casilla.disabled = !tieneResultado;
+            casilla.addEventListener('change', actualizarContadorReimpresion);
+
+            var detalle = document.createElement('span');
+            detalle.className = 'flex-grow-1';
+            var nombre = document.createElement('span');
+            nombre.className = 'fw-semibold d-block';
+            nombre.textContent = examen.nombre || examen.id || 'Examen sin nombre';
+            detalle.appendChild(nombre);
+            if (examen.area || !tieneResultado) {
+                var nota = document.createElement('small');
+                nota.className = 'text-muted';
+                nota.textContent = !tieneResultado
+                    ? 'Sin resultados: no disponible para reimpresión'
+                    : examen.area;
+                detalle.appendChild(nota);
+            }
+            etiqueta.appendChild(casilla);
+            etiqueta.appendChild(detalle);
+            lista.appendChild(etiqueta);
+        });
+        actualizarContadorReimpresion();
+        modalReimpresion.show();
+    }
+
     function renderizarTablaExamenes(examenes) {
         if (!examenes || examenes.length === 0) {
             return '<p class="text-muted mb-0">Sin exámenes registrados.</p>';
@@ -252,19 +408,7 @@
             };
         }
 
-        if (window.PdfReport && window.PdfReport.buildPayload) {
-            var payload = window.PdfReport.buildPayload(pacienteModificado);
-            if (payload.hayResultados) {
-                var nombreArchivo = ordenIndex === -1
-                    ? 'orden_actual_' + paciente.nombre
-                    : 'orden_' + pacienteModificado.orden + '_' + paciente.nombre;
-                await window.PdfReport.generarDesdePayload(payload, 'imprimir', nombreArchivo);
-            } else {
-                alert('Esta orden no tiene resultados registrados para imprimir.');
-            }
-        } else {
-            alert('No se pudo cargar el generador PDF.');
-        }
+        abrirSelectorReimpresion(pacienteModificado);
     };
 
     window.imprimirOrdenAnterior = window.imprimirOrdenPaciente;
@@ -299,6 +443,14 @@
         }
 
         renderizarPacientes(pacientes, forzarTodos);
+        if (params.get('reimprimir') === '1' && idParam) {
+            var pacienteParaReimpresion = pacientes.find(function(p) {
+                return String(p.id) === idParam;
+            });
+            if (pacienteParaReimpresion) {
+                await window.imprimirOrdenPaciente(pacienteParaReimpresion.id, -1);
+            }
+        }
 
         var buscador = document.getElementById('buscadorHistorial');
         if (buscador) {

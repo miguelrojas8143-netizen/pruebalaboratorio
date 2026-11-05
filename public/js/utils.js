@@ -276,8 +276,8 @@
                 '<div class="modal-header"><h5 class="modal-title">Confirmación</h5></div>' +
                 '<div class="modal-body"><p class="mb-0">' + mensaje.replace(/\n/g, '<br>') + '</p></div>' +
                 '<div class="modal-footer">' +
-                '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>' +
-                '<button type="button" class="btn btn-success">Sí</button>' +
+                '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="No" aria-label="No"><i class="bi bi-x-lg" aria-hidden="true"></i></button>' +
+                '<button type="button" class="btn btn-success" title="Sí" aria-label="Sí"><i class="bi bi-check-lg" aria-hidden="true"></i></button>' +
                 '</div></div></div></div>';
             
             var div = document.createElement('div');
