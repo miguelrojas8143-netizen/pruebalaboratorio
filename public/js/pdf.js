@@ -1,6 +1,6 @@
 /**
  * Módulo de generación / impresión del PDF del reporte.
- * La descarga usa jsPDF con resultados de texto; la vista previa conserva HTML/CSS.
+ * La descarga usa jsPDF; la impresión usa el reporte HTML/CSS de la vista.
  * La versión tabular con autoTable queda comentada como referencia futura.
  */
 (function() {
@@ -265,6 +265,7 @@
             var referenciasGuardadas = valores.__referencias || {};
 
             detalle.items.forEach(function(item) {
+                if (detalleId === 'hematologia_completa' && valorImprimible(valores[item.id]) === '-') return;
                 resultado.push({
                     id: item.id,
                     nombre: item.nombre,
@@ -737,11 +738,67 @@
         return paciente + '_Orden_' + numeroOrden;
     }
 
+    function leerSeleccionExamenes() {
+        var parametros = new URLSearchParams(window.location.search);
+        if (!parametros.has('seleccion')) return null;
+
+        var seleccion;
+        try {
+            seleccion = JSON.parse(parametros.get('seleccion'));
+        } catch (error) {
+            throw new Error('La selección de exámenes del reporte no es válida.');
+        }
+        if (!Array.isArray(seleccion) || seleccion.some(function(id) {
+            return typeof id !== 'string' && typeof id !== 'number';
+        })) {
+            throw new Error('La selección de exámenes del reporte no es válida.');
+        }
+        return seleccion.map(String);
+    }
+
+    function filtrarExamenesSeleccionados(paciente, idsSeleccionados) {
+        var ids = Object.create(null);
+        idsSeleccionados.forEach(function(id) { ids[String(id)] = true; });
+        var pacienteFiltrado = Object.assign({}, paciente);
+        pacienteFiltrado.examenes = (paciente.examenes || []).filter(function(examen) {
+            var id = examen.examen_id || examen.id || examen.nombre;
+            return id !== null && id !== undefined && ids[String(id)];
+        });
+        return pacienteFiltrado;
+    }
+
     async function generarPDF(accion) {
+        var ventanaImpresion = null;
+        if (accion === 'imprimir') {
+            ventanaImpresion = window.open('', '_blank');
+            if (!ventanaImpresion) {
+                window.Notifications.error('El navegador bloqueó la ventana de vista previa. Permita las ventanas emergentes para este sitio.');
+                return;
+            }
+            ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando vista previa del PDF...</p>');
+            ventanaImpresion.document.close();
+        }
         var orden = new URLSearchParams(window.location.search).get('orden') || '';
         var ordenNormalizado = String(orden || '').padStart(3, '0');
-        var result = await window.api.obtenerPacientePorOrden(ordenNormalizado);
+        var seleccionExamenes;
+        try {
+            seleccionExamenes = leerSeleccionExamenes();
+        } catch (error) {
+            if (ventanaImpresion) ventanaImpresion.close();
+            window.Notifications.error(error.message);
+            return;
+        }
+        var result;
+        try {
+            result = await window.api.obtenerPacientePorOrden(ordenNormalizado);
+        } catch (error) {
+            if (ventanaImpresion) ventanaImpresion.close();
+            console.error('[PdfReport] Error cargando la orden:', error);
+            window.Notifications.error('No se pudo cargar la orden para la vista previa: ' + error.message);
+            return;
+        }
         if (!result.success || !result.paciente) {
+            if (ventanaImpresion) ventanaImpresion.close();
             window.Notifications.error('Paciente no encontrado.');
             return;
         }
@@ -759,6 +816,14 @@
          paciente.examenes = window.enriquecerExamenesDesdeCatalogo
              ? window.enriquecerExamenesDesdeCatalogo(paciente.examenes)
              : paciente.examenes;
+         if (seleccionExamenes !== null) {
+             if (seleccionExamenes.length === 0) {
+                 if (ventanaImpresion) ventanaImpresion.close();
+                 window.Notifications.error('Seleccione al menos un examen para generar el reporte.');
+                 return;
+             }
+             paciente = filtrarExamenesSeleccionados(paciente, seleccionExamenes);
+         }
          paciente.id = paciente.id || null;
          paciente.visitas = paciente.visitas || 1;
          paciente.refAdaptadas = paciente.refAdaptadas || false;
@@ -767,33 +832,27 @@
          paciente.telefono = paciente.telefono || '';
 
           if (!window.jspdf || !window.jspdf.jsPDF) {
+             if (ventanaImpresion) ventanaImpresion.close();
              window.Notifications.error('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
              return;
          }
 
-         var ventanaImpresion = null;
-         if (accion === 'imprimir') {
-             ventanaImpresion = window.open('', '_blank');
-             if (!ventanaImpresion) {
-                 window.Notifications.error('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
-                 return;
-            }
-            ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando documento para imprimir...</p>');
-            ventanaImpresion.document.close();
-        }
-
         var nombreSanitizado = nombreArchivoReporte(paciente.nombre, paciente.orden || orden);
 
         var logoData = await cargarLogoPDF();
-        var doc = construirPDF(buildPayload(paciente), logoData);
+        var payload = buildPayload(paciente);
+        if (!payload.hayResultados) {
+           if (ventanaImpresion) ventanaImpresion.close();
+           window.Notifications.error('No hay resultados para mostrar en la vista previa.');
+           return;
+        }
+        var doc = construirPDF(payload, logoData);
         if (!doc) {
-            if (ventanaImpresion) ventanaImpresion.close();
-            return;
+           if (ventanaImpresion) ventanaImpresion.close();
+           return;
         }
         doc.setProperties({ title: nombreSanitizado, subject: 'Resultados de laboratorio' });
-
         if (accion === 'imprimir') {
-            doc.autoPrint();
             ventanaImpresion.location.href = doc.output('bloburl');
         } else {
             doc.save(nombreSanitizado + '.pdf');
@@ -801,6 +860,11 @@
     }
 
     function vistaPrevia() {
+        var areaReporte = document.getElementById('area-imprimir');
+        if (!areaReporte || areaReporte.style.display === 'none') {
+            window.Notifications.error('No hay resultados visibles para imprimir.');
+            return;
+        }
         generarPDF('imprimir');
     }
 
@@ -1279,10 +1343,10 @@
         if (accion === 'imprimir') {
             ventanaImpresion = window.open('', '_blank');
             if (!ventanaImpresion) {
-                window.Notifications.error('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes para este sitio.');
+                window.Notifications.error('El navegador bloqueó la ventana de vista previa. Permita las ventanas emergentes para este sitio.');
                 return;
             }
-            ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando documento para imprimir...</p>');
+            ventanaImpresion.document.write('<p style="font-family: Arial; padding: 24px;">Preparando vista previa del PDF...</p>');
             ventanaImpresion.document.close();
         }
 
@@ -1297,7 +1361,6 @@
         doc.setProperties({ title: nombreFinal, subject: 'Resultados de laboratorio' });
 
         if (accion === 'imprimir') {
-            doc.autoPrint();
             ventanaImpresion.location.href = doc.output('bloburl');
         } else {
             doc.save(nombreFinal + '.pdf');
@@ -1306,6 +1369,8 @@
 
     window.PdfReport = {
         buildPayload: buildPayload,
+        leerSeleccionExamenes: leerSeleccionExamenes,
+        filtrarExamenesSeleccionados: filtrarExamenesSeleccionados,
         renderDom: renderDom,
         construirPDF: construirPDF,
         generarPDF: generarPDF,

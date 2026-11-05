@@ -150,7 +150,7 @@
                                <i class="bi bi-clipboard-check me-1"></i> Guardar solisitud </button>
                                   <button class="btn btn-primary" onclick="guardarResultados()">
                                     <i class="bi bi-save me-1"></i> Guardar Resultados </button>
-                                        <button class="btn btn-success" onclick="irAImpresion()">
+                                        <button class="btn btn-success" onclick="abrirModalSeleccionImpresion()">
                                             <i class="bi bi-printer me-1"></i>Imprimir</button>
                         </div>
                     </div>
@@ -554,6 +554,42 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Cancelar</button>
                     <button type="button" class="btn btn-success" onclick="guardarItemsExamenModal()">
                         <i class="bi bi-save me-2"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalSeleccionImpresion" tabindex="-1" aria-labelledby="modalSeleccionImpresionTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalSeleccionImpresionTitulo">
+                        <i class="bi bi-printer me-2"></i>Seleccionar exámenes para imprimir
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Desmarque los exámenes que no se incluirán en este reporte. Los resultados permanecerán guardados en la orden.</p>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                        <span id="seleccionImpresionContador" class="small fw-semibold" aria-live="polite"></span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="seleccionarTodosParaImpresion(true)" title="Seleccionar todos" aria-label="Seleccionar todos">
+                                <i class="bi bi-check2-all" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="seleccionarTodosParaImpresion(false)" title="Desmarcar todos" aria-label="Desmarcar todos">
+                                <i class="bi bi-x-square" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="listaExamenesImpresion" class="lista-examenes-impresion" role="group" aria-label="Exámenes de la orden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmarSeleccionImpresion()">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Generar PDF con seleccionados
                     </button>
                 </div>
             </div>

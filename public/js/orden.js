@@ -145,6 +145,106 @@
         }
     };
 
+    var examenesEnSeleccionImpresion = [];
+
+    function actualizarContadorSeleccionImpresion() {
+        var lista = document.getElementById('listaExamenesImpresion');
+        var contador = document.getElementById('seleccionImpresionContador');
+        if (!lista || !contador) return;
+        var total = lista.querySelectorAll('input[type="checkbox"]').length;
+        var seleccionados = lista.querySelectorAll('input[type="checkbox"]:checked').length;
+        contador.textContent = 'Seleccionados: ' + seleccionados + ' de ' + total;
+    }
+
+    window.abrirModalSeleccionImpresion = function() {
+        var lista = document.getElementById('listaExamenesImpresion');
+        var elementoModal = document.getElementById('modalSeleccionImpresion');
+        if (!lista || !elementoModal || !window.bootstrap || !window.bootstrap.Modal) {
+            window.Notifications.error('No se pudo abrir la selección de exámenes para imprimir.');
+            return;
+        }
+
+        examenesEnSeleccionImpresion = (window.examenesOrden || []).slice();
+        if (examenesEnSeleccionImpresion.length === 0) {
+            window.Notifications.error('La orden no tiene exámenes para imprimir.');
+            return;
+        }
+
+        lista.replaceChildren();
+        examenesEnSeleccionImpresion.forEach(function(examen, indice) {
+            var etiqueta = document.createElement('label');
+            etiqueta.className = 'examen-impresion-item';
+
+            var casilla = document.createElement('input');
+            casilla.type = 'checkbox';
+            casilla.className = 'form-check-input';
+            casilla.checked = true;
+            casilla.value = String(indice);
+            casilla.addEventListener('change', actualizarContadorSeleccionImpresion);
+
+            var detalle = document.createElement('span');
+            detalle.className = 'examen-impresion-detalle';
+
+            var nombre = document.createElement('span');
+            nombre.className = 'fw-semibold';
+            nombre.textContent = examen.nombre || examen.id || 'Examen sin nombre';
+
+            var area = document.createElement('span');
+            area.className = 'examen-impresion-area';
+            area.textContent = examen.area || examen.categoria || '';
+
+            detalle.appendChild(nombre);
+            if (area.textContent) detalle.appendChild(area);
+            etiqueta.appendChild(casilla);
+            etiqueta.appendChild(detalle);
+            lista.appendChild(etiqueta);
+        });
+
+        actualizarContadorSeleccionImpresion();
+        window.bootstrap.Modal.getOrCreateInstance(elementoModal).show();
+    };
+
+    window.seleccionarTodosParaImpresion = function(marcar) {
+        var lista = document.getElementById('listaExamenesImpresion');
+        if (!lista) return;
+        lista.querySelectorAll('input[type="checkbox"]').forEach(function(casilla) {
+            casilla.checked = !!marcar;
+        });
+        actualizarContadorSeleccionImpresion();
+    };
+
+    window.confirmarSeleccionImpresion = function() {
+        var lista = document.getElementById('listaExamenesImpresion');
+        if (!lista) {
+            window.Notifications.error('No se encontró la lista de exámenes para imprimir.');
+            return;
+        }
+
+        var indicesSeleccionados = Array.prototype.map.call(
+            lista.querySelectorAll('input[type="checkbox"]:checked'),
+            function(casilla) { return Number(casilla.value); }
+        );
+        if (indicesSeleccionados.length === 0) {
+            window.Notifications.error('Seleccione al menos un examen para generar el reporte.');
+            return;
+        }
+
+        var idsSeleccionados = indicesSeleccionados.map(function(indice) {
+            var examen = examenesEnSeleccionImpresion[indice];
+            return String(examen.examen_id || examen.id || examen.nombre || '');
+        }).filter(function(id) { return id !== ''; });
+
+        if (idsSeleccionados.length === 0) {
+            window.Notifications.error('No se pudieron identificar los exámenes seleccionados.');
+            return;
+        }
+
+        window.bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalSeleccionImpresion')
+        ).hide();
+        window.irAImpresion(idsSeleccionados);
+    };
+
     window.iniciarNuevaVisita = async function() {
         if (window.pacienteActivoTieneCambiosSinGuardar && window.pacienteActivoTieneCambiosSinGuardar()) {
             var confirmado = await window.Notifications.confirm({
@@ -856,13 +956,19 @@
         }
     };
 
-    window.irAImpresion = async function() {
+    window.irAImpresion = async function(examenesSeleccionados) {
         var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
         var refAdaptadasGuardada = window.pacienteActivo ? window.pacienteActivo.refAdaptadas || false : false;
         try {
             if (window.examenesOrden && window.examenesOrden.length > 0) {
-                await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
-                await window.api.guardarRefAdaptadas(orden, refAdaptadasGuardada);
+                var resultadoGuardado = await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+                if (!resultadoGuardado || !resultadoGuardado.success) {
+                    throw new Error((resultadoGuardado && resultadoGuardado.error) || 'No se pudieron guardar los resultados.');
+                }
+                var referenciasGuardadas = await window.api.guardarRefAdaptadas(orden, refAdaptadasGuardada);
+                if (!referenciasGuardadas || !referenciasGuardadas.success) {
+                    throw new Error((referenciasGuardadas && referenciasGuardadas.error) || 'No se pudieron guardar las referencias.');
+                }
                 if (window.pacienteActivo) {
                     window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
                     window.pacienteActivo.refAdaptadas = refAdaptadasGuardada;
@@ -870,13 +976,17 @@
             }
         } catch (err) {
             console.error('[irAImpresion] Error:', err);
-        }
-        var examenesConResultados = (window.pacienteActivo.examenes || []).filter(window.examenTieneResultados);
-        if (examenesConResultados.length === 0) {
-            window.location.href = 'reporte.html?orden=' + orden + '&vacio=1';
+            window.Notifications.error('No se pudo guardar la orden antes de generar el reporte: ' + err.message);
             return;
         }
-        window.location.href = 'reporte.html?orden=' + orden;
+        var examenesConResultados = (window.pacienteActivo.examenes || []).filter(window.examenTieneResultados);
+        var parametros = new URLSearchParams();
+        parametros.set('orden', orden);
+        if (Array.isArray(examenesSeleccionados)) {
+            parametros.set('seleccion', JSON.stringify(examenesSeleccionados));
+        }
+        if (examenesConResultados.length === 0) parametros.set('vacio', '1');
+        window.location.href = 'reporte.html?' + parametros.toString();
     };
 
     window.getOrden = function() {

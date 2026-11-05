@@ -45,6 +45,15 @@
         paciente.perfiles = paciente.perfiles || [];
         paciente.telefono = paciente.telefono || '';
 
+        try {
+            var seleccion = window.PdfReport.leerSeleccionExamenes();
+            if (seleccion !== null) {
+                paciente = window.PdfReport.filtrarExamenesSeleccionados(paciente, seleccion);
+            }
+        } catch (error) {
+            window.Notifications.error(error.message);
+            return;
+        }
         var payload = window.PdfReport.buildPayload(paciente);
 
         var params = new URLSearchParams(window.location.search);

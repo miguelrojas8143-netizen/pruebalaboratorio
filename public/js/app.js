@@ -100,7 +100,7 @@
 
     var irAImpresionOriginal = window.irAImpresion;
     window.irAImpresion = function() {
-        irAImpresionOriginal();
+        return irAImpresionOriginal.apply(this, arguments);
     };
 
     console.log('✅ App.js cargado con parche de foco');
