@@ -48,12 +48,22 @@
     <div class="card shadow-sm mb-3 no-imprimir">
         <div class="card-body">
             <label class="form-label fw-semibold">Buscar paciente:</label>
-            <div class="input-group" style="max-width: 500px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="buscadorAnteriores" class="form-control" placeholder="Nombre, cédula u orden...">
-                <button class="btn btn-outline-secondary" type="button" onclick="window.limpiarBusquedaAnteriores()">
-                    <i class="bi bi-x-lg"></i> Limpiar
-                </button>
+            <div class="row g-2 align-items-end" style="max-width: 760px;">
+                <div class="col-sm-7">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="buscadorAnteriores" class="form-control" placeholder="Nombre, cédula u orden...">
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <label for="fechaFiltroAnteriores" class="form-label small mb-1 text-muted">Fecha</label>
+                    <input type="date" id="fechaFiltroAnteriores" class="form-control">
+                </div>
+                <div class="col-sm-2">
+                    <button class="btn btn-outline-secondary w-100" type="button" onclick="window.limpiarBusquedaAnteriores()">
+                        <i class="bi bi-x-lg"></i> Limpiar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -105,9 +115,23 @@
 <!-- Bootstrap JS local -->
 <script src="../public/lib/bootstrap.bundle.min.js"></script>
 <script src="../public/js/tooltips.js"></script>
+<!-- jsPDF y autoTable para generar PDFs -->
+<script src="../public/lib/jspdf.umd.min.js"></script>
+<script src="../public/lib/jspdf.plugin.autotable.min.js"></script>
 <script src="../public/js/db-catalogo.js"></script>
+<script src="../public/js/calculos.js"></script>
+<script src="../public/js/hematologia.js"></script>
+<script src="../public/js/uroanalisis.js"></script>
+<script src="../public/js/uroanalisis-form.js"></script>
+<script src="../public/js/secrecion-vaginal.js"></script>
+<script src="../public/js/heces-form.js"></script>
+<script src="../public/js/heces.js"></script>
+<script src="../public/js/frotis.js"></script>
+<script src="../public/js/perfiles-modal.js"></script>
+<script src="../public/js/items-detallados.js"></script>
 <script src="../public/js/utils.js"></script>
 <script src="../public/js/storage.js"></script>
+<script src="../public/js/pdf.js"></script>
 <script src="../public/js/pacientes-anteriores.js"></script>
     <script src="../public/js/app.js"></script>
     <script src="../public/js/notifications.js"></script>

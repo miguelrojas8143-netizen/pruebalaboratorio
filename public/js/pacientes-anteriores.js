@@ -6,8 +6,25 @@
         pagina: 1,
         limit: 10,
         cursorActual: 0,
-        pacientesBase: []
+        pacientesBase: [],
+        pacientesTodos: [],
+        fechaFiltro: ''
     };
+
+    function normalizarFecha(fecha) {
+        if (!fecha) return '';
+        var valor = String(fecha).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+        var partes = valor.split(/[\/\-]/);
+        if (partes.length === 3) {
+            var dia = partes[0].padStart(2, '0');
+            var mes = partes[1].padStart(2, '0');
+            var anio = partes[2];
+            if (anio.length === 2) anio = '20' + anio;
+            if (/^\d{4}$/.test(anio)) return anio + '-' + mes + '-' + dia;
+        }
+        return valor;
+    }
 
     function escapeHtml(text) {
         return String(text == null ? '' : text)
@@ -65,14 +82,54 @@
     function filtrarAnteriores(pacientes) {
         var hoy = calcularHoy();
         return pacientes.filter(function(p) {
-            return p.fechaRegistro && p.fechaRegistro !== hoy;
+            var tieneVisitasPrevias = (parseInt(p.visitas, 10) || 1) > 1;
+            var esDeDiaAnterior = p.fechaRegistro && p.fechaRegistro !== hoy;
+            return esDeDiaAnterior || tieneVisitasPrevias;
+        });
+    }
+
+    function normalizarTexto(texto) {
+        return String(texto == null ? '' : texto).trim().toLowerCase();
+    }
+
+    function coincideIncremental(valor, termino) {
+        if (!termino) return true;
+        var texto = normalizarTexto(valor);
+        if (!texto) return false;
+        if (texto.indexOf(termino) === 0) return true;
+        return texto.split(/\s+/).some(function(parte) {
+            return parte.indexOf(termino) === 0;
         });
     }
 
     function buscarCoincidencia(p, termino) {
-        return (p.nombre && p.nombre.toLowerCase().includes(termino)) ||
-            (p.cedula && String(p.cedula).includes(termino)) ||
-            (p.orden && String(p.orden).includes(termino));
+        var busqueda = normalizarTexto(termino);
+        if (!busqueda) return true;
+        return coincideIncremental(p.nombre, busqueda) ||
+            coincideIncremental(p.cedula, busqueda) ||
+            coincideIncremental(p.orden, busqueda);
+    }
+
+    function ordenarPorOrden(pacientes) {
+        return pacientes.slice().sort(function(a, b) {
+            return parseInt(a.orden, 10) - parseInt(b.orden, 10);
+        });
+    }
+
+    function aplicarFiltrosAnteriores() {
+        var buscador = document.getElementById('buscadorAnteriores');
+        var fechaInput = document.getElementById('fechaFiltroAnteriores');
+        var termino = buscador ? String(buscador.value || '').trim().toLowerCase() : '';
+        var fechaObjetivo = fechaInput ? String(fechaInput.value || '').trim() : '';
+        _paginacion.fechaFiltro = fechaObjetivo;
+        var filtrados = _paginacion.pacientesTodos.filter(function(p) {
+            if (!buscarCoincidencia(p, termino)) return false;
+            if (fechaObjetivo && normalizarFecha(p.fechaRegistro) !== fechaObjetivo) return false;
+            return true;
+        });
+        _paginacion.pacientesBase = ordenarPorOrden(filtrados);
+        _paginacion.pagina = 1;
+        renderizarPagina();
     }
 
     function paginar(pacientes) {
@@ -130,6 +187,164 @@
         window.location.href = prefijo + 'orden.html?orden=' + orden;
     }
 
+    var _reimpresion = {
+        examenes: null,
+        paciente: null,
+        modal: null
+    };
+
+    function notificarError(mensaje) {
+        if (window.Notifications && window.Notifications.error) {
+            window.Notifications.error(mensaje);
+        } else {
+            mostrarNotificacion(mensaje, 'danger');
+        }
+    }
+
+    function actualizarContadorReimpresion() {
+        var lista = document.getElementById('listaExamenesReimpresionAnterior');
+        var contador = document.getElementById('contadorExamenesReimpresionAnterior');
+        if (!lista || !contador) return;
+        var seleccionados = lista.querySelectorAll('input[type="checkbox"]:checked').length;
+        var disponibles = lista.querySelectorAll('input[type="checkbox"]:not(:disabled)').length;
+        contador.textContent = 'Seleccionados: ' + seleccionados + ' de ' + disponibles;
+    }
+
+    function crearModalReimpresion() {
+        var elemento = document.createElement('div');
+        elemento.className = 'modal fade';
+        elemento.id = 'modalReimpresionExamenesAnterior';
+        elemento.tabIndex = -1;
+        elemento.setAttribute('aria-labelledby', 'tituloModalReimpresionAnterior');
+        elemento.setAttribute('aria-hidden', 'true');
+        elemento.innerHTML =
+            '<div class="modal-dialog modal-dialog-centered">' +
+                '<div class="modal-content">' +
+                    '<div class="modal-header">' +
+                        '<h5 class="modal-title" id="tituloModalReimpresionAnterior">Seleccionar exámenes para reimprimir</h5>' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>' +
+                    '</div>' +
+                    '<div class="modal-body">' +
+                        '<p class="text-muted">Marque únicamente los exámenes que necesita volver a imprimir. Los resultados guardados no se modificarán.</p>' +
+                        '<div class="d-flex gap-2 mb-2">' +
+                            '<button type="button" class="btn btn-sm btn-outline-primary" id="seleccionarTodosReimpresionAnterior" title="Seleccionar todos" aria-label="Seleccionar todos"><i class="bi bi-check2-all" aria-hidden="true"></i></button>' +
+                            '<button type="button" class="btn btn-sm btn-outline-secondary" id="deseleccionarTodosReimpresionAnterior" title="Deseleccionar todos" aria-label="Deseleccionar todos"><i class="bi bi-x-square" aria-hidden="true"></i></button>' +
+                        '</div>' +
+                        '<div id="listaExamenesReimpresionAnterior" class="list-group"></div>' +
+                        '<div id="contadorExamenesReimpresionAnterior" class="small text-muted mt-2"></div>' +
+                    '</div>' +
+                    '<div class="modal-footer">' +
+                        '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="Cancelar" aria-label="Cancelar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>' +
+                        '<button type="button" class="btn btn-success" id="confirmarReimpresionAnterior" title="Reimprimir seleccionados" aria-label="Reimprimir seleccionados"><i class="bi bi-printer" aria-hidden="true"></i></button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(elemento);
+        _reimpresion.modal = window.bootstrap.Modal.getOrCreateInstance(elemento);
+
+        elemento.querySelector('#seleccionarTodosReimpresionAnterior').addEventListener('click', function() {
+            elemento.querySelectorAll('#listaExamenesReimpresionAnterior input:not(:disabled)').forEach(function(input) {
+                input.checked = true;
+            });
+            actualizarContadorReimpresion();
+        });
+        elemento.querySelector('#deseleccionarTodosReimpresionAnterior').addEventListener('click', function() {
+            elemento.querySelectorAll('#listaExamenesReimpresionAnterior input').forEach(function(input) {
+                input.checked = false;
+            });
+            actualizarContadorReimpresion();
+        });
+        elemento.querySelector('#confirmarReimpresionAnterior').addEventListener('click', async function() {
+            var lista = elemento.querySelector('#listaExamenesReimpresionAnterior');
+            var indices = Array.prototype.map.call(
+                lista.querySelectorAll('input[type="checkbox"]:checked'),
+                function(input) { return Number(input.value); }
+            );
+            if (indices.length === 0) {
+                notificarError('Seleccione al menos un examen con resultados para reimprimir.');
+                return;
+            }
+
+            var pacienteSeleccionado = Object.assign({}, _reimpresion.paciente, {
+                examenes: indices.map(function(indice) { return _reimpresion.examenes[indice]; })
+            });
+            var payload = window.PdfReport.buildPayload(pacienteSeleccionado);
+            if (!payload.hayResultados) {
+                notificarError('Los exámenes seleccionados no tienen resultados registrados para imprimir.');
+                return;
+            }
+
+            _reimpresion.modal.hide();
+            var nombreArchivo = 'orden_' + pacienteSeleccionado.orden + '_' + pacienteSeleccionado.nombre;
+            try {
+                await window.PdfReport.generarDesdePayload(payload, 'imprimir', nombreArchivo);
+            } catch (error) {
+                console.error('[reimpresion-anteriores] Error generando PDF:', error);
+                notificarError('No se pudo generar la reimpresión: ' + error.message);
+            }
+        });
+        return elemento;
+    }
+
+    function abrirSelectorReimpresion(paciente) {
+        if (!window.PdfReport || !window.PdfReport.buildPayload ||
+            !window.bootstrap || !window.bootstrap.Modal) {
+            notificarError('No se pudo cargar el selector de reimpresión.');
+            return;
+        }
+
+        var examenes = paciente.examenes || [];
+        if (!examenes.length) {
+            notificarError('Esta orden no tiene exámenes registrados.');
+            return;
+        }
+        if (!examenes.some(window.examenTieneResultados)) {
+            notificarError('Esta orden no tiene resultados registrados para imprimir.');
+            return;
+        }
+
+        _reimpresion.examenes = examenes;
+        _reimpresion.paciente = paciente;
+        var elemento = document.getElementById('modalReimpresionExamenesAnterior') || crearModalReimpresion();
+        var lista = elemento.querySelector('#listaExamenesReimpresionAnterior');
+        var titulo = elemento.querySelector('#tituloModalReimpresionAnterior');
+        lista.replaceChildren();
+        titulo.textContent = 'Seleccionar exámenes para reimprimir · Orden #' + paciente.orden;
+
+        examenes.forEach(function(examen, indice) {
+            var tieneResultado = window.examenTieneResultados(examen);
+            var etiqueta = document.createElement('label');
+            etiqueta.className = 'list-group-item d-flex align-items-center gap-2';
+            var casilla = document.createElement('input');
+            casilla.type = 'checkbox';
+            casilla.className = 'form-check-input mt-0';
+            casilla.value = String(indice);
+            casilla.checked = false;
+            casilla.disabled = !tieneResultado;
+            casilla.addEventListener('change', actualizarContadorReimpresion);
+
+            var detalle = document.createElement('span');
+            detalle.className = 'flex-grow-1';
+            var nombre = document.createElement('span');
+            nombre.className = 'fw-semibold d-block';
+            nombre.textContent = examen.nombre || examen.id || 'Examen sin nombre';
+            detalle.appendChild(nombre);
+            if (examen.area || !tieneResultado) {
+                var nota = document.createElement('small');
+                nota.className = 'text-muted';
+                nota.textContent = !tieneResultado
+                    ? 'Sin resultados: no disponible para reimpresión'
+                    : examen.area;
+                detalle.appendChild(nota);
+            }
+            etiqueta.appendChild(casilla);
+            etiqueta.appendChild(detalle);
+            lista.appendChild(etiqueta);
+        });
+        actualizarContadorReimpresion();
+        _reimpresion.modal.show();
+    }
+
     window.irAOrdenAnterior = function(orden) {
         navegarAOrden(orden);
     };
@@ -153,9 +368,28 @@
     };
 
     window.reimprimirPacienteAnterior = function(id) {
-        var enVistas = window.location.pathname.indexOf('/vistas/') !== -1;
-        var prefijo = enVistas ? '' : 'vistas/';
-        window.location.href = prefijo + 'historial.html?id=' + id + '&reimprimir=1';
+        var base = (_paginacion.pacientesTodos && _paginacion.pacientesTodos.length)
+            ? _paginacion.pacientesTodos
+            : _paginacion.pacientesBase;
+        var paciente = (base || []).find(function(p) {
+            return String(p.id) === String(id);
+        });
+        if (!paciente) {
+            cargarPacientes().then(function(pacientes) {
+                var encontrado = (pacientes || []).find(function(p) {
+                    return String(p.id) === String(id);
+                });
+                if (!encontrado) {
+                    notificarError('Paciente no encontrado.');
+                    return;
+                }
+                abrirSelectorReimpresion(encontrado);
+            }).catch(function(error) {
+                notificarError('No se pudo cargar el paciente: ' + (error && error.message ? error.message : error));
+            });
+            return;
+        }
+        abrirSelectorReimpresion(paciente);
     };
 
     function renderizarTabla(pacientes) {
@@ -163,14 +397,14 @@
         if (!tbody) return;
         tbody.innerHTML = '';
 
+        var total = _paginacion.pacientesBase ? _paginacion.pacientesBase.length : pacientes.length;
+        var totalEl = document.getElementById('totalAnteriores');
+        if (totalEl) totalEl.textContent = total + ' pacientes';
+
         if (pacientes.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron pacientes.</td></tr>';
-            var totalEl = document.getElementById('totalAnteriores');
-            if (totalEl) totalEl.textContent = '0 pacientes';
             return;
         }
-
-        pacientes.sort(function(a, b) { return parseInt(b.orden) - parseInt(a.orden); });
 
         pacientes.forEach(function(p) {
             var estado = window.calcularEstadoPaciente ? window.calcularEstadoPaciente(p) : 'en_espera';
@@ -192,9 +426,6 @@
                 '</div></td>';
             tbody.appendChild(fila);
         });
-
-        var totalEl = document.getElementById('totalAnteriores');
-        if (totalEl) totalEl.textContent = pacientes.length + ' pacientes';
     }
 
     function renderizarPagina() {
@@ -207,37 +438,22 @@
         inicializarPaginacion();
 
         cargarPacientes().then(function(pacientes) {
-            var hoy = calcularHoy();
             var anteriores = filtrarAnteriores(pacientes);
-            anteriores.sort(function(a, b) { return parseInt(b.orden) - parseInt(a.orden); });
-            _paginacion.pacientesBase = anteriores;
+            _paginacion.pacientesTodos = ordenarPorOrden(anteriores);
+            _paginacion.pacientesBase = _paginacion.pacientesTodos.slice();
             _paginacion.pagina = 1;
-
-            var result = paginar(anteriores);
-            actualizarControlesPaginacion(result.totalPaginas);
-            renderizarTabla(result.page);
+            renderizarPagina();
 
             var buscador = document.getElementById('buscadorAnteriores');
-            if (buscador) {
-                buscador.addEventListener('input', function() {
-                    var termino = this.value.toLowerCase();
-                    if (!termino || termino.length < 3) {
-                        _paginacion.pacientesBase = anteriores;
-                        _paginacion.pagina = 1;
-                        var r = paginar(anteriores);
-                        actualizarControlesPaginacion(r.totalPaginas);
-                        renderizarTabla(r.page);
-                        return;
-                    }
-                    var filtrados = anteriores.filter(function(p) {
-                        return buscarCoincidencia(p, termino);
-                    });
-                    _paginacion.pacientesBase = filtrados;
-                    _paginacion.pagina = 1;
-                    var r2 = paginar(filtrados);
-                    actualizarControlesPaginacion(r2.totalPaginas);
-                    renderizarTabla(r2.page);
-                });
+            var fechaFiltro = document.getElementById('fechaFiltroAnteriores');
+            if (buscador && buscador.dataset.anterioresListo !== 'true') {
+                buscador.dataset.anterioresListo = 'true';
+                buscador.addEventListener('input', aplicarFiltrosAnteriores);
+            }
+            if (fechaFiltro && fechaFiltro.dataset.anterioresListo !== 'true') {
+                fechaFiltro.dataset.anterioresListo = 'true';
+                fechaFiltro.addEventListener('input', aplicarFiltrosAnteriores);
+                fechaFiltro.addEventListener('change', aplicarFiltrosAnteriores);
             }
         }).catch(function(e) {
             console.error('[pacientes-anteriores] Error:', e);
@@ -247,8 +463,17 @@
 
     window.limpiarBusquedaAnteriores = function() {
         var buscador = document.getElementById('buscadorAnteriores');
+        var fechaFiltro = document.getElementById('fechaFiltroAnteriores');
+        if (fechaFiltro) {
+            fechaFiltro.value = '';
+        }
+        _paginacion.fechaFiltro = '';
         if (buscador) {
             buscador.value = '';
+        }
+        if (_paginacion.pacientesTodos && _paginacion.pacientesTodos.length) {
+            aplicarFiltrosAnteriores();
+        } else {
             window.initPacientesAnteriores();
         }
     };

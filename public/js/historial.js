@@ -255,8 +255,22 @@
         modalReimpresion.show();
     }
 
+    function normalizarTexto(texto) {
+        return String(texto == null ? '' : texto).trim().toLowerCase();
+    }
+
+    function coincideIncremental(valor, termino) {
+        if (!termino) return true;
+        var texto = normalizarTexto(valor);
+        if (!texto) return false;
+        if (texto.indexOf(termino) === 0) return true;
+        return texto.split(/\s+/).some(function(parte) {
+            return parte.indexOf(termino) === 0;
+        });
+    }
+
     function renderizarPacientes(pacientes, forzarTodos, termino, fechaFiltro) {
-        var busqueda = String(termino || '').trim().toLowerCase();
+        var busqueda = normalizarTexto(termino);
         var fechaObjetivo = String(fechaFiltro || '').trim();
         registrosHistorial = [];
         (pacientes || []).forEach(function(paciente) {
@@ -266,12 +280,12 @@
             var activeFecha = paciente.fechaRegistro || new Date().toLocaleDateString('es-ES');
             var activeExamenes = paciente.examenes || [];
             var coincidePaciente = !busqueda ||
-                String(paciente.nombre || '').toLowerCase().includes(busqueda) ||
-                String(paciente.cedula || '').toLowerCase().includes(busqueda);
+                coincideIncremental(paciente.nombre, busqueda) ||
+                coincideIncremental(paciente.cedula, busqueda);
 
             function agregarRegistro(orden, fecha, examenes, ordenIndex, esActual) {
                 if (!forzarTodos && !ordenesPrevias.length) return;
-                if (!coincidePaciente && !String(orden || '').toLowerCase().includes(busqueda)) return;
+                if (!coincidePaciente && !coincideIncremental(orden, busqueda)) return;
                 if (fechaObjetivo && normalizarFecha(fecha) !== fechaObjetivo) return;
                 var tieneResultado = tieneResultadosOrden(examenes);
                 registrosHistorial.push({
