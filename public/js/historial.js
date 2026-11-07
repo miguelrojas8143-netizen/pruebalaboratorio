@@ -25,6 +25,22 @@
     var registrosHistorial = [];
     var paginaHistorial = 1;
     var limiteHistorial = 10;
+    var fechaFiltroHistorial = '';
+
+    function normalizarFecha(fecha) {
+        if (!fecha) return '';
+        var valor = String(fecha).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+        var partes = valor.split(/[\/\-]/);
+        if (partes.length === 3) {
+            var dia = partes[0].padStart(2, '0');
+            var mes = partes[1].padStart(2, '0');
+            var anio = partes[2];
+            if (anio.length === 2) anio = '20' + anio;
+            if (/^\d{4}$/.test(anio)) return anio + '-' + mes + '-' + dia;
+        }
+        return valor;
+    }
 
     function actualizarPaginacionHistorial(totalPaginas) {
         var paginaEl = document.getElementById('paginaActualHistorial');
@@ -239,8 +255,9 @@
         modalReimpresion.show();
     }
 
-    function renderizarPacientes(pacientes, forzarTodos, termino) {
+    function renderizarPacientes(pacientes, forzarTodos, termino, fechaFiltro) {
         var busqueda = String(termino || '').trim().toLowerCase();
+        var fechaObjetivo = String(fechaFiltro || '').trim();
         registrosHistorial = [];
         (pacientes || []).forEach(function(paciente) {
             var ordenesPrevias = (paciente.ordenesPrevias || []);
@@ -255,6 +272,7 @@
             function agregarRegistro(orden, fecha, examenes, ordenIndex, esActual) {
                 if (!forzarTodos && !ordenesPrevias.length) return;
                 if (!coincidePaciente && !String(orden || '').toLowerCase().includes(busqueda)) return;
+                if (fechaObjetivo && normalizarFecha(fecha) !== fechaObjetivo) return;
                 var tieneResultado = tieneResultadosOrden(examenes);
                 registrosHistorial.push({
                     paciente: paciente,
@@ -275,6 +293,9 @@
                 var originalIndex = ordenesPrevias.length - 1 - indice;
                 agregarRegistro(orden.orden, orden.fecha || 'N/A', orden.examenes || [], originalIndex, false);
             });
+        });
+        registrosHistorial.sort(function(a, b) {
+            return parseInt(a.orden, 10) - parseInt(b.orden, 10);
         });
         paginaHistorial = 1;
         renderizarPaginaHistorial();
@@ -374,19 +395,34 @@
         }
 
         var buscador = document.getElementById('buscadorHistorial');
+        var fechaFiltro = document.getElementById('fechaFiltroHistorial');
+        function aplicarFiltrosHistorial() {
+            fechaFiltroHistorial = fechaFiltro ? fechaFiltro.value : '';
+            renderizarPacientes(pacientes, forzarTodos, buscador ? buscador.value : '', fechaFiltroHistorial);
+        }
         if (buscador && buscador.dataset.historialListo !== 'true') {
             buscador.dataset.historialListo = 'true';
-            buscador.addEventListener('input', function() {
-                renderizarPacientes(pacientes, forzarTodos, this.value);
-            });
+            buscador.addEventListener('input', aplicarFiltrosHistorial);
+        }
+        if (fechaFiltro && fechaFiltro.dataset.historialListo !== 'true') {
+            fechaFiltro.dataset.historialListo = 'true';
+            fechaFiltro.addEventListener('input', aplicarFiltrosHistorial);
+            fechaFiltro.addEventListener('change', aplicarFiltrosHistorial);
         }
     };
 
     window.limpiarBusquedaHistorial = function() {
         var buscador = document.getElementById('buscadorHistorial');
+        var fechaFiltro = document.getElementById('fechaFiltroHistorial');
+        if (fechaFiltro) {
+            fechaFiltro.value = '';
+        }
+        fechaFiltroHistorial = '';
         if (buscador) {
             buscador.value = '';
             buscador.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (typeof window.initHistorial === 'function') {
+            window.initHistorial();
         }
     };
 
