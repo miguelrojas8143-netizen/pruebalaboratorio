@@ -1024,15 +1024,46 @@ td.grupo-header-clickable:hover {
     HISTORIAL (vista historial.html)
     ============================================================ */
 
-/* Header del "Orden Actual": texto oscuro visible sobre gris claro */
-.orden-actual-card .card-header {
-    background-color: #f8f9fa !important;
-    color: #495057 !important;
-    border-bottom: 1px solid #e9ecef;
-    font-weight: 600;
+.pagina-historial #tablaHistorial {
+    font-size: 0.82rem;
 }
-.orden-actual-card .card-header strong {
-    color: #0d6efd;
+
+.pagina-historial #tablaHistorial td {
+    padding: 0.45rem 0.65rem;
+}
+
+.pagina-historial #tablaHistorial .badge {
+    font-size: 0.72rem;
+}
+
+.pagina-historial .historial-imprimir-btn {
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    padding: 0.3rem;
+}
+
+@media print {
+    .pagina-historial {
+        font-size: 9pt;
+    }
+
+    .pagina-historial .no-imprimir {
+        display: none !important;
+    }
+
+    .pagina-historial .card,
+    .pagina-historial .orden-actual-card {
+        box-shadow: none !important;
+        break-inside: auto;
+    }
+
+    .pagina-historial #tablaHistorial .historial-imprimir-btn {
+        display: none !important;
+    }
+
+    .pagina-historial #tablaHistorial tr {
+        break-inside: avoid;
+    }
 }
 
 /* Chevron: transición suave y rotación al expandir (Chromium 108+ / Electron 21) */

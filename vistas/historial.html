@@ -21,7 +21,7 @@
 
     <link href="../public/css/styles.css" rel="stylesheet">
 </head>
-<body>
+<body class="pagina-historial">
 <nav class="navbar navbar-dark bg-primary shadow-sm mb-4 no-imprimir">
     <div class="container">
        <span class="navbar-brand mb-0 h1">
@@ -60,9 +60,42 @@
         </div>
     </div>
 
-    <!-- Contenedor de resultados -->
-    <div id="contenedorHistorial">
-        <p class="text-muted text-center py-4"><i class="bi bi-inbox display-4 d-block mb-2"></i> Cargando pacientes...</p>
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ol me-2"></i> Órdenes del historial</span>
+            <span class="badge bg-light text-primary" id="totalOrdenesHistorial">0 órdenes</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Orden</th>
+                            <th>Paciente</th>
+                            <th>Cédula</th>
+                            <th>Fecha</th>
+                            <th class="text-center">Visitas</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaHistorial">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Cargando órdenes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-top no-imprimir">
+                <button id="btnAnteriorHistorial" class="btn btn-sm btn-outline-secondary" disabled>
+                    <i class="bi bi-chevron-left me-1"></i>Anterior
+                </button>
+                <span class="text-muted small">Página <span id="paginaActualHistorial">1</span></span>
+                <button id="btnSiguienteHistorial" class="btn btn-sm btn-outline-secondary" disabled>
+                    Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 

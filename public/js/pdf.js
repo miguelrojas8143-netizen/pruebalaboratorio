@@ -250,9 +250,15 @@
                 }).length
                 : 0;
             var resultadoHematologia = detalleId === 'hematologia_completa' && coincidenciasHematologia >= 2;
+            var coincidenciasDetalle = detalle && detalle.items
+                ? detalle.items.filter(function(item) {
+                    return Object.prototype.hasOwnProperty.call(valores, item.id);
+                }).length
+                : 0;
+            var resultadoCompuesto = coincidenciasDetalle > 0;
 
             if (!detalle || !detalle.items || !detalle.items.length ||
-                (examen.tipo !== 'perfil' && !resultadoHematologia)) {
+                (examen.tipo !== 'perfil' && !resultadoHematologia && !resultadoCompuesto)) {
                 resultado.push(examen);
                 return;
             }
@@ -265,7 +271,8 @@
             var referenciasGuardadas = valores.__referencias || {};
 
             detalle.items.forEach(function(item) {
-                if (detalleId === 'hematologia_completa' && valorImprimible(valores[item.id]) === '-') return;
+                if ((detalleId === 'hematologia_completa' || examen.tipo !== 'perfil') &&
+                    valorImprimible(valores[item.id]) === '-') return;
                 resultado.push({
                     id: item.id,
                     nombre: item.nombre,
@@ -289,9 +296,13 @@
     /* ---------- Construcción del payload unificado ---------- */
     function buildPayload(paciente) {
         var examenes = JSON.parse(JSON.stringify(paciente.examenes || []));
-        var examenesHeces = examenes.find(function(e) { return e.tipoFormulario === 'heces'; });
+        var examenesHeces = examenes.find(function(e) {
+            return e.tipoFormulario === 'heces' || e.id === 'examen_heces' || e.examen_id === 'examen_heces';
+        });
         var examenesUro = examenes.find(function(e) {
-            return e.tipoFormulario === 'uroanalisis' || e.tipo === 'uroanalisis' || e.id === 'uroanalisis' || e.id === 'examen_orina';
+            return e.tipoFormulario === 'uroanalisis' || e.tipo === 'uroanalisis' ||
+                e.id === 'uroanalisis' || e.id === 'examen_orina' ||
+                e.examen_id === 'uroanalisis' || e.examen_id === 'examen_orina';
         });
         if (!examenesUro) {
             var idsUro = window.App && window.App.examenesDetallados && window.App.examenesDetallados.examen_orina
@@ -305,7 +316,9 @@
                 return valores && idsUro.some(function(id) { return Object.prototype.hasOwnProperty.call(valores, id); });
             });
         }
-        var examenesAb = examenes.find(function(e) { return e.tipoFormulario === 'antibiograma'; });
+        var examenesAb = examenes.find(function(e) {
+            return e.tipoFormulario === 'antibiograma' || e.id === 'antibiograma' || e.examen_id === 'antibiograma';
+        });
         var examenHematologia = examenes.find(function(e) {
             return e.id === 'hematologia_completa';
         });
