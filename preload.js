@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
     guardarHistorialPaciente: (orden, historial) => ipcRenderer.invoke('guardar-historial-paciente', { orden, historial }),
     eliminarPaciente: (id) => ipcRenderer.invoke('eliminar-paciente', { id }),
     eliminarPacientePorOrden: (orden) => ipcRenderer.invoke('eliminar-paciente', { orden }),
+    eliminarOrden: (data) => ipcRenderer.invoke('eliminar-orden', data),
     eliminarTodosPacientes: () => ipcRenderer.invoke('eliminar-todos-pacientes'),
     obtenerCatalogo: () => ipcRenderer.invoke('obtener-catalogo'),
     obtenerCatalogoAdmin: () => ipcRenderer.invoke('obtener-catalogo-admin'),

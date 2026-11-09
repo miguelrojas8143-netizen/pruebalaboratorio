@@ -270,6 +270,78 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
         }
     });
 
+    ipcMain.handle('eliminar-orden', (event, data) => {
+        try {
+            var pacienteId = data && data.pacienteId;
+            var ordenObjetivo = String((data && data.orden) || '').padStart(3, '0');
+            if (!ordenObjetivo || ordenObjetivo === '000') {
+                return { success: false, error: 'Orden inválida.' };
+            }
+            var paciente = null;
+            if (pacienteId !== undefined && pacienteId !== null) {
+                paciente = db.prepare('SELECT * FROM pacientes WHERE id = ?').get(pacienteId);
+            }
+            if (!paciente) {
+                paciente = db.prepare('SELECT * FROM pacientes WHERE orden = ?').get(ordenObjetivo);
+            }
+            if (!paciente) {
+                var arch = db.prepare('SELECT paciente_id FROM ordenes_archivadas WHERE orden = ? LIMIT 1').get(ordenObjetivo);
+                if (arch) paciente = db.prepare('SELECT * FROM pacientes WHERE id = ?').get(arch.paciente_id);
+            }
+            if (!paciente) {
+                return { success: false, error: 'Paciente no encontrado para la orden.' };
+            }
+
+            var ordenActual = String(paciente.orden || '').padStart(3, '0');
+            var archivada = db.prepare(
+                'SELECT * FROM ordenes_archivadas WHERE paciente_id = ? AND orden = ? ORDER BY id DESC LIMIT 1'
+            ).get(paciente.id, ordenObjetivo);
+
+            if (ordenActual === ordenObjetivo) {
+                var ultimaArchivada = db.prepare(
+                    'SELECT * FROM ordenes_archivadas WHERE paciente_id = ? ORDER BY id DESC LIMIT 1'
+                ).get(paciente.id);
+                if (ultimaArchivada) {
+                    const promover = db.transaction(function() {
+                        db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(ordenActual);
+                        db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(ordenActual);
+                        db.prepare('DELETE FROM ordenes_archivadas WHERE id = ?').run(ultimaArchivada.id);
+                        db.prepare(
+                            'UPDATE pacientes SET orden = ?, fechaRegistro = ?, refAdaptadas = ?, perfiles = ?, historial = ?, visitas = MAX(1, visitas - 1) WHERE id = ?'
+                        ).run(
+                            String(ultimaArchivada.orden || '').padStart(3, '0'),
+                            ultimaArchivada.fecha || paciente.fechaRegistro || '',
+                            ultimaArchivada.refAdaptadas || 0,
+                            ultimaArchivada.perfiles || '[]',
+                            ultimaArchivada.historial || '[]',
+                            paciente.id
+                        );
+                        var examenes = [];
+                        try { examenes = ultimaArchivada.examenes ? JSON.parse(ultimaArchivada.examenes) : []; } catch (e) { examenes = []; }
+                        guardarExamenesPaciente(db, String(ultimaArchivada.orden || '').padStart(3, '0'), examenes);
+                    });
+                    ejecutarConLlavesSuspendidas(db, promover);
+                    return { success: true, pacienteEliminado: false, ordenRestaurada: String(ultimaArchivada.orden || '').padStart(3, '0') };
+                }
+                db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(ordenActual);
+                db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(ordenActual);
+                db.prepare('DELETE FROM ordenes_archivadas WHERE paciente_id = ?').run(paciente.id);
+                db.prepare('DELETE FROM pacientes WHERE id = ?').run(paciente.id);
+                return { success: true, pacienteEliminado: true };
+            }
+
+            if (archivada) {
+                db.prepare('DELETE FROM ordenes_archivadas WHERE id = ?').run(archivada.id);
+                db.prepare('UPDATE pacientes SET visitas = MAX(1, visitas - 1) WHERE id = ?').run(paciente.id);
+                return { success: true, pacienteEliminado: false };
+            }
+
+            return { success: false, error: 'No se encontró la orden indicada para este paciente.' };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
     ipcMain.handle('eliminar-todos-pacientes', () => {
         try {
             db.exec('DELETE FROM paciente_examenes');

@@ -2,6 +2,15 @@
 (function() {
     'use strict';
 
+    function escapeHtml(text) {
+        return String(text == null ? '' : text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function debounce(fn, delay) {
         var timer = null;
         return function() {
@@ -331,52 +340,183 @@
     }
 
     window.abrirGestionPacientes = function() {
-        renderizarListaPacientesModal();
+        renderizarListaPacientesModal(true);
         var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGestionPacientes'));
         modal.show();
     };
 
-    function renderizarListaPacientesModal() {
-        var tbody = document.getElementById('tablaGestionPacientes');
-        if (!tbody) return;
-        cargarPacientes().then(function(pacientes) {
-            if (pacientes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No hay pacientes registrados.</td></tr>';
-                return;
-            }
-            pacientes.sort(function(a, b) { return parseInt(b.orden) - parseInt(a.orden); });
-            var html = '';
-            pacientes.forEach(function(p, index) {
-                html += '<tr><td>' + (index + 1) + '</td><td class="fw-semibold">' + p.nombre + '</td><td>' + (p.cedula || '<span class="text-muted">N/A</span>') + '</td><td><span class="badge bg-primary badge-orden">#' + p.orden + '</span></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarPacienteIndividual(' + p.id + ')"><i class="bi bi-trash"></i> Eliminar</button></td></tr>';
-            });
-            tbody.innerHTML = html;
+    var _gestionPacientes = { todos: [], filtrados: [], fechaFiltro: '' };
+
+    function normalizarFechaGestion(fecha) {
+        if (!fecha) return '';
+        var valor = String(fecha).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+        var partes = valor.split(/[\/\-]/);
+        if (partes.length === 3) {
+            var dia = partes[0].padStart(2, '0');
+            var mes = partes[1].padStart(2, '0');
+            var anio = partes[2];
+            if (anio.length === 2) anio = '20' + anio;
+            if (/^\d{4}$/.test(anio)) return anio + '-' + mes + '-' + dia;
+        }
+        return valor;
+    }
+
+    function normalizarTextoGestion(texto) {
+        return String(texto == null ? '' : texto).trim().toLowerCase();
+    }
+
+    function coincideIncrementalGestion(valor, termino) {
+        if (!termino) return true;
+        var texto = normalizarTextoGestion(valor);
+        if (!texto) return false;
+        if (texto.indexOf(termino) === 0) return true;
+        return texto.split(/\s+/).some(function(parte) {
+            return parte.indexOf(termino) === 0;
         });
     }
 
-    window.eliminarPacienteIndividual = async function(pacienteId) {
-        var confirmado = await window.Notifications.confirm('¿Está seguro de eliminar este paciente?');
+    function aplicarFiltrosGestionPacientes() {
+        var buscador = document.getElementById('buscadorGestionPacientes');
+        var fechaInput = document.getElementById('fechaFiltroGestionPacientes');
+        var termino = buscador ? normalizarTextoGestion(buscador.value) : '';
+        var fechaObjetivo = fechaInput ? String(fechaInput.value || '').trim() : '';
+        _gestionPacientes.fechaFiltro = fechaObjetivo;
+        _gestionPacientes.filtrados = _gestionPacientes.todos.filter(function(p) {
+            var coincideTexto = !termino ||
+                coincideIncrementalGestion(p.nombre, termino) ||
+                coincideIncrementalGestion(p.cedula, termino) ||
+                coincideIncrementalGestion(p.orden, termino);
+            if (!coincideTexto) return false;
+            if (fechaObjetivo && normalizarFechaGestion(p.fechaRegistro) !== fechaObjetivo) return false;
+            return true;
+        }).sort(function(a, b) { return parseInt(a.orden, 10) - parseInt(b.orden, 10); });
+        renderizarTablaGestionPacientes();
+    }
+
+    function renderizarTablaGestionPacientes() {
+        var tbody = document.getElementById('tablaGestionPacientes');
+        if (!tbody) return;
+        var lista = _gestionPacientes.filtrados || [];
+        if (lista.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No se encontraron pacientes.</td></tr>';
+            return;
+        }
+        var html = '';
+        lista.forEach(function(p, index) {
+            var ordenEsc = escapeHtml(p.orden);
+            html += '<tr><td>' + (index + 1) + '</td><td class="fw-semibold">' + escapeHtml(p.nombre) + '</td><td>' + (p.cedula ? escapeHtml(p.cedula) : '<span class="text-muted">N/A</span>') + '</td><td><span class="badge bg-primary badge-orden">#' + ordenEsc + '</span></td><td>' + escapeHtml(p.fechaRegistro || '-') + '</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarOrdenPaciente(' + p.id + ', \'' + ordenEsc + '\')"><i class="bi bi-trash"></i> Eliminar orden</button></td></tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    function configurarFiltrosGestionPacientes() {
+        var buscador = document.getElementById('buscadorGestionPacientes');
+        var fechaFiltro = document.getElementById('fechaFiltroGestionPacientes');
+        if (buscador && buscador.dataset.gestionListo !== 'true') {
+            buscador.dataset.gestionListo = 'true';
+            buscador.addEventListener('input', aplicarFiltrosGestionPacientes);
+        }
+        if (fechaFiltro && fechaFiltro.dataset.gestionListo !== 'true') {
+            fechaFiltro.dataset.gestionListo = 'true';
+            fechaFiltro.addEventListener('input', aplicarFiltrosGestionPacientes);
+            fechaFiltro.addEventListener('change', aplicarFiltrosGestionPacientes);
+        }
+    }
+
+    window.limpiarBusquedaGestionPacientes = function() {
+        var buscador = document.getElementById('buscadorGestionPacientes');
+        var fechaFiltro = document.getElementById('fechaFiltroGestionPacientes');
+        if (buscador) buscador.value = '';
+        if (fechaFiltro) fechaFiltro.value = '';
+        _gestionPacientes.fechaFiltro = '';
+        aplicarFiltrosGestionPacientes();
+    };
+
+    function cargarOrdenesGestion(pacientes) {
+        var lista = (pacientes || []).slice();
+        return Promise.all(lista.map(function(p) {
+            var base = function() {
+                return {
+                    id: p.id,
+                    nombre: p.nombre,
+                    cedula: p.cedula,
+                    orden: String(p.orden || '').padStart(3, '0'),
+                    fechaRegistro: p.fechaRegistro || '',
+                    esActual: true
+                };
+            };
+            if (!window.api || !window.api.obtenerOrdenesArchivadas) return Promise.resolve([base()]);
+            return window.api.obtenerOrdenesArchivadas({ pacienteId: p.id }).then(function(resp) {
+                var registros = [base()];
+                var ordenes = (resp && resp.success && resp.ordenes) ? resp.ordenes : [];
+                ordenes.forEach(function(o) {
+                    registros.push({
+                        id: p.id,
+                        nombre: p.nombre,
+                        cedula: p.cedula,
+                        orden: String(o.orden || '').padStart(3, '0'),
+                        fechaRegistro: o.fecha || '',
+                        esActual: false
+                    });
+                });
+                return registros;
+            }).catch(function() {
+                return [base()];
+            });
+        })).then(function(grupos) {
+            var registros = [];
+            grupos.forEach(function(g) { registros = registros.concat(g); });
+            registros.sort(function(a, b) { return parseInt(a.orden, 10) - parseInt(b.orden, 10); });
+            return registros;
+        });
+    }
+
+    function renderizarListaPacientesModal(recargar) {
+        configurarFiltrosGestionPacientes();
+        var tbody = document.getElementById('tablaGestionPacientes');
+        if (recargar) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Cargando...</td></tr>';
+            cargarPacientes().then(function(pacientes) {
+                return cargarOrdenesGestion(pacientes || []);
+            }).then(function(registros) {
+                _gestionPacientes.todos = registros || [];
+                aplicarFiltrosGestionPacientes();
+            }).catch(function(e) {
+                console.error('[gestionPacientes] Error cargando órdenes:', e);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-3">Error al cargar pacientes.</td></tr>';
+            });
+            return;
+        }
+        aplicarFiltrosGestionPacientes();
+    }
+
+    window.eliminarOrdenPaciente = async function(pacienteId, orden) {
+        var confirmado = await window.Notifications.confirm('¿Está seguro de eliminar la orden #' + orden + '? Se mantendrán las demás órdenes e historial del paciente.');
         if (!confirmado) return;
-        window.api.eliminarPaciente(pacienteId).then(function(r) {
+        window.api.eliminarOrden({ pacienteId: pacienteId, orden: String(orden || '') }).then(function(r) {
             if (r && r.success) {
-                renderizarListaPacientesModal();
+                renderizarListaPacientesModal(true);
                 refrescarPaginaActual();
                 renderizarMetricas();
             } else {
-                console.error('[eliminarPacienteIndividual] Error:', r ? r.error : 'Unknown error');
-                window.Notifications.error('Error al eliminar el paciente: ' + (r ? r.error : 'Unknown error'));
+                console.error('[eliminarOrdenPaciente] Error:', r ? r.error : 'Unknown error');
+                window.Notifications.error('Error al eliminar la orden: ' + (r ? r.error : 'Unknown error'));
             }
         }).catch(function(e) {
-            console.error('[eliminarPacienteIndividual] Error:', e);
-            window.Notifications.error('Error al eliminar el paciente.');
+            console.error('[eliminarOrdenPaciente] Error:', e);
+            window.Notifications.error('Error al eliminar la orden.');
         });
     };
+
+    window.eliminarPacienteIndividual = window.eliminarOrdenPaciente;
 
     window.eliminarTodosPacientes = async function() {
         var confirmado = await window.Notifications.confirm('¿Está seguro de eliminar TODOS los pacientes?\nEsta acción no se puede deshacer.');
         if (!confirmado) return;
         window.api.eliminarTodosPacientes().then(function(r) {
             if (r && r.success) {
-                renderizarListaPacientesModal();
+                renderizarListaPacientesModal(true);
                 refrescarPaginaActual();
                 renderizarMetricas();
             } else {

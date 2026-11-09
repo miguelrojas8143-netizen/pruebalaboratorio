@@ -228,40 +228,35 @@
 
             var nombrePac = pacienteCache ? pacienteCache.nombre : 'este paciente';
             var ordenActual = pacienteCache ? String(pacienteCache.orden || '').padStart(3, '0') : '?';
-            var msgConfirmacion = '¿Desea asignar una nueva orden a ' + nombrePac + '?\n' +
-                'La orden actual #' + ordenActual + ' será archivada y pasará al historial del paciente.\n\n' +
-                '¿Continuar? (No / Sí)';
+
+            var examenesConResultados = [];
+            if (pacienteCache && window.tieneResultadosEnExamenes(pacienteCache.examenes)) {
+                examenesConResultados = (pacienteCache.examenes || []).filter(function(e) {
+                    return window.tieneResultadosEnExamenes([e]);
+                });
+            }
+
+            var nuevoTemp = calcularProximaOrden();
+            var msg = '¿Desea asignar una nueva orden a ' + nombrePac + '?\n\n' +
+                'La orden actual #' + ordenActual + ' será archivada y pasará al historial del paciente.\n\n';
+            if (examenesConResultados.length > 0) {
+                msg += 'La orden tiene ' + examenesConResultados.length + ' examen(es) con resultados.\n\n' +
+                    'Al continuar se generará la nueva orden #' + nuevoTemp + ' y se redirigirá automáticamente.';
+            } else {
+                msg += 'Se generará la nueva orden #' + nuevoTemp + ' y se redirigirá automáticamente.';
+            }
+            msg += '\n\n¿Continuar?';
 
             var confirmPromise = window.confirmar ?
-                window.confirmar(msgConfirmacion) :
-                window.Notifications.confirm(msgConfirmacion);
+                window.confirmar(msg) :
+                window.Notifications.confirm(msg);
 
             confirmPromise.then(function(proceed) {
                 if (!proceed) {
                     resolve(null);
                     return;
                 }
-
-                if (pacienteCache && window.tieneResultadosEnExamenes(pacienteCache.examenes)) {
-                    var ordenAnterior = String(pacienteCache.orden || '').padStart(3, '0');
-                    var examenesConResultados = (pacienteCache.examenes || []).filter(function(e) {
-                        return window.tieneResultadosEnExamenes([e]);
-                    });
-                    var nuevoTemp = calcularProximaOrden();
-                    var msg = 'La orden #' + ordenAnterior + ' tiene ' + examenesConResultados.length +
-                        ' examen(es) con resultados.\n\n' +
-                        'Al continuar pasará al Historial del paciente y se generará una nueva orden #' + nuevoTemp + '.\n\n' +
-                        '¿Desea continuar?';
-                    window.Notifications.confirm(msg).then(function(seguir) {
-                        if (!seguir) {
-                            resolve(null);
-                            return;
-                        }
-                        crearVisitaYResolverse();
-                    });
-                } else {
-                    crearVisitaYResolverse();
-                }
+                crearVisitaYResolverse();
             });
 
             function crearVisitaYResolverse() {
