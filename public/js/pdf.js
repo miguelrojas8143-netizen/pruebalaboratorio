@@ -130,12 +130,32 @@
     }
 
     /* ---------- Clasificación de resultados ----------*/
-    function clasificarResultado(examen) {
+    function rangoAdultoDeReferencia(refTexto, categoriaRef) {
+        if (categoriaRef !== 'adultas' || !refTexto) return null;
+
+        var referenciaAdulto = String(refTexto).match(/(?:^|[;|])\s*adult[oa]s?\s*:?\s*([^;|]*)/i);
+        if (!referenciaAdulto) return null;
+
+        var expresionRango = /(-?\d+(?:[.,]\d+)?)\s*(?:-|–|—|a)\s*(-?\d+(?:[.,]\d+)?)/gi;
+        var coincidencia = expresionRango.exec(referenciaAdulto[1]);
+        if (!coincidencia || expresionRango.exec(referenciaAdulto[1])) return null;
+
+        var minimo = Number(coincidencia[1].replace(',', '.'));
+        var maximo = Number(coincidencia[2].replace(',', '.'));
+        if (!Number.isFinite(minimo) || !Number.isFinite(maximo) || minimo > maximo) return null;
+        return { refMin: minimo, refMax: maximo };
+    }
+
+    function clasificarResultado(examen, categoriaRef) {
         var tieneResultado = String(examen.resultado ?? '').trim() !== '';
         var numResultado = parseFloat(examen.resultado);
         var clase = 'resultado-normal-texto';
         var indicador = '';
         var texto = '-';
+        var indicadorExtremo = '';
+        var rangoAdulto = rangoAdultoDeReferencia(examen.refTexto, categoriaRef);
+        var refMin = rangoAdulto ? rangoAdulto.refMin : examen.refMin;
+        var refMax = rangoAdulto ? rangoAdulto.refMax : examen.refMax;
 
         if (examen.tipo === 'multiselect_cantidad') {
             clase = '';
@@ -161,21 +181,41 @@
             if (examen.tipo === 'texto' || examen.tipo === 'seleccion_unica') {
                 clase = '';
             } else if (tieneResultado && !isNaN(numResultado)) {
-                if (numResultado < examen.refMin) {
+                if (refMin != null && refMax != null) {
+                    var rango = refMax - refMin;
+                    var limiteInferiorExtremo = refMin - rango;
+                    var limiteSuperiorExtremo = refMax + rango;
+
+                    if (numResultado < refMin) {
+                        clase = 'resultado-bajo-texto';
+                        indicador = 'bajo';
+                        if (numResultado <= limiteInferiorExtremo) {
+                            indicadorExtremo = 'VE';
+                            clase = 'resultado-ve-texto';
+                        }
+                    } else if (numResultado > refMax) {
+                        clase = 'resultado-alto-texto';
+                        indicador = 'alto';
+                        if (numResultado >= limiteSuperiorExtremo) {
+                            indicadorExtremo = 'VE';
+                            clase = 'resultado-ve-texto';
+                        }
+                    }
+                } else if (numResultado < refMin) {
                     clase = 'resultado-bajo-texto';
                     indicador = 'bajo';
-                } else if (numResultado > examen.refMax) {
+                } else if (numResultado > refMax) {
                     clase = 'resultado-alto-texto';
                     indicador = 'alto';
                 }
             }
         }
 
-        return { texto: texto, clase: clase, indicador: indicador };
+        return { texto: texto, clase: clase, indicador: indicador, indicadorExtremo: indicadorExtremo };
     }
 
-    function clasificarFila(examen) {
-        var r = clasificarResultado(examen);
+    function clasificarFila(examen, categoriaRef) {
+        var r = clasificarResultado(examen, categoriaRef);
         var refTexto = examen.refTexto ||
             ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
                 ? examen.refMin + ' - ' + examen.refMax : '-');
@@ -186,14 +226,17 @@
             texto: valorImprimible(r.texto),
             clase: r.clase,
             indicador: r.indicador,
+            indicadorExtremo: r.indicadorExtremo,
             unidad: valorImprimible(examen.unidad),
             refTexto: valorImprimible(refTexto),
             esSecrecionVaginal: examen.area === 'Secreción Vaginal'
         };
     }
 
-    function clasificarFilas(examenes) {
-        return examenes.map(clasificarFila);
+    function clasificarFilas(examenes, categoriaRef) {
+        return examenes.map(function(examen) {
+            return clasificarFila(examen, categoriaRef);
+        });
     }
 
     function dibujarIndicadorDireccion(doc, indicador, x, y) {
@@ -392,7 +435,7 @@
             if (area === 'Uroanálisis') {
                 var gruposU = window.agruparUroanalisisPorGrupo(porArea[area]);
                 Object.keys(gruposU).forEach(function(grupo) {
-                    subareas.push({ titulo: grupo, rows: clasificarFilas(gruposU[grupo]) });
+                    subareas.push({ titulo: grupo, rows: clasificarFilas(gruposU[grupo], categoriaRef) });
                 });
             } else if (area === 'Secreción Vaginal') {
                 var examenesSV = porArea[area];
@@ -400,24 +443,24 @@
                 var examenesSVGraficar = examenesSV.filter(function(e) { return e.id !== 'notas_frotis'; });
                 var gruposSV = window.agruparSecrecionVaginalPorGrupo(examenesSVGraficar);
                 Object.keys(gruposSV).forEach(function(grupo) {
-                    subareas.push({ titulo: grupo, rows: clasificarFilas(gruposSV[grupo]) });
+                    subareas.push({ titulo: grupo, rows: clasificarFilas(gruposSV[grupo], categoriaRef) });
                 });
                 if (notasFrotis && String(notasFrotis.resultado || '').trim() !== '') {
                     subareas.push({ notas: notasFrotis.resultado || '' });
                 }
             } else if (area === 'Hematología') {
                 var sep = window.separarVSG(porArea[area]);
-                if (sep.otros.length) subareas.push({ rows: clasificarFilas(sep.otros) });
+                if (sep.otros.length) subareas.push({ rows: clasificarFilas(sep.otros, categoriaRef) });
                 filasVSG = sep.vsg;
             } else {
-                subareas.push({ rows: clasificarFilas(porArea[area]) });
+                subareas.push({ rows: clasificarFilas(porArea[area], categoriaRef) });
             }
 
             if (subareas.length) secciones.push({ nombre: area, subareas: subareas });
             if (filasVSG.length) {
                 secciones.push({
                     nombre: 'V.S.G. 1 Hora',
-                    subareas: [{ rows: clasificarFilas(filasVSG) }]
+                    subareas: [{ rows: clasificarFilas(filasVSG, categoriaRef) }]
                 });
             }
         });
@@ -971,31 +1014,40 @@
             y += 4;
         }
 
-        function escribirFila(resultado) {
-            var tieneIndicador = resultado.indicador === 'alto' || resultado.indicador === 'bajo';
-            var columnaResultado = tieneIndicador
-                ? { x: columnas.resultado.x + 4, ancho: columnas.resultado.ancho - 4 }
-                : columnas.resultado;
-            var nombre = textoCelda(resultado.nombre || 'Examen', columnas.prueba);
-            var valor = textoCelda(resultado.resultado, columnaResultado);
-            var referencia = textoCelda(resultado.referencia, columnas.referencia);
-            var alto = Math.max(nombre.length, valor.length, referencia.length) * altoLinea + 1.5;
-            if (y + alto > pageHeight - margenInferior) {
-                y = nuevaPagina();
-                escribirEncabezados();
-            }
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
-            doc.setTextColor(25, 25, 25);
-            if (tieneIndicador) {
-                dibujarIndicadorDireccion(doc, resultado.indicador, columnas.resultado.x, y);
-            }
-            doc.text(nombre, columnas.prueba.x, y, { lineHeightFactor: 0.9 });
-            doc.text(valor, columnaResultado.x, y, { lineHeightFactor: 0.9 });
-            doc.text(referencia, columnas.referencia.x, y, { lineHeightFactor: 0.9 });
-            y += alto;
+function escribirFila(resultado) {
+        var tieneIndicador = resultado.indicador === 'alto' || resultado.indicador === 'bajo' || resultado.indicadorExtremo === 'VE';
+        var columnaResultado = tieneIndicador
+            ? { x: columnas.resultado.x + 4, ancho: columnas.resultado.ancho - 4 }
+            : columnas.resultado;
+        var nombre = textoCelda(resultado.nombre || 'Examen', columnas.prueba);
+        var valor = textoCelda(resultado.resultado, columnaResultado);
+        var referencia = textoCelda(resultado.referencia, columnas.referencia);
+        var alto = Math.max(nombre.length, valor.length, referencia.length) * altoLinea + 1.5;
+        if (y + alto > pageHeight - margenInferior) {
+            y = nuevaPagina();
+            escribirEncabezados();
         }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(25, 25, 25);
+        if (resultado.indicador === 'alto' || resultado.indicador === 'bajo') {
+            dibujarIndicadorDireccion(doc, resultado.indicador, columnas.resultado.x, y);
+        }
+        if (resultado.indicadorExtremo === 'VE') {
+            var veX = columnas.resultado.x + (resultado.indicador === 'alto' || resultado.indicador === 'bajo' ? 4 : 0);
+            doc.setFontSize(6);
+            doc.setTextColor(220, 53, 69);
+            doc.setFont('helvetica', 'bold');
+            doc.text('VE', veX, y - 0.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(25, 25, 25);
+        }
+        doc.text(nombre, columnas.prueba.x, y, { lineHeightFactor: 0.9 });
+        doc.text(valor, columnaResultado.x, y, { lineHeightFactor: 0.9 });
+        doc.text(referencia, columnas.referencia.x, y, { lineHeightFactor: 0.9 });
+        y += alto;
+    }
 
         function escribirTitulo() {
             if (y + 12 > pageHeight - margenInferior) y = nuevaPagina();
