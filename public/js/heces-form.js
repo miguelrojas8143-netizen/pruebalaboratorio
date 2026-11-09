@@ -166,7 +166,7 @@
 
         var ordenGrupos = [
             'Examen Macroscópico',
-            'Examen Microscópico'
+            'Examen Microscópico',
         ];
         grupos.sort(function(a, b) {
             var indiceA = ordenGrupos.indexOf(a.nombre);

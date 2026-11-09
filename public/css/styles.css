@@ -718,6 +718,29 @@ td.grupo-header-clickable:hover {
 /* Mensaje centrado cuando no hay exámenes en la orden */
 .sin-examenes { text-align: center; padding: 40px; color: #6c757d; }
 
+/* Botones de acción de examen: transición suave de color según estado de resultados */
+.examen-action-btn {
+    transition: all 0.3s ease;
+}
+.examen-action-btn.has-results {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    color: #fff !important;
+}
+.examen-action-btn.has-results:hover {
+    background-color: #157347 !important;
+    border-color: #146c43 !important;
+}
+.examen-action-btn:not(.has-results) {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #fff !important;
+}
+.examen-action-btn:not(.has-results):hover {
+    background-color: #0b5ed7 !important;
+    border-color: #0a58ca !important;
+}
+
 /* ============================================================
    FORMULARIO DE HECES (vista Orden)
    ============================================================ */
