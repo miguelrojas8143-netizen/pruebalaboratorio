@@ -51,7 +51,8 @@
         if (migrado) {
             try {
                 var ordenActual = window.getOrden ? window.getOrden() : '';
-                if (window.pacienteActivo && window.pacienteActivo.orden === ordenActual) {
+                if (window.pacienteActivo && !window.pacienteActivo.esArchivada &&
+                    window.pacienteActivo.orden === ordenActual) {
                     window.pacienteActivo.examenes = examenes;
                     if (window.api && window.api.guardarPacienteExamenes) {
                         window.api.guardarPacienteExamenes(ordenActual, examenes).catch(function(e) {
@@ -75,6 +76,13 @@
             }
             var paciente = result.paciente;
             var examenesGuardados = (result.examenes || []).map(function(e) {
+                if (paciente.esArchivada) {
+                    return Object.assign({}, e, {
+                        id: e.examen_id || e.id || e.nombre_examen,
+                        nombre: e.nombre_examen || e.nombre || '',
+                        resultado: e.resultado || ''
+                    });
+                }
                 return {
                     id: e.examen_id || e.id || e.nombre_examen,
                     examen_id: e.examen_id || e.id || null,
@@ -109,7 +117,7 @@
                     examen.refTexto = catalogoExamen.refTexto;
                 }
             });
-            window.migrarExamenesOrina(window.examenesOrden);
+            if (!paciente.esArchivada) window.migrarExamenesOrina(window.examenesOrden);
             var chkRef = document.getElementById('refAdaptadas');
             if (chkRef) {
                 chkRef.checked = !!paciente.refAdaptadas;
@@ -512,7 +520,6 @@
             });
             $('#selectorExamenes').val(null).trigger('change');
             renderizarTablaExamenes();
-            window.abrirFormularioTipoSanguineo();
             return;
         }
         if (window.App.perfiles[examenId]) {
@@ -603,9 +610,6 @@
         window.examenesOrden.push(nuevoExamen);
         $('#selectorExamenes').val(null).trigger('change');
         renderizarTablaExamenes();
-        if (examenId === 'antibiograma') {
-            window.abrirFormularioAntibiograma(examenId);
-        }
     };
 
     function _debounceValidarYCalcular(input) {
@@ -751,6 +755,9 @@
             return !ids.has(String(examen.id || '')) &&
                 !nombres.has(String(examen.nombre || '').trim().toLocaleLowerCase());
         });
+        if (window.pacienteActivo) {
+            window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
+        }
         if (window.pacienteActivo && Array.isArray(window.pacienteActivo.historial)) {
             window.pacienteActivo.historial = window.pacienteActivo.historial.filter(function(registro) {
                 var nombre = String(
@@ -902,9 +909,15 @@
         }
         try {
             if (window.examenesOrden && window.examenesOrden.length > 0) {
-                await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+                var examenesGuardados = await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+                if (!examenesGuardados || !examenesGuardados.success) {
+                    throw new Error((examenesGuardados && examenesGuardados.error) || 'No se pudieron guardar los exámenes.');
+                }
             }
-            await window.api.guardarRefAdaptadas(orden, window.pacienteActivo.refAdaptadas || false);
+            var referenciasGuardadas = await window.api.guardarRefAdaptadas(orden, window.pacienteActivo.refAdaptadas || false);
+            if (!referenciasGuardadas || !referenciasGuardadas.success) {
+                throw new Error((referenciasGuardadas && referenciasGuardadas.error) || 'No se pudieron guardar las referencias.');
+            }
             var historialExistente = window.pacienteActivo.historial || [];
             var fechaHoy = new Date().toLocaleDateString('es-ES');
             var nuevasEntradas = examenesConResultado.map(function(examen) {
@@ -925,9 +938,15 @@
             });
             var historialCombinado = historialExistente.concat(nuevasEntradas);
             window.pacienteActivo.historial = historialCombinado;
-            await window.api.guardarHistorialPaciente(orden, historialCombinado);
+            var historialGuardado = await window.api.guardarHistorialPaciente(orden, historialCombinado);
+            if (!historialGuardado || !historialGuardado.success) {
+                throw new Error((historialGuardado && historialGuardado.error) || 'No se pudo guardar el historial.');
+            }
+            window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
             if (examenesConResultado.length === 0) {
                 window.Notifications.warning('Orden guardada sin resultados ingresados.');
+            } else if (window.pacienteActivo.esArchivada) {
+                window.Notifications.success('Resultados de la orden archivada actualizados.');
             }
         } catch (err) {
             console.error('[guardarResultados] Error:', err);
@@ -946,14 +965,24 @@
             return;
         }
         try {
-            await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
-            await window.api.guardarRefAdaptadas(orden, window.pacienteActivo.refAdaptadas || false);
+            var examenesGuardados = await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+            if (!examenesGuardados || !examenesGuardados.success) {
+                throw new Error((examenesGuardados && examenesGuardados.error) || 'No se pudieron guardar los exámenes.');
+            }
+            var referenciasGuardadas = await window.api.guardarRefAdaptadas(orden, window.pacienteActivo.refAdaptadas || false);
+            if (!referenciasGuardadas || !referenciasGuardadas.success) {
+                throw new Error((referenciasGuardadas && referenciasGuardadas.error) || 'No se pudieron guardar las referencias.');
+            }
             if (window.pacienteActivo) {
                 window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
                 window.pacienteActivo.refAdaptadas = window.pacienteActivo.refAdaptadas || false;
             }
-            window.Notifications.success('Solicitud guardada. En espera de resultados.');
-            window.location.href = '../index.html';
+            if (window.pacienteActivo && window.pacienteActivo.esArchivada) {
+                window.Notifications.success('Orden archivada actualizada. Puede continuar editándola.');
+            } else {
+                window.Notifications.success('Solicitud guardada. En espera de resultados.');
+                window.location.href = '../index.html';
+            }
         } catch (err) {
             console.error('[guardarSolicitud] Error:', err);
             window.Notifications.error('Error al guardar la solicitud: ' + err.message);

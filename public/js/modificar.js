@@ -51,7 +51,7 @@
             var resp = await window.api.obtenerPacientesCompletos();
             if (resp.success) {
                 var existente = resp.pacientes.find(function(p) {
-                    return p.orden !== paciente.orden && (p.cedula || '') === cedula;
+                    return String(p.id) !== String(paciente.id) && (p.cedula || '') === cedula;
                 });
                 if (existente) {
                     window.Notifications.error('La cédula ' + cedula + ' ya está registrada para otro paciente (' + existente.nombre + ').');

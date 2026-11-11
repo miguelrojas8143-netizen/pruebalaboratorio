@@ -73,7 +73,7 @@
         
              <div class="col-md-2">
             <div class="d-flex gap-2 mt-2">
-                <button class="btn btn-dark btn-sm" onclick="window.location.href='modificar.html?orden='+window.getOrden()">
+                <button class="btn btn-dark btn-sm" id="btnEditarPaciente" onclick="window.location.href='modificar.html?orden='+window.getOrden()">
                     <i class="bi bi-pencil-square me-1"></i> Editar
                 </button>
                 <button class="btn btn-info btn-sm text-white" onclick="window.location.href='historial.html?id='+window.pacienteActivo.id">
@@ -81,14 +81,14 @@
                 </button>
                 <button class="btn btn-success btn-sm text-white" id="btnNuevaVisita"
                         onclick="window.iniciarNuevaVisita()">
-                    <i class="bi bi-plus-circle me-1"></i> Nueva Visita
+                    <i class="bi bi-plus-circle me-1"></i> Nueva Orden
                 </button>
             </div>
         </div>
    </div>
    <div class="row g-4">
             <div class="col-lg-5">
-                <div class="card shadow-sm mb-4">
+                <div class="card shadow-sm mb-4" id="panelAgregarExamenes">
                     <div class="card-header">
                         <i class="bi bi-plus-circle me-2"></i> Agregar Exámenes a la Orden
                     </div>
@@ -143,12 +143,12 @@
                         </div>
                     </div>
                 <div class="card-footer bg-light">
-                  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                     <button class="btn btn-outline-secondary" onclick="limpiarOrden()">
+                  <div class="d-grid gap-2 d-md-flex justify-content-md-end" id="accionesOrden">
+                   <button class="btn btn-outline-secondary" id="btnLimpiarOrden" onclick="limpiarOrden()">
                         <i class="bi bi-trash me-1"></i> Limpiar Orden  </button>
-                             <button class="btn btn-outline-primary" onclick="guardarSolicitud()">
+                             <button class="btn btn-outline-primary" id="btnGuardarSolicitud" onclick="guardarSolicitud()">
                                <i class="bi bi-clipboard-check me-1"></i> Guardar solisitud </button>
-                                  <button class="btn btn-primary" onclick="guardarResultados()">
+                                  <button class="btn btn-primary" id="btnGuardarResultados" onclick="guardarResultados()">
                                     <i class="bi bi-save me-1"></i> Guardar Resultados </button>
                                         <button class="btn btn-success" onclick="abrirModalSeleccionImpresion()">
                                             <i class="bi bi-printer me-1"></i>Imprimir</button>

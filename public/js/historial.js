@@ -76,10 +76,16 @@
                 '<td>' + escapeHtml(registro.fecha || '-') + '</td>' +
                 '<td class="text-center">' + (registro.paciente.visitas || 1) + '</td>' +
                 '<td class="text-center"><span class="badge ' + registro.estado.clase + '">' + registro.estado.texto + '</span></td>' +
-                '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-success historial-imprimir-btn" ' +
-                    'onclick="window.imprimirOrdenPaciente(' + registro.paciente.id + ', ' + registro.ordenIndex + ')" ' +
-                    'title="Seleccionar exámenes para imprimir" aria-label="Seleccionar exámenes para imprimir">' +
-                    '<i class="bi bi-printer"></i></button></td>' +
+                '<td class="text-center"><div class="btn-group btn-group-sm" role="group">' +
+                    '<button type="button" class="btn btn-outline-success historial-imprimir-btn" ' +
+                        'onclick="window.imprimirOrdenPaciente(' + registro.paciente.id + ', ' + registro.ordenIndex + ')" ' +
+                        'title="Seleccionar exámenes para imprimir" aria-label="Seleccionar exámenes para imprimir">' +
+                        '<i class="bi bi-printer"></i></button>' +
+                    '<a class="btn btn-outline-primary historial-ir-orden-btn" ' +
+                        'href="orden.html?orden=' + encodeURIComponent(registro.orden) + '" title="Ir a orden'+
+                         '" aria-label="Ir a orden #' + escapeHtml(registro.orden) + '">' +
+                        '<i class="bi bi-arrow-right-circle"></i></a>' +
+                    '</div></td>' +
                 '</tr>';
         }).join('');
     }

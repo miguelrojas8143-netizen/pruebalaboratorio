@@ -307,6 +307,16 @@
             var badgeEstado = window.textoEstado(estado);
             var fila = document.createElement('tr');
             fila.innerHTML = '<td><span class="badge bg-primary badge-orden">#' + p.orden + '</span></td><td class="fw-semibold">' + p.nombre + '</td><td>' + (p.cedula ? p.cedula : '<span class="text-muted">N/A</span>') + '</td><td class="text-center"><span class="badge ' + badgeEstado.clase + '">' + badgeEstado.texto + '</span></td><td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="window.location.href=\'vistas/orden.html?orden=' + p.orden + '\'"><i class="bi bi-arrow-right-circle me-1"></i> Cargar Exámenes</button></td>';
+            var botonEliminar = document.createElement('button');
+            botonEliminar.type = 'button';
+            botonEliminar.className = 'btn btn-sm btn-outline-danger ms-2';
+            botonEliminar.title = 'Eliminar orden';
+            botonEliminar.setAttribute('aria-label', 'Eliminar orden #' + p.orden);
+            botonEliminar.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+            botonEliminar.addEventListener('click', function() {
+                window.eliminarOrdenPaciente(p.id, p.orden);
+            });
+            fila.querySelector('td:last-child').appendChild(botonEliminar);
             tbody.appendChild(fila);
         });
     }

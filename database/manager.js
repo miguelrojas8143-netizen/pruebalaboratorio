@@ -135,17 +135,40 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
     );
     ipcMain.handle('actualizar-paciente', (event, paciente) => {
         try {
-            const info = updatePacienteStmt.run(
+            const valores = [
                 paciente.nombre,
                 paciente.cedula || null,
                 paciente.edad || null,
                 paciente.sexo || null,
                 paciente.fechaNac || null,
-                paciente.telefono || null,
-                paciente.orden
-            );
+                paciente.telefono || null
+            ];
+            let info;
+            if (paciente.esArchivada && paciente.id) {
+                info = db.prepare(
+                    'UPDATE pacientes SET nombre = ?, cedula = ?, edad = ?, sexo = ?, fechaNac = ?, telefono = ? WHERE id = ?'
+                ).run(
+                    paciente.nombre,
+                    paciente.cedula || null,
+                    paciente.edad || null,
+                    paciente.sexo || null,
+                    paciente.fechaNac || null,
+                    paciente.telefono || null,
+                    paciente.id
+                );
+            } else {
+                info = updatePacienteStmt.run(
+                    paciente.nombre,
+                    paciente.cedula || null,
+                    paciente.edad || null,
+                    paciente.sexo || null,
+                    paciente.fechaNac || null,
+                    paciente.telefono || null,
+                    paciente.orden
+                );
+            }
             if (info.changes === 0) {
-                return { success: false, error: 'Paciente no encontrado con orden: ' + paciente.orden };
+                return { success: false, error: 'Paciente no encontrado para la orden: ' + paciente.orden };
             }
             return { success: true, changes: info.changes };
         } catch (err) {
@@ -168,9 +191,27 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
     const selectExamenesStmt = db.prepare(
         'SELECT id, orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia FROM paciente_examenes WHERE orden_paciente = ?'
     );
+    function obtenerOrdenArchivada(orden) {
+        return db.prepare(
+            'SELECT * FROM ordenes_archivadas WHERE orden = ? ORDER BY id DESC LIMIT 1'
+        ).get(String(orden || '').padStart(3, '0'));
+    }
+
+    function actualizarExamenesArchivados(orden, examenes) {
+        const archivada = obtenerOrdenArchivada(orden);
+        if (!archivada) return null;
+        const actualizados = db.prepare(
+            'UPDATE ordenes_archivadas SET examenes = ? WHERE id = ?'
+        ).run(JSON.stringify(examenes || []), archivada.id);
+        return actualizados.changes;
+    }
 
     ipcMain.handle('guardar-examenes-paciente', (event, data) => {
         try {
+            if (obtenerOrdenArchivada(data.orden)) {
+                actualizarExamenesArchivados(data.orden, data.examenes);
+                return { success: true };
+            }
             guardarExamenesPaciente(db, data.orden, data.examenes || []);
             return { success: true };
         } catch (err) {
@@ -180,6 +221,13 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
 
     ipcMain.handle('obtener-examenes-paciente', (event, { orden }) => {
         try {
+            const archivada = obtenerOrdenArchivada(orden);
+            if (archivada) {
+                return {
+                    success: true,
+                    examenes: archivada.examenes ? JSON.parse(archivada.examenes) : []
+                };
+            }
             const examenes = selectExamenesStmt.all(orden);
             return { success: true, examenes: mapearExamenesGuardados(db, examenes) };
         } catch (err) {
@@ -233,7 +281,33 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
                 paciente = db.prepare('SELECT * FROM pacientes WHERE orden = ?').get(String(orden));
             }
             if (!paciente) {
-                return { success: false, error: 'Paciente no encontrado', paciente: null };
+                var ordenArchivada = db.prepare(
+                    'SELECT oa.*, p.id, p.nombre, p.cedula, p.edad, p.sexo, p.fechaNac, p.telefono, p.visitas ' +
+                    'FROM ordenes_archivadas oa JOIN pacientes p ON p.id = oa.paciente_id ' +
+                    'WHERE oa.orden = ? ORDER BY oa.id DESC LIMIT 1'
+                ).get(ordenStr);
+                if (!ordenArchivada) {
+                    return { success: false, error: 'Paciente no encontrado', paciente: null };
+                }
+                var examenesArchivados = ordenArchivada.examenes ? JSON.parse(ordenArchivada.examenes) : [];
+                var pacienteArchivado = {
+                    id: ordenArchivada.paciente_id,
+                    orden: String(ordenArchivada.orden || '').padStart(3, '0'),
+                    nombre: ordenArchivada.nombre,
+                    cedula: ordenArchivada.cedula,
+                    edad: ordenArchivada.edad,
+                    sexo: ordenArchivada.sexo,
+                    fechaNac: ordenArchivada.fechaNac,
+                    telefono: ordenArchivada.telefono,
+                    fechaRegistro: ordenArchivada.fecha,
+                    visitas: ordenArchivada.visitas || 1,
+                    refAdaptadas: !!ordenArchivada.refAdaptadas,
+                    perfiles: ordenArchivada.perfiles ? JSON.parse(ordenArchivada.perfiles) : [],
+                    historial: ordenArchivada.historial ? JSON.parse(ordenArchivada.historial) : [],
+                    examenes: examenesArchivados,
+                    esArchivada: true
+                };
+                return { success: true, paciente: pacienteArchivado, examenes: examenesArchivados };
             }
             var examenes = selectExamenesStmt.all(ordenStr);
             var historial = selectHistorialStmt.all(ordenStr);
@@ -242,7 +316,8 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
                 refAdaptadas: !!paciente.refAdaptadas,
                 perfiles: paciente.perfiles ? JSON.parse(paciente.perfiles) : [],
                 historial: historial,
-                visitas: paciente.visitas || 1
+                visitas: paciente.visitas || 1,
+                esArchivada: false
             });
             return { success: true, paciente: pacienteCompleto, examenes: pacienteCompleto.examenes };
         } catch (err) {
@@ -356,6 +431,10 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
 
     ipcMain.handle('guardar-paciente-examenes', (event, data) => {
         try {
+            if (obtenerOrdenArchivada(data.orden)) {
+                actualizarExamenesArchivados(data.orden, data.examenes);
+                return { success: true };
+            }
             guardarExamenesPaciente(db, data.orden, data.examenes || []);
             return { success: true };
         } catch (err) {
@@ -365,6 +444,31 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
 
     ipcMain.handle('eliminar-examenes-paciente', (event, data) => {
         try {
+            const archivada = obtenerOrdenArchivada(data.orden);
+            if (archivada) {
+                const examenes = archivada.examenes ? JSON.parse(archivada.examenes) : [];
+                const ids = new Set((data.examenes || []).map(function(examen) {
+                    return String(examen.id || examen.examen_id || '');
+                }));
+                const nombres = new Set((data.examenes || []).map(function(examen) {
+                    return String(examen.nombre || examen.nombre_examen || '').trim().toLocaleLowerCase();
+                }).filter(Boolean));
+                const restantes = examenes.filter(function(examen) {
+                    return !ids.has(String(examen.id || examen.examen_id || '')) &&
+                        !nombres.has(String(examen.nombre || examen.nombre_examen || '').trim().toLocaleLowerCase());
+                });
+                actualizarExamenesArchivados(data.orden, restantes);
+                const historial = archivada.historial ? JSON.parse(archivada.historial) : [];
+                const historialRestante = historial.filter(function(registro) {
+                    const nombre = String(
+                        registro.examen_completo || registro.examen || registro.nombre_examen || registro.nombre || ''
+                    ).trim().toLocaleLowerCase();
+                    return !nombres.has(nombre);
+                });
+                db.prepare('UPDATE ordenes_archivadas SET historial = ? WHERE id = ?')
+                    .run(JSON.stringify(historialRestante), archivada.id);
+                return { success: true, eliminados: examenes.length - restantes.length };
+            }
             const eliminados = eliminarExamenesPaciente(db, data.orden, data.examenes);
             return { success: true, eliminados: eliminados };
         } catch (err) {
@@ -374,6 +478,12 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
 
     ipcMain.handle('guardar-ref-adaptadas', (event, { orden, refAdaptadas }) => {
         try {
+            const archivada = obtenerOrdenArchivada(orden);
+            if (archivada) {
+                db.prepare('UPDATE ordenes_archivadas SET refAdaptadas = ? WHERE id = ?')
+                    .run(refAdaptadas ? 1 : 0, archivada.id);
+                return { success: true };
+            }
             db.prepare('UPDATE pacientes SET refAdaptadas = ? WHERE orden = ?').run(refAdaptadas ? 1 : 0, orden);
             return { success: true };
         } catch (err) {
@@ -383,6 +493,12 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
 
     ipcMain.handle('guardar-historial-paciente', (event, data) => {
         try {
+            const archivada = obtenerOrdenArchivada(data.orden);
+            if (archivada) {
+                db.prepare('UPDATE ordenes_archivadas SET historial = ? WHERE id = ?')
+                    .run(JSON.stringify(data.historial || []), archivada.id);
+                return { success: true };
+            }
             guardarHistorialPaciente(db, data.orden, data.historial || []);
             return { success: true };
         } catch (err) {
