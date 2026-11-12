@@ -61,6 +61,7 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
             examen_id TEXT,
             idresultado TEXT,
             referencia TEXT,
+            grupo_perfil TEXT,
             FOREIGN KEY(orden_paciente) REFERENCES pacientes(orden)
         )
     `);
@@ -189,7 +190,7 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
         'SELECT id, orden, nombre, cedula, edad, sexo, fechaNac, telefono, fechaRegistro, refAdaptadas, perfiles, historial, visitas FROM pacientes WHERE orden = ?'
     );
     const selectExamenesStmt = db.prepare(
-        'SELECT id, orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia FROM paciente_examenes WHERE orden_paciente = ?'
+        'SELECT id, orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia, grupo_perfil FROM paciente_examenes WHERE orden_paciente = ?'
     );
     function obtenerOrdenArchivada(orden) {
         return db.prepare(

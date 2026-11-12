@@ -412,8 +412,8 @@ function guardarExamenesPaciente(db, orden, examenes) {
     const eliminar = db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?');
     const insertar = db.prepare(`
         INSERT INTO paciente_examenes
-            (orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia)
-        VALUES (?, ?, ?, ?, ?, ?)
+            (orden_paciente, nombre_examen, resultado, examen_id, idresultado, referencia, grupo_perfil)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
     const guardar = db.transaction(function() {
@@ -452,7 +452,8 @@ function guardarExamenesPaciente(db, orden, examenes) {
                     examen.resultado == null ? '' : String(examen.resultado),
                     examenId || null,
                     null,
-                    null
+                    null,
+                    examen.grupoPerfil || null
                 );
                 continue;
             }
@@ -479,7 +480,8 @@ function guardarExamenesPaciente(db, orden, examenes) {
                     observaciones,
                     examenId,
                     '__observaciones',
-                    null
+                    null,
+                    examen.grupoPerfil || null
                 );
             }
             parametros.forEach(function(parametro) {
@@ -491,7 +493,8 @@ function guardarExamenesPaciente(db, orden, examenes) {
                     resultado == null ? '' : String(resultado),
                     examenId,
                     parametro.codigo,
-                    referencia == null ? null : String(referencia)
+                    referencia == null ? null : String(referencia),
+                    examen.grupoPerfil || null
                 );
             });
         }
@@ -590,6 +593,7 @@ function mapearExamenesGuardados(db, filas) {
                 examen_id: examenId,
                 nombre: nombre,
                 nombre_examen: nombre,
+                grupoPerfil: fila.grupo_perfil || null,
                 valores: {},
                 referencias: {}
             };
@@ -633,6 +637,7 @@ function mapearExamenesGuardados(db, filas) {
             examen_id: fila.examen_id || null,
             nombre: nombre,
             nombre_examen: nombre,
+            grupoPerfil: fila.grupo_perfil || null,
             resultado: fila.resultado || ''
         });
     });
@@ -647,6 +652,7 @@ function mapearExamenesGuardados(db, filas) {
             examen_id: entrada.examen_id,
             nombre: entrada.nombre,
             nombre_examen: entrada.nombre_examen,
+            grupoPerfil: entrada.grupoPerfil,
             resultado: JSON.stringify(entrada.valores)
         };
     });
@@ -759,6 +765,7 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     asegurarColumna(db, 'paciente_examenes', 'examen_id', 'TEXT');
     asegurarColumna(db, 'paciente_examenes', 'idresultado', 'TEXT');
     asegurarColumna(db, 'paciente_examenes', 'referencia', 'TEXT');
+    asegurarColumna(db, 'paciente_examenes', 'grupo_perfil', 'TEXT');
     asegurarColumna(db, 'historial_examenes', 'idresultado', 'TEXT');
     asegurarColumna(db, 'historial_examenes', 'referencia', 'TEXT');
 

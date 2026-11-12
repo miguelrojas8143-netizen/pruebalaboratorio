@@ -87,6 +87,7 @@
                     id: e.examen_id || e.id || e.nombre_examen,
                     examen_id: e.examen_id || e.id || null,
                     nombre: e.nombre_examen || e.nombre || '',
+                    grupoPerfil: e.grupoPerfil || null,
                     resultado: e.resultado || ''
                 };
             });
@@ -131,6 +132,7 @@
             window.refrescarSelect2Catalogos();
             renderizarTablaExamenes();
             inicializarDelegadosResultados();
+            inicializarNavegacionTabResultados();
             renderizarHistorial();
 
             var alertaSinGuardar = document.getElementById('alertSinGuardar');
@@ -361,6 +363,8 @@
         return window.examenTieneResultados(examen);
     }
 
+    var gruposExamenesExpandidos = new Set();
+
     function renderizarTablaExamenes() {
         var tbody = document.getElementById('tablaExamenes');
         tbody.innerHTML = '';
@@ -379,18 +383,23 @@
         }).length;
         document.getElementById('totalExamenes').textContent = totalExamenes + ' exámenes';
         if (!window.examenesOrden || window.examenesOrden.length === 0) {
+            gruposExamenesExpandidos.clear();
             tbody.innerHTML = '<tr id="filaVaciaExamenes"><td colspan="5" class="sin-examenes"><i class="bi bi-inbox display-4"></i><p class="mt-2">No hay exámenes agregados. Use el selector de la izquierda.</p></td></tr>';
             return;
         }
         var grupoAnterior = null;
         var grupoId = 0;
+        var gruposPresentes = new Set();
         window.examenesOrden.forEach(function(examen, index) {
             if (tieneTipoSanguineoCompleto && examen.id === 'factor_rh') return;
             var grupoActual = examen.grupoPerfil || 'Exámenes individuales';
             if (grupoActual !== grupoAnterior) {
+                gruposPresentes.add(grupoActual);
                 var filaGrupo = document.createElement('tr');
-                filaGrupo.className = 'grupo-examen-row';
+                var expandido = gruposExamenesExpandidos.has(grupoActual);
+                filaGrupo.className = 'grupo-examen-row' + (expandido ? '' : ' grupo-colapsado');
                 filaGrupo.setAttribute('data-grupo-id', grupoId);
+                filaGrupo.setAttribute('data-grupo-nombre', grupoActual);
                 filaGrupo.innerHTML = '<td colspan="5" class="grupo-header-clickable"><i class="bi bi-chevron-right me-2 grupo-toggle-icon"></i>' + grupoActual + '<span class="badge bg-secondary ms-2">' + window.examenesOrden.filter(function(e) { return (e.grupoPerfil || 'Exámenes individuales') === grupoActual && !(tieneTipoSanguineoCompleto && e.id === 'factor_rh'); }).length + '</span></td>';
                 filaGrupo.setAttribute('onclick', 'window.toggleGrupoExamen(' + grupoId + ')');
                 tbody.appendChild(filaGrupo);
@@ -398,7 +407,7 @@
                 grupoId++;
             }
             var fila = document.createElement('tr');
-            fila.className = 'examen-row';
+            fila.className = 'examen-row' + (gruposExamenesExpandidos.has(grupoActual) ? '' : ' d-none');
             fila.setAttribute('data-examen-id', examen.id);
             fila.setAttribute('data-grupo-id', grupoId - 1);
             if (esFormularioHeces(examen)) {
@@ -468,25 +477,44 @@
             }
             tbody.appendChild(fila);
         });
+        gruposExamenesExpandidos.forEach(function(nombre) {
+            if (!gruposPresentes.has(nombre)) gruposExamenesExpandidos.delete(nombre);
+        });
     }
 
     window.toggleGrupoExamen = function(grupoId) {
-        var rows = document.querySelectorAll('#tablaExamenes tr.examen-row[data-grupo-id="' + grupoId + '"]');
         var header = document.querySelector('#tablaExamenes tr.grupo-examen-row[data-grupo-id="' + grupoId + '"]');
         if (!header) return;
-        header.classList.toggle('grupo-colapsado');
-        rows.forEach(function(row) {
-            row.classList.toggle('d-none');
+
+        var estabaExpandido = !header.classList.contains('grupo-colapsado');
+        var headers = document.querySelectorAll('#tablaExamenes tr.grupo-examen-row');
+        gruposExamenesExpandidos.clear();
+        headers.forEach(function(grupo) {
+            grupo.classList.add('grupo-colapsado');
+            var filas = document.querySelectorAll('#tablaExamenes tr.examen-row[data-grupo-id="' + grupo.getAttribute('data-grupo-id') + '"]');
+            filas.forEach(function(row) {
+                row.classList.add('d-none');
+            });
         });
+
+        if (!estabaExpandido) {
+            header.classList.remove('grupo-colapsado');
+            gruposExamenesExpandidos.add(header.getAttribute('data-grupo-nombre'));
+            document.querySelectorAll('#tablaExamenes tr.examen-row[data-grupo-id="' + grupoId + '"]').forEach(function(row) {
+                row.classList.remove('d-none');
+            });
+        }
     };
 
     window.toggleTodosGrupos = function() {
         var headers = document.querySelectorAll('#tablaExamenes tr.grupo-examen-row');
         var allCollapsed = headers.length > 0 && Array.from(headers).every(function(h) { return h.classList.contains('grupo-colapsado'); });
+        gruposExamenesExpandidos.clear();
         headers.forEach(function(header) {
             var rows = document.querySelectorAll('#tablaExamenes tr.examen-row[data-grupo-id="' + header.getAttribute('data-grupo-id') + '"]');
             if (allCollapsed) {
                 header.classList.remove('grupo-colapsado');
+                gruposExamenesExpandidos.add(header.getAttribute('data-grupo-nombre'));
                 rows.forEach(function(r) { r.classList.remove('d-none'); });
             } else {
                 header.classList.add('grupo-colapsado');
@@ -673,6 +701,47 @@
                 examen.resultado = input.value;
             }
             _debounceValidarYCalcularFn(input);
+        });
+    }
+
+    var _navegacionTabResultadosInstalada = false;
+
+    function inicializarNavegacionTabResultados() {
+        if (_navegacionTabResultadosInstalada) return;
+        _navegacionTabResultadosInstalada = true;
+
+        var zonasResultados = [
+            { selector: '#tablaExamenes', campos: '.resultado-input' },
+            { selector: '#modalItemsExamenBody', campos: '.tabla-item-input:not([readonly]), .observaciones-bioanalista-input, .editor-resultado-input' },
+            { selector: '#formHeces', campos: 'input, select, textarea' },
+            { selector: '#formUroanalisis', campos: 'input, select, textarea' },
+            { selector: '#formularioAntibiograma', campos: '.abx-resultado, .abx-cmi, #antibiogramaObservaciones' },
+            { selector: '#formularioTipoSanguineo', campos: 'select' },
+            { selector: '#modalFrotisBody', campos: '.chk-frotis, .select-frotis' }
+        ];
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+            var actual = event.target;
+            if (!actual || typeof actual.closest !== 'function') return;
+
+            var zona = zonasResultados.find(function(item) {
+                return actual.closest(item.selector);
+            });
+            if (!zona) return;
+
+            var contenedor = actual.closest(zona.selector);
+            var campos = Array.from(contenedor.querySelectorAll(zona.campos)).filter(function(campo) {
+                return !campo.disabled && !campo.readOnly && !campo.hidden &&
+                    campo.getClientRects().length > 0;
+            });
+            var indice = campos.indexOf(actual);
+            if (indice < 0) return;
+
+            var siguiente = campos[indice + (event.shiftKey ? -1 : 1)];
+            if (!siguiente) return;
+            event.preventDefault();
+            siguiente.focus();
         });
     }
 
@@ -944,9 +1013,11 @@
             }
             window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
             if (examenesConResultado.length === 0) {
-                window.Notifications.warning('Orden guardada sin resultados ingresados.');
+                window.Notifications.warning('Exámenes guardados correctamente, pero aún no se ingresaron resultados.');
             } else if (window.pacienteActivo.esArchivada) {
                 window.Notifications.success('Resultados de la orden archivada actualizados.');
+            } else {
+                window.Notifications.success('Exámenes y resultados guardados correctamente.');
             }
         } catch (err) {
             console.error('[guardarResultados] Error:', err);
