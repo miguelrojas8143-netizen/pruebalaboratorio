@@ -711,6 +711,7 @@
         }
         return html;
     }
+   // Renderers para pantalla (Bootstrap) ---------- */
 
     function renderDom(payload, root) {
         var h = payload.header;
@@ -1055,7 +1056,7 @@ function escribirFila(resultado) {
             doc.setFontSize(9);
             doc.setTextColor(31, 78, 104);
             doc.text(textoPlano(titulo).toUpperCase(), margenIzquierdo, y);
-            y += 5;
+            y += 8;
         }
 
         if (titulo) escribirTitulo();
@@ -1200,9 +1201,9 @@ function escribirFila(resultado) {
         var h = payload.header;
 
         function encabezadoPagina(data) {
-            var logoX = 14;
-            var logoY = 14;
-            var logoSize = 22;
+            var logoX = 8;
+            var logoY = 7;
+            var logoSize = 31;
             if (logoData) {
                 try {
                     doc.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize);
@@ -1227,7 +1228,7 @@ function escribirFila(resultado) {
             doc.setLineWidth(0.5);
             doc.line(14, 36, pageWidth - 14, 36);
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.5);
+            doc.setFontSize(tamanoFuentePaciente);
             doc.setTextColor(25, 25, 25);
             doc.text(lineasPaciente, 14, 43);
             var lineaSeparadoraY = 43 + (lineasPaciente.length * 3.5) + 1;
@@ -1253,17 +1254,27 @@ function escribirFila(resultado) {
         var datosPaciente = 'Paciente: ' + textoPlano(h.nombre) +
             '  |  Cédula: ' + textoPlano(h.cedula) +
             '  |  Edad: ' + textoPlano(h.edad) +
-            '  |  Sexo: ' + textoPlano(h.sexo) +
+            '  |  Sexo: ' + textoPlano(h.sexo) + 
             '  |  Teléfono: ' + textoPlano(h.telefono);
-        var lineasPaciente = doc.splitTextToSize(datosPaciente, pageWidth - 28);
+        var anchoDisponiblePaciente = pageWidth - 28;
+        // Ajustar tamaño de fuente para que el texto del paciente quepa en una línea
+        doc.setFont('helvetica', 'normal');//
+        doc.setFontSize(7.5);
+        var anchoPaciente = doc.getTextWidth(datosPaciente);
+        var tamanoFuentePaciente = anchoPaciente > anchoDisponiblePaciente
+            ? 7.5 * anchoDisponiblePaciente / anchoPaciente
+            : 7.5;
+        var lineasPaciente = [datosPaciente];
+        // Dividir en varias líneas si es necesario
         var yDespuesEncabezado = 43 + (lineasPaciente.length * 3.5) + 1 + 8;
         encabezadoPagina({ pageNumber: 1 });
         var y = yDespuesEncabezado;
         doc.setFont('helvetica', 'bold');// para títulos de secciones
         doc.setFontSize(11);// tamaño de fuente para títulos de secciones
         doc.text('', pageWidth / 2, y, { align: 'center' });// espacio para posibles títulos de sección
-        y += 6;// espacio después del título de sección
-
+        y += 1;// espacio después del encabezado del reporte
+      
+        // Función para escribir observaciones del bioanalista en el PDF
         function escribirObservacionesBioanalista(texto) {
             if (!texto || String(texto).trim() === '') return;
             var lineas = doc.splitTextToSize(textoPlano(texto), pageWidth - 28);
@@ -1292,7 +1303,7 @@ function escribirFila(resultado) {
             y += 2;
         }
 
-        
+        // Escribir resultados de cada sección y subárea
         payload.secciones.forEach(function(seccion) {
             seccion.subareas.forEach(function(sub) {
                 if (sub.rows) {

@@ -126,9 +126,114 @@
         });
     }
 
+    const CAMPOS_DIFERENCIAL_PORCENTUAL = [
+        'neutrofilos_por', 'linfocitos_por', 'eosinofilos_por', 'monocitos_por', 'basofilos_por'
+    ];
+
+    function crearIndicadorDiferencial() {
+        var contenedor = document.createElement('div');
+        contenedor.id = 'indicadorDiferencialLeucocitario';
+        contenedor.className = 'mt-2 mb-2 p-2 small text-center';
+        contenedor.style.display = 'none';
+        return contenedor;
+    }
+
+    function actualizarIndicadorDiferencial(body) {
+        var indicador = document.getElementById('indicadorDiferencialLeucocitario');
+        if (!indicador) return;
+
+        var suma = 0;
+        var hayValores = false;
+        CAMPOS_DIFERENCIAL_PORCENTUAL.forEach(function(id) {
+            var input = body.querySelector('.tabla-item-input[data-item-id="' + id + '"]');
+            if (input) {
+                var val = parseFloat(input.value);
+                if (!isNaN(val)) {
+                    suma += val;
+                    if (val > 0) hayValores = true;
+                }
+            }
+        });
+
+        if (!hayValores) {
+            indicador.style.display = 'none';
+            return;
+        }
+
+        indicador.style.display = 'block';
+        var diff = Math.abs(suma - 100);
+        var esExacto = diff < 0.01;
+
+        if (esExacto) {
+            indicador.className = 'mt-2 mb-2 p-2 small text-center text-success fw-semibold';
+            indicador.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Total diferencial: <strong>' + suma.toFixed(2) + '%</strong> / 100% <span class="text-success">(OK)</span>';
+        } else if (suma > 100) {
+            indicador.className = 'mt-2 mb-2 p-2 small text-center text-danger fw-semibold';
+            indicador.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Total diferencial: <strong>' + suma.toFixed(2) + '%</strong> / 100% <span class="text-danger">(Excede por ' + diff.toFixed(2) + '%)</span>';
+        } else {
+            indicador.className = 'mt-2 mb-2 p-2 small text-center text-danger fw-semibold';
+            indicador.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Total diferencial: <strong>' + suma.toFixed(2) + '%</strong> / 100% <span class="text-danger">(Faltan ' + diff.toFixed(2) + '%)</span>';
+        }
+    }
+
+    function validarDiferencialLeucocitario(body) {
+        var suma = 0;
+        var hayValores = false;
+        var inputsInvolucrados = [];
+
+        CAMPOS_DIFERENCIAL_PORCENTUAL.forEach(function(id) {
+            var input = body.querySelector('.tabla-item-input[data-item-id="' + id + '"]');
+            if (input) {
+                var val = parseFloat(input.value);
+                if (!isNaN(val)) {
+                    suma += val;
+                    if (val > 0) hayValores = true;
+                }
+                inputsInvolucrados.push(input);
+            }
+        });
+
+        if (!hayValores) {
+            return { valido: true };
+        }
+
+        var diff = Math.abs(suma - 100);
+        var esExacto = diff < 0.01;
+
+        if (!esExacto) {
+            inputsInvolucrados.forEach(function(input) {
+                input.classList.add('is-invalid');
+            });
+            return {
+                valido: false,
+                mensaje: 'Error en fórmula leucocitaria: La suma de los porcentajes es ' + suma.toFixed(2) + '% y debe ser exactamente 100%.',
+                inputs: inputsInvolucrados
+            };
+        }
+
+        return { valido: true };
+    }
+
     function inicializarCalculosEnVivoModal(body) {
         if (!body || body.dataset.calculosInicializados === 'true') return;
         body.dataset.calculosInicializados = 'true';
+
+        if (body.querySelector('[data-item-id="neutrofilos_por"]')) {
+            var grupoPorcentuales = null;
+            var titulos = body.querySelectorAll('h6');
+            titulos.forEach(function(t) {
+                if (t.textContent.includes('Porcentual')) grupoPorcentuales = t;
+            });
+            var indicador = crearIndicadorDiferencial();
+            if (grupoPorcentuales && grupoPorcentuales.parentNode) {
+                grupoPorcentuales.parentNode.insertBefore(indicador, grupoPorcentuales.nextSibling);
+            } else {
+                var primeraFila = body.querySelector('.row');
+                if (primeraFila) primeraFila.parentNode.insertBefore(indicador, primeraFila);
+            }
+            actualizarIndicadorDiferencial(body);
+        }
+
         var _ultimoExamenId = null;
         var debouncedCalcular = debounce(function() {
             if (!_ultimoExamenId) return;
@@ -146,8 +251,17 @@
             var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
             if (!examen) return;
 
+            if (CAMPOS_DIFERENCIAL_PORCENTUAL.indexOf(event.target.getAttribute('data-item-id')) !== -1) {
+                event.target.classList.remove('is-invalid');
+            }
+
             examen.resultado = JSON.stringify(leerDatosModal(examenId));
             examen.tipo = 'perfil';
+
+            if (examenId === 'hematologia_completa') {
+                actualizarIndicadorDiferencial(body);
+            }
+
             if (!esObservacion) {
                 _ultimoExamenId = examenId;
                 debouncedCalcular();
@@ -221,6 +335,22 @@
             var modalSimple = bootstrap.Modal.getInstance(modalEl);
             if (modalSimple) modalSimple.hide();
             return;
+        }
+
+        var body = document.getElementById('modalItemsExamenBody');
+        if (examenId === 'hematologia_completa' && body) {
+            var validacion = validarDiferencialLeucocitario(body);
+            if (!validacion.valido) {
+                if (window.Notifications && window.Notifications.error) {
+                    window.Notifications.error(validacion.mensaje);
+                } else {
+                    alert(validacion.mensaje);
+                }
+                if (validacion.inputs && validacion.inputs.length > 0) {
+                    validacion.inputs[0].focus();
+                }
+                return;
+            }
         }
 
         var datos = leerDatosModal(examenId);
