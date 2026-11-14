@@ -316,7 +316,8 @@
             var referenciasGuardadas = valores.__referencias || {};
 
             detalle.items.forEach(function(item) {
-                if ((detalleId === 'hematologia_completa' || examen.tipo !== 'perfil') &&
+                if ((detalleId === 'hematologia_completa' || detalleId === 'dengue_igm_igg' ||
+                    examen.tipo !== 'perfil') &&
                     valorImprimible(valores[item.id]) === '-') return;
                 resultado.push({
                     id: item.id,

@@ -450,7 +450,7 @@
                 fila.innerHTML = '<td class="fw-semibold align-top">' + nombreTipoSanguineo + '</td><td><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioTipoSanguineo()"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-muted small">-</td><td>-</td><td class="text-center align-top"><button class="btn btn-sm btn-outline-danger" onclick="' + eliminarTipoSanguineo + '" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'seleccion_unica') {
                 var opcionesHtml2 = (examen.opciones || []).map(function(opt) { return '<option value="' + opt + '" ' + (examen.resultado === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('');
-                if (window.esSecrecionVaginal(examen)) {
+                if (window.esSecrecionVaginal(examen) || examen.id === 'helicobacter_heces') {
                     var btnClass = 'btn examen-action-btn btn-sm' + (tieneResultados ? ' has-results' : '');
                     fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
                 } else {

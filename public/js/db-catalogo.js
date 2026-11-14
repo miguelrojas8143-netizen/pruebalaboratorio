@@ -199,7 +199,8 @@
         'uroanalisis',
         'proteinas_totales_fraccionadas',
         'bilirrubina_total_fraccionada',
-        'psa_total_fraccionada'
+        'psa_total_fraccionada',
+        'dengue_igm_igg'
     ];
 
     window.esExamenNormalCompuesto = function(examenId) {
@@ -342,16 +343,37 @@
 
                 var esCalculado = parametro.tipo === 'calculado' || parametro.tipo === 'calculado_texto';
                 var esTexto = parametro.tipo === 'texto' || parametro.tipo === 'calculado_texto';
-                var entrada = document.createElement('input');
-                entrada.type = esTexto ? 'text' : 'number';
-                if (!esTexto) entrada.step = '0.01';
-                entrada.className = 'form-control form-control-sm tabla-item-input'
-                    + (esTexto ? '' : ' item-input-numerico');
+                var esSeleccion = parametro.tipo === 'seleccion_unica';
+                var entrada;
+                if (esSeleccion) {
+                    entrada = document.createElement('select');
+                    entrada.className = 'form-select form-select-sm tabla-item-input';
+                    var opcionVacia = document.createElement('option');
+                    opcionVacia.value = '';
+                    opcionVacia.textContent = 'Seleccionar...';
+                    entrada.appendChild(opcionVacia);
+                    (parametro.opciones || []).forEach(function(valor) {
+                        var opcion = document.createElement('option');
+                        opcion.value = valor;
+                        opcion.textContent = valor;
+                        entrada.appendChild(opcion);
+                    });
+                } else {
+                    entrada = document.createElement('input');
+                    entrada.type = esTexto ? 'text' : 'number';
+                    if (!esTexto) entrada.step = '0.01';
+                    entrada.className = 'form-control form-control-sm tabla-item-input'
+                        + (esTexto ? '' : ' item-input-numerico');
+                }
                 entrada.id = prefijo + claveExamen + '_' + parametro.id;
                 entrada.placeholder = '-';
                 entrada.setAttribute('data-item-id', parametro.id);
                 entrada.setAttribute('data-examen-id', claveExamen);
                 entrada.value = valores[parametro.id] === undefined ? '' : valores[parametro.id];
+                entrada.required = parametro.obligatorio;
+                entrada.addEventListener('change', function() {
+                    if (entrada.value.trim() !== '') entrada.classList.remove('is-invalid');
+                });
 
                 if (esCalculado) {
                     entrada.readOnly = true;
@@ -362,30 +384,32 @@
                 columna.appendChild(etiqueta);
                 columna.appendChild(entrada);
 
-                var referencia = document.createElement('input');
-                referencia.type = 'text';
-                referencia.className = 'form-control form-control-sm referencia-item-input';
-                referencia.tabIndex = -1;
-                referencia.setAttribute('data-item-id', parametro.id);
-                referencia.placeholder = 'Referencia';
-                referencia.value = valores.__referencias && valores.__referencias[parametro.id] !== undefined
-                    ? valores.__referencias[parametro.id]
-                    : referenciaPorDefecto(parametro);
+                if (opciones.referencias !== false) {
+                    var referencia = document.createElement('input');
+                    referencia.type = 'text';
+                    referencia.className = 'form-control form-control-sm referencia-item-input';
+                    referencia.tabIndex = -1;
+                    referencia.setAttribute('data-item-id', parametro.id);
+                    referencia.placeholder = 'Referencia';
+                    referencia.value = valores.__referencias && valores.__referencias[parametro.id] !== undefined
+                        ? valores.__referencias[parametro.id]
+                        : referenciaPorDefecto(parametro);
 
-                if (conUnidades) {
-                    var unidad = document.createElement('span');
-                    unidad.className = 'item-unidad';
-                    unidad.textContent = parametro.unidad || '-';
-                    var zona = document.createElement('span');
-                    zona.className = 'item-referencia';
-                    zona.appendChild(referencia);
-                    columna.appendChild(unidad);
-                    columna.appendChild(zona);
-                } else {
-                    var contenedorRef = document.createElement('div');
-                    contenedorRef.className = 'mt-1';
-                    contenedorRef.appendChild(referencia);
-                    columna.appendChild(contenedorRef);
+                    if (conUnidades) {
+                        var unidad = document.createElement('span');
+                        unidad.className = 'item-unidad';
+                        unidad.textContent = parametro.unidad || '-';
+                        var zona = document.createElement('span');
+                        zona.className = 'item-referencia';
+                        zona.appendChild(referencia);
+                        columna.appendChild(unidad);
+                        columna.appendChild(zona);
+                    } else {
+                        var contenedorRef = document.createElement('div');
+                        contenedorRef.className = 'mt-1';
+                        contenedorRef.appendChild(referencia);
+                        columna.appendChild(contenedorRef);
+                    }
                 }
 
                 creado.push(columna);

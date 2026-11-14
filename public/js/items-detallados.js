@@ -63,12 +63,15 @@
         var body = document.getElementById('modalItemsExamenBody');
         if (!modalEl || !body) return Promise.resolve();
 
-        modalEl.classList.remove('modal-editor-individual');
+        modalEl.classList.remove('modal-editor-individual', 'modal-editor-dengue');
+        modalEl.classList.remove('modal-editor-cualitativo');
+        if (examenId === 'dengue_igm_igg') modalEl.classList.add('modal-editor-dengue');
         document.getElementById('modalItemsExamenTitulo').textContent = detalle.nombre;
         modalEl.setAttribute('data-examen-id', examenId);
         modalEl.setAttribute('data-editor-mode', 'detallado');
 
         var esHematologia = examenId === 'hematologia_completa';
+        var esDengue = examenId === 'dengue_igm_igg';
         var soloResultados = esHematologia || detalle.items.every(function(item) {
             return item.tipo !== 'seleccion_unica' && item.tipo !== 'multiselect_cantidad';
         });
@@ -76,14 +79,16 @@
         var valoresGuardados = valoresGuardadosDe(examen);
         return window.renderizarParametrosDesdeSQLite(body, examenId, valoresGuardados, {
             prefijo: 'modalItem_',
-            agrupar: !esHematologia,
+            agrupar: !esHematologia && !esDengue,
             grupoUnico: esHematologia ? 'Hematología' : null,
             clasesFila: [
                 esHematologia && 'items-detallados-verticales',
+                esDengue && 'items-detallados-dengue',
                 soloResultados && 'items-detallados-tabla'
             ].filter(Boolean).join(' '),
-            cabecera: soloResultados,
-            unidades: soloResultados
+            cabecera: !esDengue && soloResultados,
+            unidades: !esDengue && soloResultados,
+            referencias: !esDengue
         }).then(function() {
             if (esHematologia) agregarCampoObservaciones(body, valoresGuardados.__observaciones);
             if (examenId === 'proteinas_totales_fraccionadas') actualizarProteinasFraccionadas(body);
@@ -229,18 +234,22 @@
 
     function crearFormularioIndividual(body, examen, examenReferencias) {
         body.textContent = '';
+        var esAntigenoHelicobacter = examen.id === 'helicobacter_heces';
 
-        var cabecera = document.createElement('div');
-        cabecera.className = 'items-detallados-cabecera';
-        ['Parámetro', 'Resultado', 'Unidad', 'Valores de Referencia'].forEach(function(texto) {
-            var celda = document.createElement('span');
-            celda.textContent = texto;
-            cabecera.appendChild(celda);
-        });
-        body.appendChild(cabecera);
+        if (!esAntigenoHelicobacter) {
+            var cabecera = document.createElement('div');
+            cabecera.className = 'items-detallados-cabecera';
+            ['Parámetro', 'Resultado', 'Unidad', 'Valores de Referencia'].forEach(function(texto) {
+                var celda = document.createElement('span');
+                celda.textContent = texto;
+                cabecera.appendChild(celda);
+            });
+            body.appendChild(cabecera);
+        }
 
         var fila = document.createElement('div');
-        fila.className = 'row g-3 items-detallados-tabla';
+        fila.className = 'row g-3 items-detallados-tabla'
+            + (esAntigenoHelicobacter ? ' items-detallados-helicobacter' : '');
         var columna = document.createElement('div');
         columna.className = 'col-md-4 col-sm-6';
 
@@ -250,14 +259,17 @@
         etiqueta.textContent = examen.nombre || examen.id;
 
         var entrada;
-        if (examen.tipo === 'seleccion_unica' && Array.isArray(examen.opciones) && examen.opciones.length > 0) {
+        var opciones = esAntigenoHelicobacter
+            ? ['Positivo', 'Negativo']
+            : (Array.isArray(examen.opciones) ? examen.opciones : []);
+        if ((esAntigenoHelicobacter || examen.tipo === 'seleccion_unica') && opciones.length > 0) {
             entrada = document.createElement('select');
             entrada.className = 'form-select form-select-sm tabla-item-input editor-resultado-input';
             var opcionVacia = document.createElement('option');
             opcionVacia.value = '';
             opcionVacia.textContent = 'Seleccionar...';
             entrada.appendChild(opcionVacia);
-            examen.opciones.forEach(function(valor) {
+            opciones.forEach(function(valor) {
                 var opcion = document.createElement('option');
                 opcion.value = valor;
                 opcion.textContent = valor;
@@ -275,27 +287,28 @@
         entrada.setAttribute('data-item-id', examen.id);
         entrada.setAttribute('data-examen-id', examen.id);
 
-        var unidad = document.createElement('span');
-        unidad.className = 'item-unidad';
-        unidad.textContent = examen.unidad || '-';
-
-        var referenciaContenedor = document.createElement('span');
-        referenciaContenedor.className = 'item-referencia';
-        var referencia = document.createElement('input');
-        referencia.type = 'text';
-        referencia.className = 'form-control form-control-sm referencia-item-input editor-referencia-input';
-        referencia.id = 'modalReferencia_' + examen.id;
-        referencia.tabIndex = -1;
-        referencia.setAttribute('data-item-id', examen.id);
-        referencia.setAttribute('aria-label', 'Valor de referencia de ' + (examen.nombre || examen.id));
-        referencia.placeholder = 'Referencia';
-        referencia.value = referenciaInicialDe(examenReferencias);
-        referenciaContenedor.appendChild(referencia);
-
         columna.appendChild(etiqueta);
         columna.appendChild(entrada);
-        columna.appendChild(unidad);
-        columna.appendChild(referenciaContenedor);
+        if (!esAntigenoHelicobacter) {
+            var unidad = document.createElement('span');
+            unidad.className = 'item-unidad';
+            unidad.textContent = examen.unidad || '-';
+
+            var referenciaContenedor = document.createElement('span');
+            referenciaContenedor.className = 'item-referencia';
+            var referencia = document.createElement('input');
+            referencia.type = 'text';
+            referencia.className = 'form-control form-control-sm referencia-item-input editor-referencia-input';
+            referencia.id = 'modalReferencia_' + examen.id;
+            referencia.tabIndex = -1;
+            referencia.setAttribute('data-item-id', examen.id);
+            referencia.setAttribute('aria-label', 'Valor de referencia de ' + (examen.nombre || examen.id));
+            referencia.placeholder = 'Referencia';
+            referencia.value = referenciaInicialDe(examenReferencias);
+            referenciaContenedor.appendChild(referencia);
+            columna.appendChild(unidad);
+            columna.appendChild(referenciaContenedor);
+        }
         fila.appendChild(columna);
         body.appendChild(fila);
     }
@@ -463,6 +476,8 @@
 
         var modalEl = document.getElementById('modalItemsExamen');
         var body = document.getElementById('modalItemsExamenBody');
+        modalEl.classList.remove('modal-editor-dengue', 'modal-editor-cualitativo');
+        if (examenId === 'helicobacter_heces') modalEl.classList.add('modal-editor-cualitativo');
         var examenConReferencias = window.aplicarReferenciasAdaptadas
             ? window.aplicarReferenciasAdaptadas(window.pacienteActivo, [examen])[0] || examen
             : examen;
@@ -494,6 +509,25 @@
         }
 
         var body = document.getElementById('modalItemsExamenBody');
+        var detalle = window.App.examenesDetallados[examenId];
+        var camposObligatorios = (detalle && detalle.items ? detalle.items : [])
+            .filter(function(item) { return item.obligatorio; })
+            .map(function(item) {
+                return body.querySelector('.tabla-item-input[data-examen-id="' + examenId + '"][data-item-id="' + item.id + '"]');
+            })
+            .filter(Boolean);
+        var campoVacio = camposObligatorios.find(function(input) {
+            return input.value.trim() === '';
+        });
+        if (campoVacio) {
+            campoVacio.classList.add('is-invalid');
+            if (window.Notifications && window.Notifications.error) {
+                window.Notifications.error('Complete todos los resultados obligatorios antes de guardar.');
+            }
+            campoVacio.focus();
+            return;
+        }
+
         if (examenId === 'hematologia_completa' && body) {
             var validacion = validarDiferencialLeucocitario(body);
             if (!validacion.valido) {

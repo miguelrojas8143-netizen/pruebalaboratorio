@@ -695,6 +695,160 @@ function asegurarCatalogoPSA(db, raizProyecto) {
     });
 }
 
+function asegurarCatalogoDengue(db, raizProyecto) {
+    const dataset = normalizarConfiguracion(leerConfiguracionDesdeArchivos(raizProyecto));
+    const examen = dataset.examenes.find(function(item) { return item.id === 'dengue_igm_igg'; });
+    const parametros = dataset.parametros.filter(function(item) {
+        return item.examen_id === 'dengue_igm_igg';
+    });
+    if (!examen || parametros.length !== 2 ||
+        parametros.some(function(item) { return item.tipo_interfaz !== 'seleccion_unica' || !item.obligatorio; })) {
+        throw new Error('La configuración del panel Dengue IgM/IgG está incompleta.');
+    }
+
+    const categoria = dataset.categorias.find(function(item) { return item.id === examen.categoria_id; });
+    if (!categoria) throw new Error('No se encontró la categoría del panel Dengue IgM/IgG.');
+
+    const sincronizar = db.transaction(function() {
+        const categoriaExistente = db.prepare(
+            'SELECT id FROM categorias_examenes WHERE nombre = ? COLLATE NOCASE'
+        ).get(categoria.nombre);
+        const categoriaId = categoriaExistente ? categoriaExistente.id : categoria.id;
+        db.prepare(`
+            INSERT INTO categorias_examenes (id, nombre, orden)
+            VALUES (?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, orden = excluded.orden
+        `).run(categoriaId, categoria.nombre, categoria.orden);
+
+        db.prepare(`
+            INSERT INTO examenes
+                (id, categoria_id, nombre, unidad, tipo, tipo_formulario, grupo,
+                 valor_defecto, ref_min, ref_max, ref_texto, orden)
+            VALUES
+                (@id, @categoria_id, @nombre, @unidad, @tipo, @tipo_formulario, @grupo,
+                 @valor_defecto, @ref_min, @ref_max, @ref_texto, @orden)
+            ON CONFLICT(id) DO UPDATE SET
+                categoria_id = excluded.categoria_id,
+                nombre = excluded.nombre,
+                unidad = excluded.unidad,
+                tipo = excluded.tipo,
+                tipo_formulario = excluded.tipo_formulario,
+                grupo = excluded.grupo,
+                valor_defecto = excluded.valor_defecto,
+                ref_min = excluded.ref_min,
+                ref_max = excluded.ref_max,
+                ref_texto = excluded.ref_texto,
+                orden = excluded.orden
+            WHERE examenes.origen <> 'usuario'
+        `).run(Object.assign({}, examen, { categoria_id: categoriaId }));
+
+        const guardarParametro = db.prepare(`
+            INSERT INTO parametros_examen
+                (examen_id, codigo, nombre, tipo_dato, tipo_interfaz, unidad, grupo,
+                 valor_defecto, ref_min, ref_max, ref_texto, obligatorio, orden, orden_render)
+            VALUES
+                (@examen_id, @codigo, @nombre, @tipo_dato, @tipo_interfaz, @unidad, @grupo,
+                 @valor_defecto, @ref_min, @ref_max, @ref_texto, @obligatorio, @orden, @orden_render)
+            ON CONFLICT(examen_id, codigo) DO UPDATE SET
+                nombre = excluded.nombre,
+                tipo_dato = excluded.tipo_dato,
+                tipo_interfaz = excluded.tipo_interfaz,
+                unidad = excluded.unidad,
+                grupo = excluded.grupo,
+                valor_defecto = excluded.valor_defecto,
+                ref_min = excluded.ref_min,
+                ref_max = excluded.ref_max,
+                ref_texto = excluded.ref_texto,
+                obligatorio = excluded.obligatorio,
+                orden = excluded.orden,
+                orden_render = excluded.orden_render
+        `);
+        const parametroIds = db.prepare(
+            'SELECT id FROM parametros_examen WHERE examen_id = ? AND codigo = ?'
+        );
+        const borrarOpciones = db.prepare('DELETE FROM opciones_parametro WHERE parametro_id = ?');
+        const guardarOpcion = db.prepare(
+            'INSERT INTO opciones_parametro (parametro_id, orden, valor) VALUES (?, ?, ?)'
+        );
+
+        parametros.forEach(function(parametro) {
+            guardarParametro.run(parametro);
+            const fila = parametroIds.get(parametro.examen_id, parametro.codigo);
+            if (!fila) throw new Error('No se pudo guardar el parámetro ' + parametro.codigo + ' de Dengue.');
+            borrarOpciones.run(fila.id);
+            dataset.opcionesParametro.filter(function(opcion) {
+                return opcion.examen_id === parametro.examen_id && opcion.codigo === parametro.codigo;
+            }).forEach(function(opcion) {
+                guardarOpcion.run(fila.id, opcion.orden, opcion.valor);
+            });
+        });
+    });
+    sincronizar();
+}
+
+function asegurarCatalogoHelicobacterAntigeno(db, raizProyecto) {
+    const dataset = normalizarConfiguracion(leerConfiguracionDesdeArchivos(raizProyecto));
+    const examen = dataset.examenes.find(function(item) { return item.id === 'helicobacter_heces'; });
+    if (!examen || examen.tipo !== 'seleccion_unica') {
+        throw new Error('La configuración de Helicobacter Pylori (Antígeno) debe ser cualitativa.');
+    }
+
+    const opciones = dataset.opcionesExamen.filter(function(item) {
+        return item.examen_id === examen.id;
+    });
+    if (opciones.length !== 2 ||
+        opciones.some(function(item) { return item.valor !== 'Positivo' && item.valor !== 'Negativo'; })) {
+        throw new Error('Helicobacter Pylori (Antígeno) debe ofrecer Positivo/Negativo.');
+    }
+
+    const categoria = dataset.categorias.find(function(item) { return item.id === examen.categoria_id; });
+    if (!categoria) throw new Error('No se encontró la categoría de Helicobacter Pylori (Antígeno).');
+
+    const sincronizar = db.transaction(function() {
+        const categoriaExistente = db.prepare(
+            'SELECT id FROM categorias_examenes WHERE nombre = ? COLLATE NOCASE'
+        ).get(categoria.nombre);
+        const categoriaId = categoriaExistente ? categoriaExistente.id : categoria.id;
+        db.prepare(`
+            INSERT INTO categorias_examenes (id, nombre, orden)
+            VALUES (?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, orden = excluded.orden
+        `).run(categoriaId, categoria.nombre, categoria.orden);
+
+        const resultado = db.prepare(`
+            INSERT INTO examenes
+                (id, categoria_id, nombre, unidad, tipo, tipo_formulario, grupo,
+                 valor_defecto, ref_min, ref_max, ref_texto, orden)
+            VALUES
+                (@id, @categoria_id, @nombre, @unidad, @tipo, @tipo_formulario, @grupo,
+                 @valor_defecto, @ref_min, @ref_max, @ref_texto, @orden)
+            ON CONFLICT(id) DO UPDATE SET
+                categoria_id = excluded.categoria_id,
+                nombre = excluded.nombre,
+                unidad = excluded.unidad,
+                tipo = excluded.tipo,
+                tipo_formulario = excluded.tipo_formulario,
+                grupo = excluded.grupo,
+                valor_defecto = excluded.valor_defecto,
+                ref_min = excluded.ref_min,
+                ref_max = excluded.ref_max,
+                ref_texto = excluded.ref_texto,
+                orden = excluded.orden
+            WHERE examenes.origen <> 'usuario'
+        `).run(Object.assign({}, examen, { categoria_id: categoriaId }));
+        if (resultado.changes === 0) return;
+
+        db.prepare('DELETE FROM opciones_examen WHERE examen_id = ?').run(examen.id);
+        const guardarOpcion = db.prepare(
+            'INSERT INTO opciones_examen (examen_id, orden, valor) VALUES (?, ?, ?)'
+        );
+        opciones.forEach(function(opcion) {
+            guardarOpcion.run(opcion.examen_id, opcion.orden, opcion.valor);
+        });
+    });
+    sincronizar();
+}
+
 /**
  * Añade al catálogo existente los parámetros de un examen compuesto que falten.
  * Es aditivo para no borrar parámetros ni opciones personalizados en bases
@@ -825,6 +979,8 @@ module.exports = {
     asegurarCatalogoProteinas,
     asegurarCatalogoBilirrubinas,
     asegurarCatalogoPSA,
+    asegurarCatalogoDengue,
+    asegurarCatalogoHelicobacterAntigeno,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces,
     aSlug,

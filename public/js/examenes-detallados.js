@@ -51,6 +51,13 @@ window.App.examenesDetallados.bilirrubina_total_fraccionada = {
         { id: 'bilirrubina_indirecta', nombre: 'Bilirrubina Indirecta', unidad: 'mg/dL', tipo: 'calculado', grupo: 'Bilirrubinas' }
     ]
 };
+window.App.examenesDetallados.dengue_igm_igg = {
+    nombre: 'Dengue (IgM/IgG)',
+    items: [
+        { id: 'dengue_igm', nombre: 'Dengue IgM', unidad: '', tipo: 'seleccion_unica', grupo: 'Dengue', opciones: ['Positivo', 'Negativo'], obligatorio: true },
+        { id: 'dengue_igg', nombre: 'Dengue IgG', unidad: '', tipo: 'seleccion_unica', grupo: 'Dengue', opciones: ['Positivo', 'Negativo'], obligatorio: true }
+    ]
+};
 // Hemograma Completo (CBC)Los elementos se definen arriba. A continuación se presentan exámenes detallados adicionales.
 
 // A continuación se presentan exámenes detallados adicionales.

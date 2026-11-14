@@ -1377,3 +1377,84 @@ body.notification-modal-open {
         padding: 0.75rem;
     }
 }
+
+#modalItemsExamen.modal-editor-dengue .modal-dialog {
+    width: min(460px, calc(100vw - 1rem));
+    max-width: 460px;
+}
+
+#modalItemsExamen.modal-editor-dengue .modal-header,
+#modalItemsExamen.modal-editor-dengue .modal-footer {
+    padding: 0.4rem 0.65rem;
+}
+
+#modalItemsExamen.modal-editor-dengue .modal-body {
+    padding: 0.45rem 0.65rem;
+}
+
+#modalItemsExamen.modal-editor-dengue .items-detallados-dengue {
+    display: block;
+    margin: 0;
+}
+
+#modalItemsExamen.modal-editor-dengue .items-detallados-dengue > [class*="col-"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: none;
+    margin: 0 0 0.45rem;
+    padding: 0;
+}
+
+#modalItemsExamen.modal-editor-dengue .items-detallados-dengue label {
+    margin: 0 0 0.15rem;
+    font-size: 0.8rem;
+}
+
+#modalItemsExamen.modal-editor-dengue .items-detallados-dengue .form-select {
+    width: 100%;
+    max-width: 320px;
+    min-height: 30px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.82rem;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .modal-dialog {
+    width: min(380px, calc(100vw - 1rem));
+    max-width: 380px;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .modal-header,
+#modalItemsExamen.modal-editor-cualitativo .modal-footer {
+    padding: 0.4rem 0.65rem;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .modal-body {
+    padding: 0.5rem 0.65rem;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .items-detallados-helicobacter {
+    display: block;
+    margin: 0;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .items-detallados-helicobacter > [class*="col-"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .items-detallados-helicobacter label {
+    margin: 0 0 0.15rem;
+    font-size: 0.8rem;
+}
+
+#modalItemsExamen.modal-editor-cualitativo .items-detallados-helicobacter .form-select {
+    width: 100%;
+    min-height: 30px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.82rem;
+}
