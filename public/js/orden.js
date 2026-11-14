@@ -714,10 +714,10 @@
 
         var zonasResultados = [
             { selector: '#tablaExamenes', campos: '.resultado-input' },
-            { selector: '#modalItemsExamenBody', campos: '.tabla-item-input:not([readonly]), .referencia-item-input, .observaciones-bioanalista-input, .editor-resultado-input' },
-            { selector: '#formHeces', campos: 'input, select, textarea' },
-            { selector: '#formUroanalisis', campos: 'input, select, textarea' },
-            { selector: '#formularioAntibiograma', campos: '.abx-resultado, .abx-cmi, #antibiogramaObservaciones' },
+            { selector: '#modalItemsExamenBody', campos: '.tabla-item-input:not([readonly]), .editor-resultado-input' },
+            { selector: '#formHeces', campos: '.resultado-campo' },
+            { selector: '#formUroanalisis', campos: '.resultado-campo' },
+            { selector: '#formularioAntibiograma', campos: '.abx-resultado, .abx-cmi' },
             { selector: '#formularioTipoSanguineo', campos: 'select' },
             { selector: '#modalFrotisBody', campos: '.chk-frotis, .select-frotis' }
         ];

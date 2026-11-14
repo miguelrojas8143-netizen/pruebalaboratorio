@@ -88,6 +88,7 @@
             if (esHematologia) agregarCampoObservaciones(body, valoresGuardados.__observaciones);
             if (examenId === 'proteinas_totales_fraccionadas') actualizarProteinasFraccionadas(body);
             if (examenId === 'bilirrubina_total_fraccionada') actualizarBilirrubinaFraccionada(body);
+            if (examenId === 'psa_total_fraccionada') actualizarPSAFraccionada(body);
             inicializarCalculosEnVivoModal(body);
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         }).catch(function(error) {
@@ -158,6 +159,42 @@
         indirectaInput.title = indirecta < 0
             ? 'La bilirrubina directa no puede ser mayor que la bilirrubina total.'
             : 'Valor calculado automáticamente';
+    }
+
+    function actualizarPSAFraccionada(body) {
+        // Calcula automáticamente la Relación Libre/Total (%) en tiempo real
+        // para el examen "PSA T y L (Antígeno Prostático Total y Libre)".
+        //
+        // LÓGICA DE ENTRADA Y CÁLCULO AUTOMÁTICO:
+        // - Campos de entrada manual (Inputs habilitados para escribir):
+        //   * PSA Total (ng/mL) - data-item-id="psa_total"
+        //   * PSA Libre (ng/mL) - data-item-id="psa_libre"
+        // - Campos de cálculo automático (Solo lectura):
+        //   * Relación Libre/Total (%) - data-item-id="psa_relacion"
+        //
+        // FÓRMULA: Relación = (PSA Libre ÷ PSA Total) × 100
+        // - Resultado expresado en porcentaje (%) con 1 decimal
+        // - Ejemplo: Total=3.0, Libre=0.8 → (0.8/3.0)*100 = 26.7%
+        // El campo calculado es numérico; la unidad "%" se muestra por separado.
+        if (!body) return;
+        var totalInput = body.querySelector('.tabla-item-input[data-item-id="psa_total"]');
+        var libreInput = body.querySelector('.tabla-item-input[data-item-id="psa_libre"]');
+        var relacionInput = body.querySelector('.tabla-item-input[data-item-id="psa_relacion"]');
+        if (!totalInput || !libreInput || !relacionInput) return;
+
+        var totalTexto = totalInput.value.trim().replace(',', '.');
+        var libreTexto = libreInput.value.trim().replace(',', '.');
+        var total = totalTexto === '' ? NaN : Number(totalTexto);
+        var libre = libreTexto === '' ? NaN : Number(libreTexto);
+        if (!Number.isFinite(total) || !Number.isFinite(libre) || total <= 0) {
+            relacionInput.value = '';
+            relacionInput.title = 'Ingrese un PSA Total mayor que 0 y un PSA Libre válido.';
+            return;
+        }
+
+        var relacion = Number(((libre / total) * 100).toFixed(1));
+        relacionInput.value = relacion.toFixed(1);
+        relacionInput.title = 'Valor calculado automáticamente: (PSA Libre / PSA Total) × 100';
     }
 
     function actualizarInputsCalculados(examenId) {
@@ -248,6 +285,7 @@
         referencia.type = 'text';
         referencia.className = 'form-control form-control-sm referencia-item-input editor-referencia-input';
         referencia.id = 'modalReferencia_' + examen.id;
+        referencia.tabIndex = -1;
         referencia.setAttribute('data-item-id', examen.id);
         referencia.setAttribute('aria-label', 'Valor de referencia de ' + (examen.nombre || examen.id));
         referencia.placeholder = 'Referencia';
@@ -397,6 +435,9 @@
             if (examenId === 'bilirrubina_total_fraccionada' && !esObservacion) {
                 actualizarBilirrubinaFraccionada(body);
             }
+            if (examenId === 'psa_total_fraccionada' && !esObservacion) {
+                actualizarPSAFraccionada(body);
+            }
             examen.resultado = JSON.stringify(leerDatosModal(examenId));
             examen.tipo = 'perfil';
 
@@ -483,6 +524,9 @@
                 body.querySelector('.tabla-item-input[data-item-id="bilirrubina_directa"]').focus();
                 return;
             }
+        }
+        if (examenId === 'psa_total_fraccionada') {
+            actualizarPSAFraccionada(body);
         }
         var datos = leerDatosModal(examenId);
         examen.resultado = JSON.stringify(datos);

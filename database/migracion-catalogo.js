@@ -686,6 +686,15 @@ function asegurarCatalogoBilirrubinas(db, raizProyecto) {
     });
 }
 
+function asegurarCatalogoPSA(db, raizProyecto) {
+    asegurarCatalogoCompuesto(db, raizProyecto, {
+        idsExamenes: ['psa_total', 'psa_libre', 'psa_total_fraccionada'],
+        examenCompuestoId: 'psa_total_fraccionada',
+        cantidadParametros: 3,
+        nombre: 'PSA'
+    });
+}
+
 /**
  * Añade al catálogo existente los parámetros de un examen compuesto que falten.
  * Es aditivo para no borrar parámetros ni opciones personalizados en bases
@@ -815,6 +824,7 @@ module.exports = {
     asegurarCatalogoPoblado,
     asegurarCatalogoProteinas,
     asegurarCatalogoBilirrubinas,
+    asegurarCatalogoPSA,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces,
     aSlug,

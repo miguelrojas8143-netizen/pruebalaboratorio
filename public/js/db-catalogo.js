@@ -198,7 +198,8 @@
         'hematologia_completa',
         'uroanalisis',
         'proteinas_totales_fraccionadas',
-        'bilirrubina_total_fraccionada'
+        'bilirrubina_total_fraccionada',
+        'psa_total_fraccionada'
     ];
 
     window.esExamenNormalCompuesto = function(examenId) {
@@ -354,6 +355,7 @@
 
                 if (esCalculado) {
                     entrada.readOnly = true;
+                    entrada.tabIndex = -1;
                     entrada.title = 'Valor calculado automáticamente';
                 }
 
@@ -363,6 +365,7 @@
                 var referencia = document.createElement('input');
                 referencia.type = 'text';
                 referencia.className = 'form-control form-control-sm referencia-item-input';
+                referencia.tabIndex = -1;
                 referencia.setAttribute('data-item-id', parametro.id);
                 referencia.placeholder = 'Referencia';
                 referencia.value = valores.__referencias && valores.__referencias[parametro.id] !== undefined

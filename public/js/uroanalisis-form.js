@@ -93,6 +93,8 @@
             control.className = 'form-control form-control-sm';
             control.placeholder = 'Escriba el resultado';
         }
+        control.classList.add('resultado-campo');
+        if (entradaManual) entradaManual.classList.add('resultado-campo');
         control.id = 'uro_' + item.id;
         columna.appendChild(control);
         if (entradaManual) columna.appendChild(entradaManual);

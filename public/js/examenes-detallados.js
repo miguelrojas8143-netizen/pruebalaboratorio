@@ -90,6 +90,14 @@ window.App.examenesDetallados.hemoglobina_hematocrito = {
         { id: 'hematocrito', nombre: 'Hematocrito', unidad: '%', refMin: 36, refMax: 54, grupo: 'Hemograma' }
     ]
 };
+window.App.examenesDetallados.psa_total_fraccionada = {
+    nombre: 'PSA T y L (Antígeno Prostático Total y Libre)',
+    items: [
+        { id: 'psa_total', nombre: 'PSA Total', unidad: 'ng/mL', refMin: 0, refMax: 4.0, grupo: 'Antígeno Prostático' },
+        { id: 'psa_libre', nombre: 'PSA Libre', unidad: 'ng/mL', refMin: 0.10, refMax: 0.90, grupo: 'Antígeno Prostático' },
+        { id: 'psa_relacion', nombre: 'Relación Libre/Total', unidad: '%', tipo: 'calculado', grupo: 'Antígeno Prostático' }
+    ]
+};
 // A continuación se presentan exámenes detallados adicionales.
 window.App.examenesDetallados.depuracion_creatinina = {
     nombre: 'Depuración de Creatinina',

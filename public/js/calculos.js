@@ -46,8 +46,8 @@
             calcular: function(examenesOrden) {
                 var total = obtenerValor(examenesOrden, 'psa_total');
                 var libre = obtenerValor(examenesOrden, 'psa_libre');
-                if (isNaN(total) || isNaN(libre)) return null;
-                var relacion = libre > 0 ? total / libre : 0;
+                if (isNaN(total) || isNaN(libre) || total <= 0) return null;
+                var relacion = (libre / total) * 100;
                 return { psa_relacion: relacion };
             }
         };

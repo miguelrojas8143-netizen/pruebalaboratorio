@@ -80,7 +80,9 @@
             control.className = 'form-control form-control-sm';
             control.placeholder = campo.placeholder || 'Escriba el resultado';
         }
+        control.classList.add('resultado-campo');
         control.id = campo.id;
+        if (entradaManual) entradaManual.classList.add('resultado-campo');
         if (campo.unidad) {
             var grupoEntrada = document.createElement('div');
             grupoEntrada.className = 'input-group input-group-sm';
