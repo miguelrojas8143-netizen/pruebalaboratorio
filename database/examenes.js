@@ -12,6 +12,7 @@
 const {
     asegurarCatalogoPoblado,
     asegurarCatalogoProteinas,
+    asegurarCatalogoBilirrubinas,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces
 } = require('./migracion-catalogo');
@@ -776,6 +777,7 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
         console.log('🌱 Catálogo de exámenes sembrado desde los archivos de configuración:', sembrado);
     }
     asegurarCatalogoProteinas(db, raizProyecto);
+    asegurarCatalogoBilirrubinas(db, raizProyecto);
     const parametrosUroanalisis = asegurarParametrosUroanalisis(db, raizProyecto);
     if (parametrosUroanalisis > 0) {
         console.log('🧪 Parámetros de uroanálisis agregados al catálogo:', parametrosUroanalisis);

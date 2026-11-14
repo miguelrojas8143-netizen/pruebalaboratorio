@@ -43,6 +43,14 @@ window.App.examenesDetallados.proteinas_totales_fraccionadas = {
         { id: 'relacion_ag', nombre: 'Relación A/G', unidad: '', tipo: 'calculado_texto', grupo: 'Proteínas' }
     ]
 };
+window.App.examenesDetallados.bilirrubina_total_fraccionada = {
+    nombre: 'Bilirrubina Total y Fraccionada',
+    items: [
+        { id: 'bilirrubina_total', nombre: 'Bilirrubina Total', unidad: 'mg/dL', refMin: 0, refMax: 1.3, grupo: 'Bilirrubinas' },
+        { id: 'bilirrubina_directa', nombre: 'Bilirrubina Directa', unidad: 'mg/dL', refMin: 0, refMax: 0.2, grupo: 'Bilirrubinas' },
+        { id: 'bilirrubina_indirecta', nombre: 'Bilirrubina Indirecta', unidad: 'mg/dL', tipo: 'calculado', grupo: 'Bilirrubinas' }
+    ]
+};
 // Hemograma Completo (CBC)Los elementos se definen arriba. A continuación se presentan exámenes detallados adicionales.
 
 // A continuación se presentan exámenes detallados adicionales.

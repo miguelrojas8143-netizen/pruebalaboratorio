@@ -87,6 +87,7 @@
         }).then(function() {
             if (esHematologia) agregarCampoObservaciones(body, valoresGuardados.__observaciones);
             if (examenId === 'proteinas_totales_fraccionadas') actualizarProteinasFraccionadas(body);
+            if (examenId === 'bilirrubina_total_fraccionada') actualizarBilirrubinaFraccionada(body);
             inicializarCalculosEnVivoModal(body);
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         }).catch(function(error) {
@@ -131,6 +132,32 @@
         var globulinas = Number((total - albumina).toFixed(2));
         globulinasInput.value = globulinas.toFixed(2);
         relacionInput.value = globulinas > 0 ? (albumina / globulinas).toFixed(2) : 'N/A';
+    }
+
+    function actualizarBilirrubinaFraccionada(body) {
+        if (!body) return;
+        var totalInput = body.querySelector('.tabla-item-input[data-item-id="bilirrubina_total"]');
+        var directaInput = body.querySelector('.tabla-item-input[data-item-id="bilirrubina_directa"]');
+        var indirectaInput = body.querySelector('.tabla-item-input[data-item-id="bilirrubina_indirecta"]');
+        if (!totalInput || !directaInput || !indirectaInput) return;
+
+        var totalTexto = totalInput.value.trim().replace(',', '.');
+        var directaTexto = directaInput.value.trim().replace(',', '.');
+        var total = totalTexto === '' ? NaN : Number(totalTexto);
+        var directa = directaTexto === '' ? NaN : Number(directaTexto);
+        if (!Number.isFinite(total) || !Number.isFinite(directa)) {
+            indirectaInput.value = '';
+            indirectaInput.classList.remove('is-invalid');
+            indirectaInput.title = 'Valor calculado automáticamente';
+            return;
+        }
+
+        var indirecta = Number((total - directa).toFixed(2));
+        indirectaInput.value = indirecta.toFixed(2);
+        indirectaInput.classList.toggle('is-invalid', indirecta < 0);
+        indirectaInput.title = indirecta < 0
+            ? 'La bilirrubina directa no puede ser mayor que la bilirrubina total.'
+            : 'Valor calculado automáticamente';
     }
 
     function actualizarInputsCalculados(examenId) {
@@ -367,6 +394,9 @@
             if (examenId === 'proteinas_totales_fraccionadas' && !esObservacion) {
                 actualizarProteinasFraccionadas(body);
             }
+            if (examenId === 'bilirrubina_total_fraccionada' && !esObservacion) {
+                actualizarBilirrubinaFraccionada(body);
+            }
             examen.resultado = JSON.stringify(leerDatosModal(examenId));
             examen.tipo = 'perfil';
 
@@ -440,6 +470,19 @@
 
         if (examenId === 'proteinas_totales_fraccionadas') {
             actualizarProteinasFraccionadas(body);
+        }
+        if (examenId === 'bilirrubina_total_fraccionada') {
+            actualizarBilirrubinaFraccionada(body);
+            var indirectaInput = body.querySelector('.tabla-item-input[data-item-id="bilirrubina_indirecta"]');
+            if (indirectaInput && indirectaInput.classList.contains('is-invalid')) {
+                if (window.Notifications && window.Notifications.error) {
+                    window.Notifications.error('La bilirrubina directa no puede ser mayor que la bilirrubina total. Revise los valores ingresados.');
+                } else {
+                    alert('La bilirrubina directa no puede ser mayor que la bilirrubina total. Revise los valores ingresados.');
+                }
+                body.querySelector('.tabla-item-input[data-item-id="bilirrubina_directa"]').focus();
+                return;
+            }
         }
         var datos = leerDatosModal(examenId);
         examen.resultado = JSON.stringify(datos);

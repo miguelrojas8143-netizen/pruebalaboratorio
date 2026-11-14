@@ -38,20 +38,6 @@
         };
     }
 
-    if (!GRUPOS_CALCULO.bilirrubinas) {
-        GRUPOS_CALCULO.bilirrubinas = {
-            nombre: 'Bilirrubinas',
-            entradas: ['bilirrubina_total', 'bilirrubina_directa'],
-            salidas: ['bilirrubina_indirecta'],
-            calcular: function(examenesOrden) {
-                var total = obtenerValor(examenesOrden, 'bilirrubina_total');
-                var directa = obtenerValor(examenesOrden, 'bilirrubina_directa');
-                if (isNaN(total) || isNaN(directa)) return null;
-                return { bilirrubina_indirecta: total - directa };
-            }
-        };
-    }
-
     if (!GRUPOS_CALCULO.psa) {
         GRUPOS_CALCULO.psa = {
             nombre: 'PSA',
@@ -66,7 +52,8 @@
             }
         };
     }
-
+// Función para obtener el valor de un examen
+ // Si el examen no tiene un resultado directo, busca en el perfil correspondiente
     function obtenerValor(examenesOrden, examenId) {
         var examen = examenesOrden.find(function(e) { return e.id === examenId; });
         var resultado = examen && examen.resultado;
@@ -87,7 +74,7 @@
         var valor = parseFloat(String(resultado).replace(',', '.'));
         return isNaN(valor) ? NaN : valor;
     }
-
+//  Función para guardar el valor calculado de un examen
     function guardarValor(examenesOrden, examenId, valorFormateado) {
         var examen = examenesOrden.find(function(e) { return e.id === examenId; });
         if (examen) {
@@ -110,7 +97,8 @@
             return false;
         }
     }
-
+ // Función para ejecutar los cálculos automáticos de todos los grupos definidos
+   // Compara los resultados calculados con los valores actuales y actualiza si hay cambios
     window.ejecutarCalculosAutomaticos = function() {
         var examenesOrden = window.examenesOrden || [];
         if (examenesOrden.length === 0) return;
@@ -141,7 +129,7 @@
             }
         }
     };
-
+   // Función para obtener el valor guardado de un examen, ya sea directamente o desde un perfil
     function obtenerValorGuardado(examenesOrden, examenId) {
         var examen = examenesOrden.find(function(e) { return e.id === examenId; });
         if (examen) return examen.resultado;

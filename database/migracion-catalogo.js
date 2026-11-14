@@ -589,16 +589,16 @@ function asegurarCatalogoPoblado(db, raizProyecto) {
     return migrarCatalogoDesdeArchivos(db, raizProyecto, { silencioso: true });
 }
 
-function asegurarCatalogoProteinas(db, raizProyecto) {
+function asegurarCatalogoCompuesto(db, raizProyecto, opciones) {
     const configuracion = leerConfiguracionDesdeArchivos(raizProyecto);
     const dataset = normalizarConfiguracion(configuracion);
-    const idsExamenes = new Set(['proteinas_totales', 'albumina', 'proteinas_totales_fraccionadas']);
+    const idsExamenes = new Set(opciones.idsExamenes);
     const examenes = dataset.examenes.filter(function(examen) { return idsExamenes.has(examen.id); });
     const parametros = dataset.parametros.filter(function(parametro) {
-        return parametro.examen_id === 'proteinas_totales_fraccionadas';
+        return parametro.examen_id === opciones.examenCompuestoId;
     });
-    if (examenes.length !== idsExamenes.size || parametros.length !== 4) {
-        throw new Error('La configuración de proteínas está incompleta.');
+    if (examenes.length !== idsExamenes.size || parametros.length !== opciones.cantidadParametros) {
+        throw new Error('La configuración de ' + opciones.nombre + ' está incompleta.');
     }
 
     const categoria = dataset.categorias.find(function(item) {
@@ -666,6 +666,24 @@ function asegurarCatalogoProteinas(db, raizProyecto) {
         parametros.forEach(function(parametro) { guardarParametro.run(parametro); });
     });
     sincronizar();
+}
+
+function asegurarCatalogoProteinas(db, raizProyecto) {
+    asegurarCatalogoCompuesto(db, raizProyecto, {
+        idsExamenes: ['proteinas_totales', 'albumina', 'proteinas_totales_fraccionadas'],
+        examenCompuestoId: 'proteinas_totales_fraccionadas',
+        cantidadParametros: 4,
+        nombre: 'proteínas'
+    });
+}
+
+function asegurarCatalogoBilirrubinas(db, raizProyecto) {
+    asegurarCatalogoCompuesto(db, raizProyecto, {
+        idsExamenes: ['bilirrubina_total', 'bilirrubina_directa', 'bilirrubina_total_fraccionada'],
+        examenCompuestoId: 'bilirrubina_total_fraccionada',
+        cantidadParametros: 3,
+        nombre: 'bilirrubinas'
+    });
 }
 
 /**
@@ -796,6 +814,7 @@ module.exports = {
     migrarCatalogoDesdeArchivos,
     asegurarCatalogoPoblado,
     asegurarCatalogoProteinas,
+    asegurarCatalogoBilirrubinas,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces,
     aSlug,

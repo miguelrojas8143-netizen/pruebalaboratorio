@@ -7,7 +7,8 @@ window.App.examenesNormalesCompuestos = [
     'perfil_secrecion_vaginal',
     'hematologia_completa',
     'uroanalisis',
-    'proteinas_totales_fraccionadas'
+    'proteinas_totales_fraccionadas',
+    'bilirrubina_total_fraccionada'
 ];
 
 window.esExamenNormalCompuesto = function(examenId) {
@@ -43,8 +44,7 @@ window.App.perfiles.perfil_hepatico = {
         { id: 'ggt', nombre: 'G.G.T.', area: 'Química Sanguínea', unidad: 'U/L', refMin: 0, refMax: 50 },
         { id: 'proteinas_totales', nombre: 'Proteína Total', area: 'Química Sanguínea', unidad: 'g/dL', refMin: 6.5, refMax: 8.5 },
         { id: 'albumina', nombre: 'Albúmina', area: 'Química Sanguínea', unidad: 'g/dL', refMin: 3.5, refMax: 5.5 },
-        { id: 'bilirrubina_total', nombre: 'Bilirrubina Total y Fraccionada', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0, refMax: 1.3 },
-        { id: 'bilirrubina_directa', nombre: 'Bilirrubina Directa', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0, refMax: 0.2 },
+        { id: 'bilirrubina_total_fraccionada', nombre: 'Bilirrubina Total y Fraccionada', area: 'Química Sanguínea', unidad: '', tipo: 'perfil' },
         { id: 'fosfatasa_alcalina', nombre: 'Fosfatasa Alcalina', area: 'Química Sanguínea', unidad: 'U/L', refMin: 30, refMax: 120 },
         { id: 'tgo', nombre: 'Transaminasas TGO', area: 'Química Sanguínea', unidad: 'U/L', refMin: 5, refMax: 40 },
         { id: 'tgp', nombre: 'Transaminasas TGP', area: 'Química Sanguínea', unidad: 'U/L', refMin: 7, refMax: 56 },

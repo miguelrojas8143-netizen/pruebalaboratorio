@@ -120,6 +120,7 @@
 
         catalogo.examenes.forEach(function(fila) {
             var examen = examenDeFila(fila);
+            if (examen.id === 'bilirrubina_indirecta') return;
             estado.examenesPorId[examen.id] = examen;
             catalogoPlano.push(examen);
 
@@ -196,7 +197,8 @@
         'perfil_secrecion_vaginal',
         'hematologia_completa',
         'uroanalisis',
-        'proteinas_totales_fraccionadas'
+        'proteinas_totales_fraccionadas',
+        'bilirrubina_total_fraccionada'
     ];
 
     window.esExamenNormalCompuesto = function(examenId) {
