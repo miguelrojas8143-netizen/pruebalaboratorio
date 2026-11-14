@@ -11,6 +11,7 @@
 
 const {
     asegurarCatalogoPoblado,
+    asegurarCatalogoProteinas,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces
 } = require('./migracion-catalogo');
@@ -452,7 +453,7 @@ function guardarExamenesPaciente(db, orden, examenes) {
                     examen.resultado == null ? '' : String(examen.resultado),
                     examenId || null,
                     null,
-                    null,
+                    examen.referencia == null ? null : String(examen.referencia),
                     examen.grupoPerfil || null
                 );
                 continue;
@@ -638,7 +639,8 @@ function mapearExamenesGuardados(db, filas) {
             nombre: nombre,
             nombre_examen: nombre,
             grupoPerfil: fila.grupo_perfil || null,
-            resultado: fila.resultado || ''
+            resultado: fila.resultado || '',
+            referencia: fila.referencia == null ? null : String(fila.referencia)
         });
     });
 
@@ -773,6 +775,7 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     if (sembrado) {
         console.log('🌱 Catálogo de exámenes sembrado desde los archivos de configuración:', sembrado);
     }
+    asegurarCatalogoProteinas(db, raizProyecto);
     const parametrosUroanalisis = asegurarParametrosUroanalisis(db, raizProyecto);
     if (parametrosUroanalisis > 0) {
         console.log('🧪 Parámetros de uroanálisis agregados al catálogo:', parametrosUroanalisis);

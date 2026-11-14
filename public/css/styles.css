@@ -855,41 +855,43 @@ td.grupo-header-clickable:hover {
 }
 
 #modalItemsExamen.modal-editor-individual .modal-dialog {
-    width: min(560px, calc(100vw - 2rem));
+    width: min(520px, calc(100vw - 2rem));
+    max-width: 520px;
 }
 
 #modalItemsExamen.modal-editor-individual .modal-body {
-    padding: 0.8rem 1rem;
+    padding: 0.6rem 0.8rem;
 }
 
-#modalItemsExamen .editor-resultado-individual {
-    display: grid;
-    gap: 0.35rem;
+#modalItemsExamen.modal-editor-individual .modal-header,
+#modalItemsExamen.modal-editor-individual .modal-footer {
+    padding: 0.5rem 0.75rem;
 }
 
-#modalItemsExamen .editor-resultado-individual .editor-resultado-input {
-    min-height: 38px;
-    font-size: 1rem;
+#modalItemsExamen.modal-editor-individual .modal-body .form-control,
+#modalItemsExamen.modal-editor-individual .modal-body .form-select {
+    min-height: 28px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.82rem;
 }
 
-#modalItemsExamen .editor-resultado-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    color: #526575;
-    font-size: 0.8rem;
+#modalItemsExamen.modal-editor-individual .items-detallados-cabecera,
+#modalItemsExamen.modal-editor-individual .items-detallados-tabla > [class*="col-"] {
+    grid-template-columns: minmax(130px, 1.3fr) minmax(96px, 0.9fr) 76px minmax(100px, 1.1fr);
+    column-gap: 0.25rem;
 }
 
-#modalItemsExamen .editor-resultado-unidad,
-#modalItemsExamen .editor-resultado-referencia {
-    padding: 0.3rem 0.5rem;
-    border-radius: 0.45rem;
-    background: #f1f5f9;
+#modalItemsExamen.modal-editor-individual .items-detallados-cabecera {
+    font-size: 0.64rem;
 }
 
-#modalItemsExamen .editor-resultado-referencia {
-    color: #174a75;
-    background: #eaf3ff;
+#modalItemsExamen.modal-editor-individual .items-detallados-tabla label {
+    font-size: 0.78rem;
+}
+
+#modalItemsExamen.modal-editor-individual .items-detallados-tabla .item-unidad {
+    font-size: 0.72rem;
+    white-space: nowrap;
 }
 
 #modalItemsExamen .items-detallados-cabecera,
@@ -941,18 +943,22 @@ td.grupo-header-clickable:hover {
 
 @media (max-width: 600px) {
     #modalItemsExamen.modal-editor-individual .modal-body {
-        padding: 0.7rem;
+        padding: 0.55rem 0.65rem;
     }
 
     #modalItemsExamen .items-detallados-cabecera,
     #modalItemsExamen .items-detallados-verticales > [class*="col-"],
-    #modalItemsExamen .items-detallados-tabla > [class*="col-"] {
-        grid-template-columns: minmax(120px, 1fr) minmax(80px, 0.8fr);
+    #modalItemsExamen .items-detallados-tabla > [class*="col-"],
+    #modalItemsExamen.modal-editor-individual .items-detallados-cabecera,
+    #modalItemsExamen.modal-editor-individual .items-detallados-tabla > [class*="col-"] {
+        grid-template-columns: minmax(130px, 1fr) minmax(96px, 0.8fr);
         row-gap: 0.2rem;
     }
 
     #modalItemsExamen .items-detallados-cabecera span:nth-child(3),
-    #modalItemsExamen .items-detallados-cabecera span:nth-child(4) {
+    #modalItemsExamen .items-detallados-cabecera span:nth-child(4),
+    #modalItemsExamen.modal-editor-individual .items-detallados-cabecera span:nth-child(3),
+    #modalItemsExamen.modal-editor-individual .items-detallados-cabecera span:nth-child(4) {
         display: none;
     }
 

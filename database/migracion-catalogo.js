@@ -51,6 +51,7 @@ const TIPOS_DATO = {
     numerico: 'numerico',
     texto: 'texto',
     calculado: 'numerico',
+    calculado_texto: 'texto',
     seleccion_unica: 'seleccion_unica',
     multiselect_cantidad: 'multiselect_cantidad',
     perfil: 'numerico',
@@ -588,6 +589,85 @@ function asegurarCatalogoPoblado(db, raizProyecto) {
     return migrarCatalogoDesdeArchivos(db, raizProyecto, { silencioso: true });
 }
 
+function asegurarCatalogoProteinas(db, raizProyecto) {
+    const configuracion = leerConfiguracionDesdeArchivos(raizProyecto);
+    const dataset = normalizarConfiguracion(configuracion);
+    const idsExamenes = new Set(['proteinas_totales', 'albumina', 'proteinas_totales_fraccionadas']);
+    const examenes = dataset.examenes.filter(function(examen) { return idsExamenes.has(examen.id); });
+    const parametros = dataset.parametros.filter(function(parametro) {
+        return parametro.examen_id === 'proteinas_totales_fraccionadas';
+    });
+    if (examenes.length !== idsExamenes.size || parametros.length !== 4) {
+        throw new Error('La configuración de proteínas está incompleta.');
+    }
+
+    const categoria = dataset.categorias.find(function(item) {
+        return item.nombre === 'Química Sanguínea';
+    });
+    if (!categoria) throw new Error('No se encontró la categoría Química Sanguínea.');
+
+    const sincronizar = db.transaction(function() {
+        const categoriaExistente = db.prepare(
+            'SELECT id FROM categorias_examenes WHERE nombre = ? COLLATE NOCASE'
+        ).get(categoria.nombre);
+        const categoriaId = categoriaExistente ? categoriaExistente.id : categoria.id;
+        db.prepare(`
+            INSERT INTO categorias_examenes (id, nombre, orden)
+            VALUES (?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, orden = excluded.orden
+        `).run(categoriaId, categoria.nombre, categoria.orden);
+
+        const guardarExamen = db.prepare(`
+            INSERT INTO examenes
+                (id, categoria_id, nombre, unidad, tipo, tipo_formulario, grupo,
+                 valor_defecto, ref_min, ref_max, ref_texto, orden)
+            VALUES
+                (@id, @categoria_id, @nombre, @unidad, @tipo, @tipo_formulario, @grupo,
+                 @valor_defecto, @ref_min, @ref_max, @ref_texto, @orden)
+            ON CONFLICT(id) DO UPDATE SET
+                categoria_id = excluded.categoria_id,
+                nombre = excluded.nombre,
+                unidad = excluded.unidad,
+                tipo = excluded.tipo,
+                tipo_formulario = excluded.tipo_formulario,
+                grupo = excluded.grupo,
+                valor_defecto = excluded.valor_defecto,
+                ref_min = excluded.ref_min,
+                ref_max = excluded.ref_max,
+                ref_texto = excluded.ref_texto,
+                orden = excluded.orden
+            WHERE examenes.origen <> 'usuario'
+        `);
+        examenes.forEach(function(examen) {
+            guardarExamen.run(Object.assign({}, examen, { categoria_id: categoriaId }));
+        });
+
+        const guardarParametro = db.prepare(`
+            INSERT INTO parametros_examen
+                (examen_id, codigo, nombre, tipo_dato, tipo_interfaz, unidad, grupo,
+                 valor_defecto, ref_min, ref_max, ref_texto, obligatorio, orden, orden_render)
+            VALUES
+                (@examen_id, @codigo, @nombre, @tipo_dato, @tipo_interfaz, @unidad, @grupo,
+                 @valor_defecto, @ref_min, @ref_max, @ref_texto, @obligatorio, @orden, @orden_render)
+            ON CONFLICT(examen_id, codigo) DO UPDATE SET
+                nombre = excluded.nombre,
+                tipo_dato = excluded.tipo_dato,
+                tipo_interfaz = excluded.tipo_interfaz,
+                unidad = excluded.unidad,
+                grupo = excluded.grupo,
+                valor_defecto = excluded.valor_defecto,
+                ref_min = excluded.ref_min,
+                ref_max = excluded.ref_max,
+                ref_texto = excluded.ref_texto,
+                obligatorio = excluded.obligatorio,
+                orden = excluded.orden,
+                orden_render = excluded.orden_render
+        `);
+        parametros.forEach(function(parametro) { guardarParametro.run(parametro); });
+    });
+    sincronizar();
+}
+
 /**
  * Añade al catálogo existente los parámetros de un examen compuesto que falten.
  * Es aditivo para no borrar parámetros ni opciones personalizados en bases
@@ -715,6 +795,7 @@ module.exports = {
     normalizarConfiguracion,
     migrarCatalogoDesdeArchivos,
     asegurarCatalogoPoblado,
+    asegurarCatalogoProteinas,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces,
     aSlug,

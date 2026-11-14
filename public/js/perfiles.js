@@ -3,7 +3,12 @@
  */
 window.App = window.App || {};
 window.App.perfiles = window.App.perfiles || {};
-window.App.examenesNormalesCompuestos = ['perfil_secrecion_vaginal', 'hematologia_completa', 'uroanalisis'];
+window.App.examenesNormalesCompuestos = [
+    'perfil_secrecion_vaginal',
+    'hematologia_completa',
+    'uroanalisis',
+    'proteinas_totales_fraccionadas'
+];
 
 window.esExamenNormalCompuesto = function(examenId) {
     return window.App.examenesNormalesCompuestos.indexOf(examenId) !== -1;
@@ -36,7 +41,7 @@ window.App.perfiles.perfil_hepatico = {
     area: 'Perfiles',
     examenes: [
         { id: 'ggt', nombre: 'G.G.T.', area: 'Química Sanguínea', unidad: 'U/L', refMin: 0, refMax: 50 },
-        { id: 'proteinas_totales', nombre: 'Proteínas Totales y Albúmina', area: 'Química Sanguínea', unidad: 'g/dL', refMin: 6.5, refMax: 8.5 },
+        { id: 'proteinas_totales', nombre: 'Proteína Total', area: 'Química Sanguínea', unidad: 'g/dL', refMin: 6.5, refMax: 8.5 },
         { id: 'albumina', nombre: 'Albúmina', area: 'Química Sanguínea', unidad: 'g/dL', refMin: 3.5, refMax: 5.5 },
         { id: 'bilirrubina_total', nombre: 'Bilirrubina Total y Fraccionada', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0, refMax: 1.3 },
         { id: 'bilirrubina_directa', nombre: 'Bilirrubina Directa', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0, refMax: 0.2 },

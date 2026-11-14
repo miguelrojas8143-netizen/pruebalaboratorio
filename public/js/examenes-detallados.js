@@ -34,6 +34,15 @@ window.App.examenesDetallados.hematologia_completa = {
         { id: 'plcr', nombre: 'P.LCR', unidad: '%', refMin: 0, refMax: 42.3, refTexto: '<42.3', grupo: 'Hemograma' }
     ]
 };
+window.App.examenesDetallados.proteinas_totales_fraccionadas = {
+    nombre: 'Proteínas Totales y Fraccionadas',
+    items: [
+        { id: 'proteinas_totales', nombre: 'Proteínas Totales', unidad: 'g/dL', refMin: 6.5, refMax: 8.5, grupo: 'Proteínas' },
+        { id: 'albumina', nombre: 'Albúmina', unidad: 'g/dL', refMin: 3.5, refMax: 5.5, grupo: 'Proteínas' },
+        { id: 'globulinas', nombre: 'Globulinas', unidad: 'g/dL', tipo: 'calculado', grupo: 'Proteínas' },
+        { id: 'relacion_ag', nombre: 'Relación A/G', unidad: '', tipo: 'calculado_texto', grupo: 'Proteínas' }
+    ]
+};
 // Hemograma Completo (CBC)Los elementos se definen arriba. A continuación se presentan exámenes detallados adicionales.
 
 // A continuación se presentan exámenes detallados adicionales.

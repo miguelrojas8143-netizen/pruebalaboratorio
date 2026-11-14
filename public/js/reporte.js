@@ -31,7 +31,8 @@
                 id: e.examen_id || e.nombre_examen || '',
                 nombre: e.nombre_examen || '',
                 examen_id: e.examen_id || '',
-                resultado: e.resultado || ''
+                resultado: e.resultado || '',
+                referencia: e.referencia
             };
         });
         // Enriquecer exámenes con datos del catálogo (area, tipo, unidad, referencias)

@@ -80,7 +80,8 @@
                     return Object.assign({}, e, {
                         id: e.examen_id || e.id || e.nombre_examen,
                         nombre: e.nombre_examen || e.nombre || '',
-                        resultado: e.resultado || ''
+                        resultado: e.resultado || '',
+                        referencia: e.referencia
                     });
                 }
                 return {
@@ -88,7 +89,8 @@
                     examen_id: e.examen_id || e.id || null,
                     nombre: e.nombre_examen || e.nombre || '',
                     grupoPerfil: e.grupoPerfil || null,
-                    resultado: e.resultado || ''
+                    resultado: e.resultado || '',
+                    referencia: e.referencia
                 };
             });
             paciente.examenes = window.enriquecerExamenesDesdeCatalogo
@@ -712,7 +714,7 @@
 
         var zonasResultados = [
             { selector: '#tablaExamenes', campos: '.resultado-input' },
-            { selector: '#modalItemsExamenBody', campos: '.tabla-item-input:not([readonly]), .observaciones-bioanalista-input, .editor-resultado-input' },
+            { selector: '#modalItemsExamenBody', campos: '.tabla-item-input:not([readonly]), .referencia-item-input, .observaciones-bioanalista-input, .editor-resultado-input' },
             { selector: '#formHeces', campos: 'input, select, textarea' },
             { selector: '#formUroanalisis', campos: 'input, select, textarea' },
             { selector: '#formularioAntibiograma', campos: '.abx-resultado, .abx-cmi, #antibiogramaObservaciones' },

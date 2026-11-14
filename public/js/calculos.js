@@ -52,22 +52,6 @@
         };
     }
 
-    if (!GRUPOS_CALCULO.proteinas) {
-        GRUPOS_CALCULO.proteinas = {
-            nombre: 'Proteínas',
-            entradas: ['proteinas_totales', 'albumina'],
-            salidas: ['globulina', 'relacion_ag'],
-            calcular: function(examenesOrden) {
-                var total = obtenerValor(examenesOrden, 'proteinas_totales');
-                var albumina = obtenerValor(examenesOrden, 'albumina');
-                if (isNaN(total) || isNaN(albumina)) return null;
-                var globulina = total - albumina;
-                var relacionAG = globulina > 0 ? albumina / globulina : 0;
-                return { globulina: globulina, relacion_ag: relacionAG };
-            }
-        };
-    }
-
     if (!GRUPOS_CALCULO.psa) {
         GRUPOS_CALCULO.psa = {
             nombre: 'PSA',

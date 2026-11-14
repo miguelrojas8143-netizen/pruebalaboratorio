@@ -216,9 +216,11 @@
 
     function clasificarFila(examen, categoriaRef) {
         var r = clasificarResultado(examen, categoriaRef);
-        var refTexto = examen.refTexto ||
-            ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
-                ? examen.refMin + ' - ' + examen.refMax : '-');
+        var refTexto = examen.referencia !== undefined && examen.referencia !== null
+            ? examen.referencia
+            : examen.refTexto ||
+                ((examen.refMin !== undefined && examen.refMax !== undefined && (examen.refMin || examen.refMax))
+                    ? examen.refMin + ' - ' + examen.refMax : '-');
         return {
             // `valorImprimible` sustituye nombre y resultado: un examen sin
             // catalogar nunca imprime `undefined` ni su JSON crudo.
@@ -227,7 +229,7 @@
             clase: r.clase,
             indicador: r.indicador,
             indicadorExtremo: r.indicadorExtremo,
-            unidad: valorImprimible(examen.unidad),
+            unidad: examen.id === 'relacion_ag' ? '' : valorImprimible(examen.unidad),
             refTexto: valorImprimible(refTexto),
             esSecrecionVaginal: examen.area === 'Secreción Vaginal'
         };
@@ -326,7 +328,8 @@
                     refTexto: referenciasGuardadas[item.id] !== undefined
                         ? referenciasGuardadas[item.id]
                         : item.refTexto,
-                    tipo: item.tipo === 'calculado' ? 'numerico' : (item.tipo || 'numerico'),
+                    tipo: item.tipo === 'calculado' ? 'numerico'
+                        : (item.tipo === 'calculado_texto' ? 'texto' : (item.tipo || 'numerico')),
                     resultado: valores[item.id] == null ? '' : String(valores[item.id]),
                     grupoPerfil: examen.grupoPerfil,
                     grupo: item.grupo || examen.nombre

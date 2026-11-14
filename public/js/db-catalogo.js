@@ -192,7 +192,12 @@
 
     // Exámenes que se listan como perfil pero se agregan a la orden como
     // exámenes normales, es decir, se expanden en sus parámetros.
-    window.App.examenesNormalesCompuestos = ['perfil_secrecion_vaginal', 'hematologia_completa', 'uroanalisis'];
+    window.App.examenesNormalesCompuestos = [
+        'perfil_secrecion_vaginal',
+        'hematologia_completa',
+        'uroanalisis',
+        'proteinas_totales_fraccionadas'
+    ];
 
     window.esExamenNormalCompuesto = function(examenId) {
         return window.App.examenesNormalesCompuestos.indexOf(examenId) !== -1;
@@ -332,7 +337,8 @@
                     etiqueta.appendChild(asterisco);
                 }
 
-                var esTexto = parametro.tipo === 'texto';
+                var esCalculado = parametro.tipo === 'calculado' || parametro.tipo === 'calculado_texto';
+                var esTexto = parametro.tipo === 'texto' || parametro.tipo === 'calculado_texto';
                 var entrada = document.createElement('input');
                 entrada.type = esTexto ? 'text' : 'number';
                 if (!esTexto) entrada.step = '0.01';
@@ -344,7 +350,7 @@
                 entrada.setAttribute('data-examen-id', claveExamen);
                 entrada.value = valores[parametro.id] === undefined ? '' : valores[parametro.id];
 
-                if (parametro.tipo === 'calculado') {
+                if (esCalculado) {
                     entrada.readOnly = true;
                     entrada.title = 'Valor calculado automáticamente';
                 }
