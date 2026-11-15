@@ -786,36 +786,40 @@ function asegurarCatalogoDengue(db, raizProyecto) {
     sincronizar();
 }
 
-function asegurarCatalogoHelicobacterAntigeno(db, raizProyecto) {
+function asegurarCatalogoHelicobacter(db, raizProyecto) {
     const dataset = normalizarConfiguracion(leerConfiguracionDesdeArchivos(raizProyecto));
-    const examen = dataset.examenes.find(function(item) { return item.id === 'helicobacter_heces'; });
-    if (!examen || examen.tipo !== 'seleccion_unica') {
-        throw new Error('La configuración de Helicobacter Pylori (Antígeno) debe ser cualitativa.');
-    }
-
-    const opciones = dataset.opcionesExamen.filter(function(item) {
-        return item.examen_id === examen.id;
+    const ids = ['helicobacter_igm', 'helicobacter_total', 'helicobacter_heces'];
+    const examenes = ids.map(function(id) {
+        return dataset.examenes.find(function(item) { return item.id === id; });
     });
-    if (opciones.length !== 2 ||
-        opciones.some(function(item) { return item.valor !== 'Positivo' && item.valor !== 'Negativo'; })) {
-        throw new Error('Helicobacter Pylori (Antígeno) debe ofrecer Positivo/Negativo.');
+    const examenIgm = examenes[0];
+    if (!examenIgm || examenIgm.tipo !== 'numerico' || examenIgm.unidad ||
+        examenIgm.ref_min !== null || examenIgm.ref_max !== null || examenIgm.ref_texto) {
+        throw new Error('Helicobacter Pylori IgM debe ser numérico y no tener unidad ni referencia.');
     }
-
-    const categoria = dataset.categorias.find(function(item) { return item.id === examen.categoria_id; });
-    if (!categoria) throw new Error('No se encontró la categoría de Helicobacter Pylori (Antígeno).');
+    examenes.slice(1).forEach(function(examen) {
+        if (!examen || examen.tipo !== 'seleccion_unica' || examen.unidad ||
+            examen.ref_min !== null || examen.ref_max !== null || examen.ref_texto) {
+            throw new Error('Helicobacter Pylori total y antígeno deben ser cualitativos sin unidad ni referencia.');
+        }
+        const opciones = dataset.opcionesExamen.filter(function(item) { return item.examen_id === examen.id; });
+        if (opciones.length !== 2 ||
+            opciones.some(function(item) { return item.valor !== 'Positivo' && item.valor !== 'Negativo'; })) {
+            throw new Error(examen.nombre + ' debe ofrecer Positivo/Negativo.');
+        }
+    });
 
     const sincronizar = db.transaction(function() {
-        const categoriaExistente = db.prepare(
+        const buscarCategoria = db.prepare(
             'SELECT id FROM categorias_examenes WHERE nombre = ? COLLATE NOCASE'
-        ).get(categoria.nombre);
-        const categoriaId = categoriaExistente ? categoriaExistente.id : categoria.id;
-        db.prepare(`
+        );
+        const buscarExamen = db.prepare('SELECT origen FROM examenes WHERE id = ?');
+        const guardarCategoria = db.prepare(`
             INSERT INTO categorias_examenes (id, nombre, orden)
             VALUES (?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, orden = excluded.orden
-        `).run(categoriaId, categoria.nombre, categoria.orden);
-
-        const resultado = db.prepare(`
+        `);
+        const guardarExamen = db.prepare(`
             INSERT INTO examenes
                 (id, categoria_id, nombre, unidad, tipo, tipo_formulario, grupo,
                  valor_defecto, ref_min, ref_max, ref_texto, orden)
@@ -835,15 +839,30 @@ function asegurarCatalogoHelicobacterAntigeno(db, raizProyecto) {
                 ref_texto = excluded.ref_texto,
                 orden = excluded.orden
             WHERE examenes.origen <> 'usuario'
-        `).run(Object.assign({}, examen, { categoria_id: categoriaId }));
-        if (resultado.changes === 0) return;
-
-        db.prepare('DELETE FROM opciones_examen WHERE examen_id = ?').run(examen.id);
+        `);
+        const borrarOpciones = db.prepare('DELETE FROM opciones_examen WHERE examen_id = ?');
         const guardarOpcion = db.prepare(
             'INSERT INTO opciones_examen (examen_id, orden, valor) VALUES (?, ?, ?)'
         );
-        opciones.forEach(function(opcion) {
-            guardarOpcion.run(opcion.examen_id, opcion.orden, opcion.valor);
+        const borrarRangos = db.prepare('DELETE FROM rangos_referencia WHERE examen_id = ?');
+
+        examenes.forEach(function(examen) {
+            const categoria = dataset.categorias.find(function(item) { return item.id === examen.categoria_id; });
+            if (!categoria) throw new Error('No se encontró la categoría de ' + examen.nombre + '.');
+            const existente = buscarCategoria.get(categoria.nombre);
+            const categoriaId = existente ? existente.id : categoria.id;
+            guardarCategoria.run(categoriaId, categoria.nombre, categoria.orden);
+
+            const examenExistente = buscarExamen.get(examen.id);
+            if (examenExistente && examenExistente.origen === 'usuario') return;
+            guardarExamen.run(Object.assign({}, examen, { categoria_id: categoriaId }));
+
+            borrarRangos.run(examen.id);
+            borrarOpciones.run(examen.id);
+            dataset.opcionesExamen.filter(function(opcion) { return opcion.examen_id === examen.id; })
+                .forEach(function(opcion) {
+                    guardarOpcion.run(opcion.examen_id, opcion.orden, opcion.valor);
+                });
         });
     });
     sincronizar();
@@ -862,9 +881,44 @@ function asegurarParametrosExamen(db, raizProyecto, examenId, nombreExamen) {
         throw new Error('No se encontraron parámetros configurados para ' + nombreExamen + '.');
     }
 
-    const examenExiste = db.prepare('SELECT 1 FROM examenes WHERE id = ?').get(examenId);
+    let examenExiste = db.prepare('SELECT 1 FROM examenes WHERE id = ?').get(examenId);
     if (!examenExiste) {
-        throw new Error('No existe ' + examenId + ' en el catálogo SQLite.');
+        const dataset = normalizarConfiguracion(configuracion);
+        const examen = dataset.examenes.find(function(item) { return item.id === examenId; });
+        if (!examen) {
+            throw new Error('No se encontró ' + examenId + ' en la configuración del catálogo.');
+        }
+        const categoria = dataset.categorias.find(function(item) { return item.id === examen.categoria_id; });
+        if (!categoria) {
+            throw new Error('No se encontró la categoría de ' + nombreExamen + '.');
+        }
+
+        const agregarExamen = db.transaction(function() {
+            const categoriaExistente = db.prepare(
+                'SELECT id FROM categorias_examenes WHERE nombre = ? COLLATE NOCASE'
+            ).get(categoria.nombre);
+            const categoriaId = categoriaExistente ? categoriaExistente.id : categoria.id;
+            db.prepare(`
+                INSERT INTO categorias_examenes (id, nombre, orden)
+                VALUES (?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, orden = excluded.orden
+            `).run(categoriaId, categoria.nombre, categoria.orden);
+            db.prepare(`
+                INSERT INTO examenes
+                    (id, categoria_id, nombre, unidad, tipo, tipo_formulario, grupo,
+                     valor_defecto, ref_min, ref_max, ref_texto, orden)
+                VALUES
+                    (@id, @categoria_id, @nombre, @unidad, @tipo, @tipo_formulario, @grupo,
+                     @valor_defecto, @ref_min, @ref_max, @ref_texto, @orden)
+                ON CONFLICT(id) DO NOTHING
+            `).run(Object.assign({}, examen, { categoria_id: categoriaId }));
+        });
+        agregarExamen();
+
+        examenExiste = db.prepare('SELECT 1 FROM examenes WHERE id = ?').get(examenId);
+        if (!examenExiste) {
+            throw new Error('No existe ' + examenId + ' en el catálogo SQLite.');
+        }
     }
 
     const insertarParametro = db.prepare(`
@@ -968,6 +1022,10 @@ function asegurarParametrosHeces(db, raizProyecto) {
     return asegurarParametrosExamen(db, raizProyecto, 'examen_heces', 'el examen de heces');
 }
 
+function asegurarParametrosHecesSeriado(db, raizProyecto) {
+    return asegurarParametrosExamen(db, raizProyecto, 'examen_heces_seriado', 'el examen de heces seriado');
+}
+
 module.exports = {
     ARCHIVOS_FUENTE,
     ORDENES_RENDER,
@@ -980,9 +1038,10 @@ module.exports = {
     asegurarCatalogoBilirrubinas,
     asegurarCatalogoPSA,
     asegurarCatalogoDengue,
-    asegurarCatalogoHelicobacterAntigeno,
+    asegurarCatalogoHelicobacter,
     asegurarParametrosUroanalisis,
     asegurarParametrosHeces,
+    asegurarParametrosHecesSeriado,
     aSlug,
     aEntero
 };

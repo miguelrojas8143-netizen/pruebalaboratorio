@@ -234,9 +234,10 @@
 
     function crearFormularioIndividual(body, examen, examenReferencias) {
         body.textContent = '';
-        var esAntigenoHelicobacter = examen.id === 'helicobacter_heces';
+        var esHelicobacter = ['helicobacter_heces', 'helicobacter_igm', 'helicobacter_total'].indexOf(examen.id) !== -1;
+        var esHelicobacterCualitativo = examen.id === 'helicobacter_heces' || examen.id === 'helicobacter_total';
 
-        if (!esAntigenoHelicobacter) {
+        if (!esHelicobacter) {
             var cabecera = document.createElement('div');
             cabecera.className = 'items-detallados-cabecera';
             ['Parámetro', 'Resultado', 'Unidad', 'Valores de Referencia'].forEach(function(texto) {
@@ -249,7 +250,7 @@
 
         var fila = document.createElement('div');
         fila.className = 'row g-3 items-detallados-tabla'
-            + (esAntigenoHelicobacter ? ' items-detallados-helicobacter' : '');
+            + (esHelicobacter ? ' items-detallados-helicobacter' : '');
         var columna = document.createElement('div');
         columna.className = 'col-md-4 col-sm-6';
 
@@ -259,10 +260,10 @@
         etiqueta.textContent = examen.nombre || examen.id;
 
         var entrada;
-        var opciones = esAntigenoHelicobacter
+        var opciones = esHelicobacterCualitativo
             ? ['Positivo', 'Negativo']
             : (Array.isArray(examen.opciones) ? examen.opciones : []);
-        if ((esAntigenoHelicobacter || examen.tipo === 'seleccion_unica') && opciones.length > 0) {
+        if ((esHelicobacterCualitativo || examen.tipo === 'seleccion_unica') && opciones.length > 0) {
             entrada = document.createElement('select');
             entrada.className = 'form-select form-select-sm tabla-item-input editor-resultado-input';
             var opcionVacia = document.createElement('option');
@@ -277,7 +278,9 @@
             });
         } else {
             entrada = document.createElement('input');
-            entrada.type = examen.tipo === 'texto' ? 'text' : 'number';
+            entrada.type = examen.id === 'helicobacter_igm'
+                ? 'number'
+                : (examen.tipo === 'texto' ? 'text' : 'number');
             if (entrada.type === 'number') entrada.step = '0.01';
             entrada.className = 'form-control form-control-sm tabla-item-input editor-resultado-input';
             entrada.placeholder = '-';
@@ -289,7 +292,7 @@
 
         columna.appendChild(etiqueta);
         columna.appendChild(entrada);
-        if (!esAntigenoHelicobacter) {
+        if (!esHelicobacter) {
             var unidad = document.createElement('span');
             unidad.className = 'item-unidad';
             unidad.textContent = examen.unidad || '-';
@@ -476,8 +479,10 @@
 
         var modalEl = document.getElementById('modalItemsExamen');
         var body = document.getElementById('modalItemsExamenBody');
-        modalEl.classList.remove('modal-editor-dengue', 'modal-editor-cualitativo');
-        if (examenId === 'helicobacter_heces') modalEl.classList.add('modal-editor-cualitativo');
+        modalEl.classList.remove('modal-editor-dengue', 'modal-editor-helicobacter', 'modal-editor-cualitativo');
+        if (['helicobacter_heces', 'helicobacter_igm', 'helicobacter_total'].indexOf(examenId) !== -1) {
+            modalEl.classList.add('modal-editor-helicobacter');
+        }
         var examenConReferencias = window.aplicarReferenciasAdaptadas
             ? window.aplicarReferenciasAdaptadas(window.pacienteActivo, [examen])[0] || examen
             : examen;

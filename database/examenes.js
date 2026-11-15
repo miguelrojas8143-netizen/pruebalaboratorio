@@ -15,9 +15,10 @@ const {
     asegurarCatalogoBilirrubinas,
     asegurarCatalogoPSA,
     asegurarCatalogoDengue,
-    asegurarCatalogoHelicobacterAntigeno,
+    asegurarCatalogoHelicobacter,
     asegurarParametrosUroanalisis,
-    asegurarParametrosHeces
+    asegurarParametrosHeces,
+    asegurarParametrosHecesSeriado
 } = require('./migracion-catalogo');
 const { columnasDe, existeTabla } = require('./schema');
 
@@ -783,7 +784,7 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     asegurarCatalogoBilirrubinas(db, raizProyecto);
     asegurarCatalogoPSA(db, raizProyecto);
     asegurarCatalogoDengue(db, raizProyecto);
-    asegurarCatalogoHelicobacterAntigeno(db, raizProyecto);
+    asegurarCatalogoHelicobacter(db, raizProyecto);
     const parametrosUroanalisis = asegurarParametrosUroanalisis(db, raizProyecto);
     if (parametrosUroanalisis > 0) {
         console.log('🧪 Parámetros de uroanálisis agregados al catálogo:', parametrosUroanalisis);
@@ -791,6 +792,10 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     const parametrosHeces = asegurarParametrosHeces(db, raizProyecto);
     if (parametrosHeces > 0) {
         console.log('🧪 Parámetros de heces agregados al catálogo:', parametrosHeces);
+    }
+    const parametrosHecesSeriado = asegurarParametrosHecesSeriado(db, raizProyecto);
+    if (parametrosHecesSeriado > 0) {
+        console.log('🧪 Parámetros de heces seriado agregados al catálogo:', parametrosHecesSeriado);
     }
     const resultadosLegados = migrarExamenesPacienteLegados(db);
     if (resultadosLegados > 0) {

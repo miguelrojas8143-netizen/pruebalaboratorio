@@ -28,7 +28,7 @@
             return;
         }
 
-        if (!window.HecesForm || !window.HecesForm.construir()) {
+        if (!window.HecesForm || !window.HecesForm.construir(examenId)) {
             window.Notifications.error('No se encontraron los parámetros del examen de heces en el catálogo.');
             return;
         }
@@ -83,7 +83,7 @@
             if (item.id !== examenId) return item;
             return Object.assign({}, item, {
                 resultado: resultado,
-                examen_id: 'examen_heces',
+                examen_id: examenId,
                 tipoFormulario: 'heces'
             });
         });
@@ -105,7 +105,7 @@
         }
 
         examen.resultado = resultado;
-        examen.examen_id = 'examen_heces';
+        examen.examen_id = examenId;
         examen.tipoFormulario = 'heces';
         if (window.pacienteActivo) {
             window.pacienteActivo.examenes = JSON.parse(JSON.stringify(examenes));

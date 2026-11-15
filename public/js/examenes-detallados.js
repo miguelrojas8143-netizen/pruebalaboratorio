@@ -105,6 +105,31 @@ window.App.examenesDetallados.psa_total_fraccionada = {
         { id: 'psa_relacion', nombre: 'Relación Libre/Total', unidad: '%', tipo: 'calculado', grupo: 'Antígeno Prostático' }
     ]
 };
+/**
+ * Examen de Heces Seriado.
+ *
+ * Incluye dos campos especiales al inicio (Número de muestras y Método de concentración)
+ * y hereda todos los campos del Examen Directo de Heces.
+ */
+window.App.examenesDetallados.examen_heces_seriado = {
+    nombre: 'Examen Directo de Heces Seriados',
+    items: [
+        { id: 'numeroMuestras', nombre: 'Número de muestras', area: 'Coproanálisis', unidad: '', tipo: 'texto', placeholder: 'Ej: 3 muestras', grupo: 'Datos Iniciales' },
+        { id: 'metodoConcentracion', nombre: 'Método de concentración', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Formol-éter', 'Sedimentación espontánea', 'Sheather', 'Otros'], grupo: 'Datos Iniciales' },
+        { id: 'colorHeces', nombre: 'Color', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Marrón', 'Amarillo', 'Rojo', 'Negro', 'Verde'], grupo: 'Examen Macroscópico' },
+        { id: 'aspectoHeces', nombre: 'Aspecto', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Homogéneo', 'Heterogéneo'], grupo: 'Examen Macroscópico' },
+        { id: 'consistencia', nombre: 'Consistencia', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Líquidas', 'Blandas', 'Pastosa', 'Duras'], refTexto: 'Blandas/Pastosas', grupo: 'Examen Macroscópico' },
+        { id: 'restosAlimentos', nombre: 'Restos de Alimentos', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], grupo: 'Examen Macroscópico' },
+        { id: 'mocoFecal', nombre: 'Moco', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Macroscópico' },
+        { id: 'sangreHeces', nombre: 'Sangre', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Macroscópico' },
+        { id: 'reaccion', nombre: 'Reacción', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Ácida', 'Alcalina', 'Neutra'], grupo: 'Examen Macroscópico' },
+        { id: 'eritrocitosHeces', nombre: 'Eritrocitos', area: 'Coproanálisis', unidad: '', tipo: 'numerico', refTexto: '0 xcpo', grupo: 'Examen Microscópico' },
+        { id: 'leucocitosHeces', nombre: 'Leucocitos', area: 'Coproanálisis', unidad: '', tipo: 'numerico', refTexto: '0 xcpo', grupo: 'Examen Microscópico' },
+        { id: 'helmintos', nombre: 'Helmintos', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Microscópico' },
+        { id: 'protozoarios', nombre: 'Protozoarios', area: 'Coproanálisis', unidad: '', tipo: 'seleccion_unica', opciones: ['Presente', 'Ausente'], refTexto: 'Ausente', grupo: 'Examen Microscópico' },
+        { id: 'otrosHeces', nombre: 'Otros', area: 'Coproanálisis', unidad: '', tipo: 'texto', grupo: 'Examen Microscópico' }
+    ]
+};
 // A continuación se presentan exámenes detallados adicionales.
 window.App.examenesDetallados.depuracion_creatinina = {
     nombre: 'Depuración de Creatinina',

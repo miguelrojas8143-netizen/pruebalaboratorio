@@ -54,7 +54,7 @@ window.App.catalogo.push(
     { id: 'antigenos_febriles', nombre: 'Antígenos Febriles (Widal)', area: 'Inmunología', unidad: '', tipo: 'texto', valorDefecto: '' },
     { id: 'toxoplasmosis_igm', nombre: 'Toxoplasmosis (IgM)', area: 'Inmunología', unidad: '', tipo: 'texto', valorDefecto: '' },
     { id: 'toxoplasmosis_igg', nombre: 'Toxoplasmosis (IgG)', area: 'Inmunología', unidad: '', tipo: 'texto', valorDefecto: '' },
-    { id: 'helicobacter_igm', nombre: 'Helicobacter Pylori (IgM)', area: 'Inmunología', unidad: '', tipo: 'texto', valorDefecto: '' },
+    { id: 'helicobacter_igm', nombre: 'Helicobacter Pylori (IgM)', area: 'Inmunología', unidad: '', tipo: 'numerico', valorDefecto: '' },
     { id: 'helicobacter_igg', nombre: 'Helicobacter Pylori (IgG)', area: 'Inmunología', unidad: '', tipo: 'texto', valorDefecto: '' },
     { id: 'helicobacter_total', nombre: 'Helicobacter Pylori (Anticuerpos Totales)', area: 'Inmunología', unidad: '', tipo: 'seleccion_unica', opciones: ['Positivo', 'Negativo'], valorDefecto: '' },
     { id: 'hbsag', nombre: 'Antígeno de Superficie Hep. B (HBsAg)', area: 'Inmunología', unidad: '', tipo: 'seleccion_unica', opciones: ['Positivo', 'Negativo'], valorDefecto: '' },

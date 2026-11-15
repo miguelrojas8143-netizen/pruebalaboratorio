@@ -2,14 +2,18 @@
  * Construcción y manejo de los campos del formulario de examen de heces.
  * La definición de los campos y sus opciones vive aquí para que la interfaz no
  * dependa de parámetros antiguos guardados en la base de datos.
+ * Soporta dos tipos: 'examen_heces' (directo) y 'examen_heces_seriado' (seriado).
  */
 (function() {
     'use strict';
 
     var controles = Object.create(null);
+    var tipoExamenActual = 'examen_heces';
 
     var observacionesPorDefecto = 'No se observaron formas parasitarias en la muestra observada.';
-    var campos = [
+
+    // Campos base comunes a ambos tipos (Examen Directo de Heces)
+    var camposBase = [
         { id: 'colorHeces', nombre: 'Color', tipo: 'seleccion_unica', opciones: ['Marrón', 'Amarillo', 'Rojo', 'Negro', 'Verde'], grupo: 'Examen Macroscópico' },
         { id: 'aspectoHeces', nombre: 'Aspecto', tipo: 'seleccion_unica', opciones: ['Homogéneo', 'Heterogéneo'], grupo: 'Examen Macroscópico' },
         { id: 'consistencia', nombre: 'Consistencia', tipo: 'seleccion_unica', opciones: ['Líquidas', 'Blandas', 'Pastosa', 'Duras'], refTexto: 'Blandas/Pastosas', grupo: 'Examen Macroscópico' },
@@ -24,6 +28,12 @@
         { id: 'otrosHeces', nombre: 'Otros', tipo: 'texto', placeholder: 'Blastocystis spp', grupo: 'Examen Microscópico' }
     ];
 
+    // Campos adicionales para examen seriado (al inicio)
+    var camposSeriado = [
+        { id: 'numeroMuestras', nombre: 'Número de muestras', tipo: 'texto', placeholder: 'Ej: 3 muestras', grupo: 'Datos Iniciales' },
+        { id: 'metodoConcentracion', nombre: 'Método de concentración', tipo: 'seleccion_unica', opciones: ['Formol-éter', 'Sedimentación espontánea', 'Sheather', 'Otros'], grupo: 'Datos Iniciales' }
+    ];
+
     var camposObsoletos = [
         'phHeces',
         'glucosaHeces',
@@ -34,6 +44,13 @@
         'entamoebaColi',
         'floraBacteriana'
     ];
+
+    function getCamposParaTipo(tipo) {
+        if (tipo === 'examen_heces_seriado') {
+            return camposSeriado.concat(camposBase);
+        }
+        return camposBase;
+    }
 
     function crearCampo(campo) {
         var columna = document.createElement('div');
@@ -149,12 +166,14 @@
         formulario.appendChild(contenedor);
     }
 
-    function construir() {
+    function construir(tipoExamen) {
+        tipoExamenActual = tipoExamen || 'examen_heces';
         var formulario = document.getElementById('formHeces');
         if (!formulario) return false;
 
         formulario.replaceChildren();
         controles = Object.create(null);
+        var campos = getCamposParaTipo(tipoExamenActual);
         var grupos = [];
         campos.forEach(function(campo) {
             var nombreGrupo = campo.grupo || 'General';
@@ -167,6 +186,7 @@
         });
 
         var ordenGrupos = [
+            'Datos Iniciales',
             'Examen Macroscópico',
             'Examen Microscópico',
         ];
@@ -201,6 +221,7 @@
             'Blanda': 'Blandas',
             'Dura': 'Duras'
         };
+        var campos = getCamposParaTipo(tipoExamenActual);
         campos.forEach(function(campo) {
             var estado = controles[campo.id];
             var valor = datos[campo.id] == null ? '' : String(datos[campo.id]);
@@ -234,6 +255,7 @@
         if (!validar()) return null;
         var datos = Object.assign({}, datosGuardados || {});
         camposObsoletos.forEach(function(id) { delete datos[id]; });
+        var campos = getCamposParaTipo(tipoExamenActual);
         campos.forEach(function(campo) {
             var estado = controles[campo.id];
             var valor = estado.control.tagName === 'SELECT' && estado.control.value === '__manual__'
@@ -252,7 +274,8 @@
         construir: construir,
         cargar: cargar,
         obtenerResultados: obtenerResultados,
-        obtenerCampos: function() {
+        obtenerCampos: function(tipoExamen) {
+            var campos = getCamposParaTipo(tipoExamen || tipoExamenActual);
             return campos.map(function(campo) {
                 return Object.assign({}, campo, {
                     opciones: campo.opciones ? campo.opciones.slice() : undefined

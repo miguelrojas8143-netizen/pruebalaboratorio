@@ -228,6 +228,13 @@ app.whenReady().then(() => {
         ventanaLista = true;
         transicionar();
     });
+}).catch((error) => {
+    console.error('[arranque] No se pudo inicializar la aplicación:', error);
+    dialog.showErrorBox(
+        'MiroLab Systems - Error al iniciar',
+        `No se pudo inicializar la aplicación.\n\n${error && error.message ? error.message : error}`
+    );
+    app.quit();
 });
 
 app.on('window-all-closed', () => {

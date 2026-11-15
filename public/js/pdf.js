@@ -344,7 +344,9 @@
     function buildPayload(paciente) {
         var examenes = JSON.parse(JSON.stringify(paciente.examenes || []));
         var examenesHeces = examenes.find(function(e) {
-            return e.tipoFormulario === 'heces' || e.id === 'examen_heces' || e.examen_id === 'examen_heces';
+            return e.tipoFormulario === 'heces' || 
+                e.id === 'examen_heces' || e.examen_id === 'examen_heces' ||
+                e.id === 'examen_heces_seriado' || e.examen_id === 'examen_heces_seriado';
         });
         var examenesUro = examenes.find(function(e) {
             return e.tipoFormulario === 'uroanalisis' || e.tipo === 'uroanalisis' ||
@@ -470,16 +472,19 @@
         });
 
         var heces = null;
+        var examenHecesId = 'examen_heces';
         if (examenesHeces && window.tieneDatosHeces(examenesHeces)) {
             var datosHeces = JSON.parse(examenesHeces.resultado || '{}');
+            examenHecesId = examenesHeces.id === 'examen_heces_seriado' || examenesHeces.examen_id === 'examen_heces_seriado' ? 'examen_heces_seriado' : 'examen_heces';
             var itemsHeces = window.HecesForm && window.HecesForm.obtenerCampos
-                ? window.HecesForm.obtenerCampos()
+                ? window.HecesForm.obtenerCampos(examenHecesId)
                 : [];
-            var gruposHeces = construirGruposDeExamen(datosHeces, itemsHeces, 'examen_heces', true);
+            var gruposHeces = construirGruposDeExamen(datosHeces, itemsHeces, examenHecesId, true);
             heces = {
                 datos: datosHeces,
                 grupos: gruposHeces.grupos,
                 ordenGrupos: gruposHeces.ordenGrupos,
+                examenId: examenHecesId,
                 observaciones: datosHeces.__observaciones && String(datosHeces.__observaciones).trim()
                     ? datosHeces.__observaciones
                     : 'No se observaron formas parasitarias en la muestra observada.'
@@ -667,7 +672,8 @@
 
     function renderHecesDom(heces) {
         if (!heces) return '';
-        var html = renderTablaParametrosDom('Examen de Heces', heces.grupos, heces.ordenGrupos, {
+        var titulo = heces.examenId === 'examen_heces_seriado' ? 'Examen de Heces Seriados' : 'Examen de Heces';
+        var html = renderTablaParametrosDom(titulo, heces.grupos, heces.ordenGrupos, {
             clase: 'pdf-heces',
             tituloColumnaReferencia: 'Valor de Referencia',
             omitirUnidad: true
@@ -1378,7 +1384,8 @@ function escribirFila(resultado) {
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
             }
-            y = agregarGruposPDF(doc, 'Examen de Heces', payload.heces.grupos, payload.heces.ordenGrupos, {
+            var tituloHeces = payload.heces.examenId === 'examen_heces_seriado' ? 'Examen de Heces Seriados' : 'Examen de Heces';
+            y = agregarGruposPDF(doc, tituloHeces, payload.heces.grupos, payload.heces.ordenGrupos, {
                 y: y,
                 didDrawPage: encabezadoPagina,
                 startY: yDespuesEncabezado,
