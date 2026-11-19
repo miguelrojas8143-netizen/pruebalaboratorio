@@ -9,6 +9,8 @@
     var categoriaActiva = '';
     var examenEditando = null;
     var modal = null;
+    var antigenosCatalogoModificados = false;
+    var permitirCerrarCatalogo = false;
 
     function elemento(id) {
         return document.getElementById(id);
@@ -378,6 +380,84 @@
         contenedor.appendChild(vacio);
     }
 
+    function esExamenAntigenosFebriles(examen) {
+        return !!examen && examen.id === 'antigenos_febriles';
+    }
+
+    function agregarFilaAntigenoCatalogo(antigeno) {
+        var cuerpo = elemento('catalogoAntigenosTablaBody');
+        var fila = document.createElement('tr');
+        var celdaNombre = document.createElement('td');
+        var nombre = document.createElement('input');
+        nombre.type = 'text';
+        nombre.className = 'form-control form-control-sm catalogo-antigeno-nombre';
+        nombre.maxLength = 120;
+        nombre.placeholder = 'Ej.: Tífico O';
+        nombre.setAttribute('aria-label', 'Nombre del antígeno');
+        nombre.value = antigeno && antigeno.nombre ? antigeno.nombre : '';
+        celdaNombre.appendChild(nombre);
+
+        var celdaReferencia = document.createElement('td');
+        var referencia = document.createElement('input');
+        referencia.type = 'text';
+        referencia.className = 'form-control form-control-sm catalogo-antigeno-referencia';
+        referencia.maxLength = 240;
+        referencia.placeholder = 'Ej.: Negativo o menor de 1:80';
+        referencia.setAttribute('aria-label', 'Valor de referencia');
+        referencia.value = antigeno && antigeno.referencia ? antigeno.referencia : '';
+        celdaReferencia.appendChild(referencia);
+
+        var celdaAccion = document.createElement('td');
+        celdaAccion.className = 'text-center';
+        var eliminar = document.createElement('button');
+        eliminar.type = 'button';
+        eliminar.className = 'btn btn-sm btn-outline-danger';
+        eliminar.title = 'Eliminar antígeno';
+        eliminar.setAttribute('aria-label', 'Eliminar antígeno');
+        eliminar.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+        eliminar.addEventListener('click', function() {
+            fila.remove();
+            antigenosCatalogoModificados = true;
+        });
+        celdaAccion.appendChild(eliminar);
+
+        fila.appendChild(celdaNombre);
+        fila.appendChild(celdaReferencia);
+        fila.appendChild(celdaAccion);
+        cuerpo.appendChild(fila);
+    }
+
+    function cargarFilasAntigenosCatalogo(examen) {
+        var seccion = elemento('catalogoAntigenosFebriles');
+        var cuerpo = elemento('catalogoAntigenosTablaBody');
+        var habilitado = esExamenAntigenosFebriles(examen);
+        seccion.classList.toggle('d-none', !habilitado);
+        elemento('catalogoCamposGenerales').classList.toggle('d-none', habilitado);
+        elemento('btnGuardarExamenCatalogo').innerHTML = habilitado
+            ? '<i class="bi bi-save me-1"></i>Guardar configuración Widal'
+            : '<i class="bi bi-save me-1"></i>Guardar examen';
+        antigenosCatalogoModificados = false;
+        cuerpo.replaceChildren();
+        if (!habilitado) return;
+
+        var antigenos = Array.isArray(examen.antigenos) ? examen.antigenos : [];
+        (antigenos.length ? antigenos : [{}]).forEach(agregarFilaAntigenoCatalogo);
+    }
+
+    function leerAntigenosCatalogo() {
+        return Array.from(elemento('catalogoAntigenosTablaBody').querySelectorAll('tr'))
+            .map(function(fila, indice) {
+                var nombre = fila.querySelector('.catalogo-antigeno-nombre').value.trim();
+                var referencia = fila.querySelector('.catalogo-antigeno-referencia').value.trim();
+                if (!nombre && !referencia) return null;
+                if (!nombre) {
+                    throw new Error('Escribe el nombre del antígeno en la fila ' + (indice + 1) + '.');
+                }
+                return { nombre: nombre, referencia: referencia };
+            })
+            .filter(Boolean);
+    }
+
     function abrirFormulario(examen) {
         examenEditando = examen || null;
         limpiarError();
@@ -396,6 +476,7 @@
             ? examen.ref_max : (examen && examen.refMax !== undefined && examen.refMax !== null ? examen.refMax : '');
         elemento('catalogoRefTexto').value = examen ? (examen.ref_texto || examen.refTexto || '') : '';
         elemento('catalogoValorDefecto').value = examen ? (examen.valor_defecto || examen.valorDefecto || '') : '';
+        cargarFilasAntigenosCatalogo(examen);
 
         var tipoEspecial = elemento('catalogoTipoEspecial');
         var selectTipo = elemento('catalogoTipo');
@@ -422,7 +503,7 @@
         if (min !== null && max !== null && min > max) {
             throw new Error('La referencia mínima no puede superar la máxima.');
         }
-        return {
+        var datos = {
             id: elemento('catalogoId').value.trim(),
             nombre: elemento('catalogoNombre').value.trim(),
             categoria: elemento('catalogoCategoria').value.trim(),
@@ -433,6 +514,8 @@
             refTexto: elemento('catalogoRefTexto').value.trim(),
             valorDefecto: elemento('catalogoValorDefecto').value.trim()
         };
+        if (datos.id === 'antigenos_febriles') datos.antigenos = leerAntigenosCatalogo();
+        return datos;
     }
 
     async function cargarCatalogo() {
@@ -463,10 +546,18 @@
                 throw new Error((respuesta && respuesta.error) || 'No se pudo guardar el examen.');
             }
             guardado = true;
+            antigenosCatalogoModificados = false;
+            permitirCerrarCatalogo = true;
             modal.hide();
+            permitirCerrarCatalogo = false;
             await cargarCatalogo();
             if (window.refrescarCatalogoDesdeSQLite) await window.refrescarCatalogoDesdeSQLite();
-            mostrarToast('El examen "' + datos.nombre + '" se guardó correctamente.', 'success');
+            mostrarToast(
+                datos.id === 'antigenos_febriles'
+                    ? 'La configuración de Antígenos Febriles (Widal) se guardó correctamente.'
+                    : 'El examen "' + datos.nombre + '" se guardó correctamente.',
+                'success'
+            );
         } catch (error) {
             if (guardado) {
                 mostrarToast('El examen se guardó, pero no se pudo actualizar la vista: ' + error.message, 'danger');
@@ -530,6 +621,15 @@
 
     function instalarEventos() {
         elemento('btnNuevoExamen').addEventListener('click', function() { abrirFormulario(null); });
+        elemento('btnAgregarAntigenoCatalogo').addEventListener('click', function() {
+            agregarFilaAntigenoCatalogo({});
+            antigenosCatalogoModificados = true;
+            var campos = elemento('catalogoAntigenosTablaBody').querySelectorAll('.catalogo-antigeno-nombre');
+            campos[campos.length - 1].focus();
+        });
+        elemento('catalogoAntigenosTablaBody').addEventListener('input', function() {
+            antigenosCatalogoModificados = true;
+        });
         elemento('buscarExamenCatalogo').addEventListener('input', renderizarAcordeon);
         elemento('catalogoCategorias').addEventListener('click', function(event) {
             var boton = event.target.closest('[data-categoria]');
@@ -579,10 +679,38 @@
         elemento('catalogoId').addEventListener('input', function() {
             this.dataset.manuallyEdited = 'true';
         });
+        elemento('modalExamenCatalogo').addEventListener('hide.bs.modal', function(event) {
+            if (!antigenosCatalogoModificados || permitirCerrarCatalogo) return;
+            event.preventDefault();
+            window.Notifications.confirm({
+                title: 'Cambios sin guardar',
+                message: 'Los antígenos agregados o editados todavía no se han guardado. ¿Deseas descartarlos?',
+                type: 'warning',
+                confirmText: 'Descartar cambios',
+                cancelText: 'Seguir editando'
+            }).then(function(confirmado) {
+                if (!confirmado) return;
+                antigenosCatalogoModificados = false;
+                permitirCerrarCatalogo = true;
+                modal.hide();
+                permitirCerrarCatalogo = false;
+            });
+        });
+        window.addEventListener('beforeunload', function(event) {
+            if (!antigenosCatalogoModificados) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
         elemento('modalExamenCatalogo').addEventListener('hidden.bs.modal', function() {
             elemento('formExamenCatalogo').reset();
+            elemento('catalogoAntigenosTablaBody').replaceChildren();
+            elemento('catalogoAntigenosFebriles').classList.add('d-none');
+            elemento('catalogoCamposGenerales').classList.remove('d-none');
+            elemento('btnGuardarExamenCatalogo').innerHTML = '<i class="bi bi-save me-1"></i>Guardar examen';
             elemento('catalogoId').dataset.manuallyEdited = 'false';
             examenEditando = null;
+            antigenosCatalogoModificados = false;
+            permitirCerrarCatalogo = false;
             limpiarError();
         });
     }

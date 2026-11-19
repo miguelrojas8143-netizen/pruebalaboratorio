@@ -44,6 +44,9 @@
     function examenTieneResultados(examen) {
         if (!examen) return false;
         var resultado = examen.resultado;
+        var esAntigenosFebriles = examen.id === 'antigenos_febriles' ||
+            examen.examen_id === 'antigenos_febriles' ||
+            examen.tipoFormulario === 'antigenos_febriles';
 
         if (typeof resultado === 'string') {
             resultado = resultado.trim();
@@ -57,6 +60,16 @@
             } else {
                 return true;
             }
+        }
+
+        if (esAntigenosFebriles) {
+            var antigenos = Array.isArray(resultado)
+                ? resultado
+                : (resultado && Array.isArray(resultado.antigenos) ? resultado.antigenos : []);
+            return antigenos.some(function(antigeno) {
+                return antigeno && antigeno.resultado != null &&
+                    String(antigeno.resultado).trim() !== '';
+            });
         }
 
         function tieneContenido(valor) {

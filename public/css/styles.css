@@ -774,6 +774,10 @@ td.grupo-header-clickable:hover {
     overflow-y: auto;
 }
 
+.formulario-flotante-antigenos-febriles {
+    width: min(900px, calc(100vw - 2rem));
+}
+
 .formulario-flotante-uroanalisis .card-body {
     padding: 0.8rem !important;
 }

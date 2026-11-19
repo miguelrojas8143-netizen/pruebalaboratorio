@@ -661,6 +661,9 @@ function registrarHandlersCatalogo(ipcMain, db, consultasCatalogo) {
             examen.parametros.forEach(parametro => {
                 parametro.opciones = valoresDe(opcionesParametro.get(parametro.id));
             });
+            if (examen.id === 'antigenos_febriles') {
+                examen.antigenos = consultasCatalogo.antigenosFebriles.all(examen.id);
+            }
         });
 
         resolverPerfiles(perfiles, perfilesExamenes, examenesPorId);
@@ -668,10 +671,16 @@ function registrarHandlersCatalogo(ipcMain, db, consultasCatalogo) {
     }));
 
     ipcMain.handle('obtener-catalogo-admin', envolver(function() {
+        const examenes = consultasCatalogo.examenesAdmin.all();
+        const examenAntigenosFebriles = examenes.find(examen => examen.id === 'antigenos_febriles');
+        if (examenAntigenosFebriles) {
+            examenAntigenosFebriles.antigenos =
+                consultasCatalogo.antigenosFebriles.all(examenAntigenosFebriles.id);
+        }
         return {
             success: true,
             categorias: consultasCatalogo.categoriasAdmin.all(),
-            examenes: consultasCatalogo.examenesAdmin.all()
+            examenes: examenes
         };
     }));
 

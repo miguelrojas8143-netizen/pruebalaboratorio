@@ -83,6 +83,14 @@
         if (fila.valor_defecto !== null && fila.valor_defecto !== undefined) {
             examen.valorDefecto = fila.valor_defecto;
         }
+        if (Array.isArray(fila.antigenos)) {
+            examen.antigenos = fila.antigenos.map(function(antigeno) {
+                return {
+                    nombre: antigeno.nombre,
+                    referencia: antigeno.referencia || ''
+                };
+            });
+        }
         if (fila.opciones && fila.opciones.length > 0) examen.opciones = fila.opciones;
         if (fila.parametros && fila.parametros.length > 0) {
             examen.items = fila.parametros.map(parametrosDeFila);

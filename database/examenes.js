@@ -443,6 +443,24 @@ function guardarExamenesPaciente(db, orden, examenes) {
             }
             if (!nombre) nombre = examenId;
 
+            if (examenId === 'antigenos_febriles') {
+                const resultado = examen.resultado == null
+                    ? ''
+                    : (typeof examen.resultado === 'string'
+                        ? examen.resultado
+                        : JSON.stringify(examen.resultado));
+                insertar.run(
+                    orden,
+                    nombre,
+                    resultado,
+                    examenId,
+                    null,
+                    examen.referencia == null ? null : String(examen.referencia),
+                    examen.grupoPerfil || null
+                );
+                continue;
+            }
+
             let valores = null;
             if (examen.resultado && typeof examen.resultado === 'object' &&
                 !Array.isArray(examen.resultado)) {

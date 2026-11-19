@@ -69,6 +69,48 @@
         return (detalle && detalle.items && detalle.items.length) ? detalle.items : [];
     }
 
+    function esExamenAntigenosFebriles(examen) {
+        if (!examen) return false;
+        var nombre = String(examen.nombre || examen.nombre_examen || '').trim().toLocaleLowerCase();
+        return examen.id === 'antigenos_febriles' ||
+            examen.examen_id === 'antigenos_febriles' ||
+            examen.tipoFormulario === 'antigenos_febriles' ||
+            nombre === 'antígenos febriles (widal)' ||
+            nombre === 'antigenos febriles (widal)';
+    }
+
+    function filasAntigenosFebriles(examen) {
+        if (!examen || examen.resultado == null || examen.resultado === '') return [];
+        var datos = examen.resultado;
+        if (typeof datos === 'string') {
+            var texto = datos.trim();
+            if (!texto) return [];
+            if (texto.charAt(0) !== '{' && texto.charAt(0) !== '[') {
+                return [{ nombre: '', resultado: texto, referencia: '' }];
+            }
+            datos = JSON.parse(texto);
+        }
+        if (!datos || typeof datos !== 'object') {
+            throw new Error('Los resultados guardados de antígenos febriles no contienen una lista válida.');
+        }
+        var filas = Array.isArray(datos) ? datos : (datos.antigenos || []);
+        if (!Array.isArray(filas)) {
+            throw new Error('Los resultados guardados de antígenos febriles no contienen una lista válida.');
+        }
+        return filas.filter(function(fila) {
+            return fila && typeof fila === 'object' &&
+                (String(fila.nombre || '').trim() ||
+                    String(fila.resultado || '').trim() ||
+                    String(fila.referencia || '').trim());
+        }).map(function(fila) {
+            return {
+                nombre: String(fila.nombre || '').trim() || '-',
+                resultado: String(fila.resultado || '').trim() || '-',
+                referencia: String(fila.referencia || '').trim() || '-'
+            };
+        });
+    }
+
     /**
      * Ajustes de presentación que dependen del parámetro. Se mantiene fuera del
      * recorrido genérico para que agregar un examen no toque esta función.
@@ -368,12 +410,16 @@
         var examenesAb = examenes.find(function(e) {
             return e.tipoFormulario === 'antibiograma' || e.id === 'antibiograma' || e.examen_id === 'antibiograma';
         });
+        var examenAntigenosFebriles = examenes.find(esExamenAntigenosFebriles);
+        var antigenosFebriles = filasAntigenosFebriles(examenAntigenosFebriles);
         var examenHematologia = examenes.find(function(e) {
             return e.id === 'hematologia_completa';
         });
         var examenesNormales = examenes.filter(function(e) {
             return e !== examenesHeces && e !== examenesUro && e !== examenesAb &&
-                e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' && e.tipoFormulario !== 'antibiograma';
+                e !== examenAntigenosFebriles &&
+                e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' &&
+                e.tipoFormulario !== 'antibiograma' && e.tipoFormulario !== 'antigenos_febriles';
         });
 
         if (!examenesUro) {
@@ -527,7 +573,8 @@
         var hayResultados = examenesNormales.length > 0 ||
             (examenesHeces && window.tieneDatosHeces(examenesHeces)) ||
             (examenesUro && window.tieneDatosUroanalisis(examenesUro)) ||
-            (examenesAb && window.tieneDatosAntibiograma(examenesAb));
+            (examenesAb && window.tieneDatosAntibiograma(examenesAb)) ||
+            antigenosFebriles.length > 0;
 
         return {
             header: header,
@@ -541,6 +588,7 @@
             hematologiaObservaciones: hematologiaObservaciones,
             uro: uro,
             antibiograma: antibiograma,
+            antigenosFebriles: antigenosFebriles,
             refAdaptadas: refAdaptadas,
             categoriaRef: categoriaRef,
             hayResultados: hayResultados
@@ -698,6 +746,20 @@
         return html + renderObservacionesBioanalista(uro.observaciones);
     }
 
+    function renderAntigenosFebrilesDom(filas) {
+        if (!filas || !filas.length) return '';
+        var html = '<div class="pdf-bloque"><h6 class="reporte-area-titulo">Antígenos Febriles (Widal)</h6>' +
+            '<div class="pdf-resultado-wrapper"><table class="pdf-reporte-tabla table table-bordered table-sm">' +
+            '<thead><tr><th width="40%">Nombre del Antígeno</th><th width="25%">Resultado</th>' +
+            '<th width="35%">Valor de Referencia</th></tr></thead><tbody>';
+        filas.forEach(function(fila) {
+            html += '<tr><td class="fw-semibold">' + escapeHtml(fila.nombre) + '</td>' +
+                '<td>' + escapeHtml(fila.resultado) + '</td>' +
+                '<td>' + escapeHtml(fila.referencia) + '</td></tr>';
+        });
+        return html + '</tbody></table></div></div>';
+    }
+
     function renderAntibiogramaDom(ab) {
         if (!ab) return '';
         var d = ab.datos;
@@ -765,6 +827,13 @@
             }
             if (contenedor) contenedor.appendChild(s);
         });
+
+        if (contenedor && payload.antigenosFebriles.length) {
+            var antigenos = document.createElement('div');
+            antigenos.className = 'reporte-area-grupo';
+            antigenos.innerHTML = renderAntigenosFebrilesDom(payload.antigenosFebriles);
+            contenedor.appendChild(antigenos);
+        }
 
         // El antibiograma es un examen individual y comparte la hoja con las demás áreas.
         if (contenedor && payload.antibiograma) {
@@ -907,7 +976,15 @@
         var nombreSanitizado = nombreArchivoReporte(paciente.nombre, paciente.orden || orden);
 
         var logoData = await cargarLogoPDF();
-        var payload = buildPayload(paciente);
+        var payload;
+        try {
+            payload = buildPayload(paciente);
+        } catch (error) {
+            if (ventanaImpresion) ventanaImpresion.close();
+            console.error('[PdfReport] Error preparando resultados:', error);
+            window.Notifications.error('No se pudieron preparar los resultados para el reporte: ' + error.message);
+            return;
+        }
         if (!payload.hayResultados) {
            if (ventanaImpresion) ventanaImpresion.close();
            window.Notifications.error('No hay resultados para mostrar en la vista previa.');
@@ -1341,6 +1418,47 @@ function escribirFila(resultado) {
                 escribirObservacionesBioanalista(payload.hematologiaObservaciones);
             }
         });
+
+        if (payload.antigenosFebriles.length) {
+            var paginaInicialAntigenos = doc.getNumberOfPages();
+            doc.autoTable({
+                startY: y,
+                head: [['Nombre del Antígeno', 'Resultado', 'Valor de Referencia']],
+                body: payload.antigenosFebriles.map(function(fila) {
+                    return [fila.nombre, fila.resultado, fila.referencia];
+                }),
+                theme: 'striped',
+                margin: { top: yDespuesEncabezado, right: 14, bottom: 30, left: 14 },
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 8,
+                    cellPadding: 2.5,
+                    textColor: [25, 25, 25],
+                    lineWidth: 0
+                },
+                headStyles: {
+                    fillColor: [31, 78, 104],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    lineWidth: 0
+                },
+                alternateRowStyles: { fillColor: [248, 251, 253] },
+                columnStyles: {
+                    0: { cellWidth: 73 },
+                    1: { cellWidth: 45 },
+                    2: { cellWidth: 64 }
+                },
+                tableLineWidth: 0,
+                showHead: 'everyPage',
+                rowPageBreak: 'avoid',
+                didDrawPage: function() {
+                    if (doc.getNumberOfPages() > paginaInicialAntigenos) {
+                        encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                    }
+                }
+            });
+            y = doc.lastAutoTable.finalY + 7;
+        }
 
         if (payload.antibiograma) {
             var abx = payload.antibiograma.datos.antibioticos || [];

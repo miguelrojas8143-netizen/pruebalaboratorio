@@ -295,6 +295,19 @@
         if (datos.tipo === 'texto') {
             nuevoExamen.tipo = 'texto';
         }
+        if (datos.id === 'antigenos_febriles') {
+            nuevoExamen.tipoFormulario = 'antigenos_febriles';
+            nuevoExamen.tipo = 'antigenos_febriles';
+            nuevoExamen.resultado = JSON.stringify({
+                antigenos: (datos.antigenos || []).map(function(antigeno) {
+                    return {
+                        nombre: antigeno.nombre,
+                        resultado: '',
+                        referencia: antigeno.referencia || ''
+                    };
+                })
+            });
+        }
         if (datos.tipo === 'tipo_sanguineo') {
             nuevoExamen.tipo = 'tipo_sanguineo';
         }
@@ -361,6 +374,16 @@
         );
     }
 
+    function esFormularioAntigenosFebriles(examen) {
+        if (!examen) return false;
+        var nombre = String(examen.nombre || examen.nombre_examen || '').trim().toLocaleLowerCase();
+        return examen.id === 'antigenos_febriles' ||
+            examen.examen_id === 'antigenos_febriles' ||
+            examen.tipoFormulario === 'antigenos_febriles' ||
+            nombre === 'antígenos febriles (widal)' ||
+            nombre === 'antigenos febriles (widal)';
+    }
+
     function tieneResultadosFormulario(examen) {
         return window.examenTieneResultados(examen);
     }
@@ -416,11 +439,18 @@
                 examen.tipoFormulario = 'heces';
                 examen.tipo = 'heces';
             }
+            if (esFormularioAntigenosFebriles(examen)) {
+                examen.tipoFormulario = 'antigenos_febriles';
+                examen.tipo = 'antigenos_febriles';
+            }
             var tieneResultados = tieneResultadosFormulario(examen);
             var btnClass = 'btn examen-action-btn btn-sm' + (tieneResultados ? ' has-results' : '');
             if (esFormularioHeces(examen)) {
                 var accionHeces = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionHeces + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+            } else if (esFormularioAntigenosFebriles(examen)) {
+                var accionAntigenos = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioAntigenosFebriles(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionAntigenos + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipoFormulario === 'uroanalisis') {
                 var accionUro = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioUroanalisis(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionUro + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
@@ -769,7 +799,7 @@
         if (!fila) return;
         var examenId = fila.getAttribute('data-examen-id');
         var examen = (window.examenesOrden || []).find(function(e) { return e.id === examenId; });
-        if (examen && (examen.tipo === 'texto' || examen.tipo === 'tipo_sanguineo' || examen.tipo === 'seleccion_unica' || examen.tipo === 'multiselect_cantidad' || examen.tipoFormulario === 'heces' || examen.tipoFormulario === 'uroanalisis' || examen.tipoFormulario === 'antibiograma')) return;
+        if (examen && (examen.tipo === 'texto' || examen.tipo === 'tipo_sanguineo' || examen.tipo === 'seleccion_unica' || examen.tipo === 'multiselect_cantidad' || examen.tipoFormulario === 'heces' || examen.tipoFormulario === 'uroanalisis' || examen.tipoFormulario === 'antibiograma' || examen.tipoFormulario === 'antigenos_febriles')) return;
 
         var refMin = examen ? parseFloat(examen.refMin) : 0;
         var refMax = examen ? parseFloat(examen.refMax) : 0;

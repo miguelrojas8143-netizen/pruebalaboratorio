@@ -44,6 +44,15 @@ CREATE TABLE IF NOT EXISTS examenes (
     FOREIGN KEY (categoria_id) REFERENCES categorias_examenes(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS antigenos_febriles_catalogo (
+    examen_id  TEXT NOT NULL,
+    orden      INTEGER NOT NULL,
+    nombre     TEXT NOT NULL,
+    referencia TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (examen_id, orden),
+    FOREIGN KEY (examen_id) REFERENCES examenes(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS parametros_examen (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     examen_id     TEXT NOT NULL,
@@ -316,6 +325,12 @@ function prepararConsultasCatalogo(db) {
             JOIN categorias_examenes c ON c.id = e.categoria_id
             WHERE e.activo = 1
             ORDER BY e.orden, e.nombre
+        `),
+        antigenosFebriles: db.prepare(`
+            SELECT nombre, referencia
+            FROM antigenos_febriles_catalogo
+            WHERE examen_id = ?
+            ORDER BY orden
         `),
         categoriasAdmin: db.prepare(`
             SELECT c.id, c.nombre, c.orden

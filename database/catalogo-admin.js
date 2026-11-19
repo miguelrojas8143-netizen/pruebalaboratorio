@@ -1,6 +1,7 @@
 'use strict';
 
 const ID_EXAMEN = /^[a-z][a-z0-9_]{0,63}$/;
+const ID_ANTIGENOS_FEBRILES = 'antigenos_febriles';
 const TIPOS_EDITABLES = new Set(['numerico', 'texto']);
 
 function textoRequerido(valor, campo, maximo) {
@@ -107,6 +108,22 @@ function validarDatosExamen(db, datos) {
     };
 }
 
+function validarAntigenosFebriles(antigenos) {
+    if (!Array.isArray(antigenos)) {
+        throw new Error('La configuración de antígenos febriles no es válida.');
+    }
+
+    return antigenos.map(function(antigeno, indice) {
+        if (!antigeno || typeof antigeno !== 'object' || Array.isArray(antigeno)) {
+            throw new Error('El antígeno ' + (indice + 1) + ' no es válido.');
+        }
+        return {
+            nombre: textoRequerido(antigeno.nombre, 'El nombre del antígeno ' + (indice + 1), 120),
+            referencia: textoOpcional(antigeno.referencia, 'La referencia del antígeno ' + (indice + 1), 240)
+        };
+    });
+}
+
 function guardarExamenCatalogo(db, datos) {
     const guardar = db.transaction(function() {
         const examen = validarDatosExamen(db, datos);
@@ -135,7 +152,20 @@ function guardarExamenCatalogo(db, datos) {
             );
         }
 
-        return db.prepare(`
+        if (examen.id === ID_ANTIGENOS_FEBRILES && datos.antigenos !== undefined) {
+            const antigenos = validarAntigenosFebriles(datos.antigenos);
+            db.prepare('DELETE FROM antigenos_febriles_catalogo WHERE examen_id = ?')
+                .run(ID_ANTIGENOS_FEBRILES);
+            const insertarAntigeno = db.prepare(`
+                INSERT INTO antigenos_febriles_catalogo (examen_id, orden, nombre, referencia)
+                VALUES (?, ?, ?, ?)
+            `);
+            antigenos.forEach(function(antigeno, indice) {
+                insertarAntigeno.run(ID_ANTIGENOS_FEBRILES, indice, antigeno.nombre, antigeno.referencia);
+            });
+        }
+
+        const examenGuardado = db.prepare(`
             SELECT e.id, e.categoria_id, c.nombre AS categoria, e.nombre, e.unidad,
                    e.tipo, e.tipo_formulario, e.grupo, e.valor_defecto,
                    e.ref_min, e.ref_max, e.ref_texto, e.orden, e.activo
@@ -143,6 +173,15 @@ function guardarExamenCatalogo(db, datos) {
             JOIN categorias_examenes c ON c.id = e.categoria_id
             WHERE e.id = ?
         `).get(examen.id);
+        if (examen.id === ID_ANTIGENOS_FEBRILES) {
+            examenGuardado.antigenos = db.prepare(`
+                SELECT nombre, referencia
+                FROM antigenos_febriles_catalogo
+                WHERE examen_id = ?
+                ORDER BY orden
+            `).all(examen.id);
+        }
+        return examenGuardado;
     });
 
     return guardar();

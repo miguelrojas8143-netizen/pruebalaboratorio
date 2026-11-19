@@ -451,6 +451,42 @@
         </div>
     </div>
 
+    <div id="formularioAntigenosFebriles" style="display:none;" class="formulario-flotante formulario-flotante-antigenos-febriles">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-virus me-2"></i> ANTÍGENOS FEBRILES (WIDAL)</span>
+                <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioAntigenosFebriles()" title="Cerrar formulario" aria-label="Cerrar formulario"></button>
+            </div>
+            <div class="card-body p-4">
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Nombre del Antígeno</th>
+                                <th scope="col">Resultado</th>
+                                <th scope="col">Valor de Referencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="antigenosFebrilesTablaBody"></tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarAntigenoFebril()">
+                        <i class="bi bi-plus-lg me-1"></i>Agregar Antígeno
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarFormularioAntigenosFebriles()">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="guardarFormularioAntigenosFebriles()">
+                            <i class="bi bi-save me-1"></i>Guardar Resultados
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Formulario de Tipo Sanguíneo Completo -->
     <div id="formularioTipoSanguineo" style="display:none;" class="formulario-flotante formulario-flotante-tipo-sanguineo">
         <div class="card border-danger">
@@ -621,6 +657,7 @@
     <script src="../public/js/heces.js"></script>
     <script src="../public/js/frotis.js"></script>
     <script src="../public/js/antibiograma.js"></script>
+    <script src="../public/js/antigenos-febriles.js"></script>
     <script src="../public/js/notifications.js"></script>
     <script src="../public/js/app.js"></script>
 
