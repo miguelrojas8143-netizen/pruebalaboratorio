@@ -487,45 +487,36 @@
         </div>
     </div>
 
-    <!-- Formulario de Tipo Sanguíneo Completo -->
+    <!-- Formulario de Grupo Sanguíneo y Factor Rh -->
     <div id="formularioTipoSanguineo" style="display:none;" class="formulario-flotante formulario-flotante-tipo-sanguineo">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-droplet-half me-2"></i> TIPO SANGUÍNEO COMPLETO</span>
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-droplet-half me-2"></i> GRUPO SANGUÍNEO</span>
                 <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioTipoSanguineo()" title="Cerrar formulario"></button>
             </div>
             <div class="card-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold" for="antiA">Reactivo Anti-A:</label>
-                        <select id="antiA" class="form-select" onchange="determinarTipoSangre()">
-                            <option value="">Seleccione la lectura...</option>
-                            <option value="si">Sí, reacciona (aglutinación)</option>
-                            <option value="no">No, no reacciona</option>
+                        <label class="form-label fw-semibold" for="grupoSanguineoSeleccion">Grupo Sanguíneo (ABO)</label>
+                        <select id="grupoSanguineoSeleccion" class="form-select" onchange="determinarTipoSangre()" required>
+                            <option value="">Seleccione...</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="O">O</option>
+                            <option value="AB">AB</option>
                         </select>
-                        <small id="antiAEstado" class="reactivo-estado text-muted">Lectura pendiente</small>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold" for="antiB">Reactivo Anti-B:</label>
-                        <select id="antiB" class="form-select" onchange="determinarTipoSangre()">
-                            <option value="">Seleccione la lectura...</option>
-                            <option value="si">Sí, reacciona (aglutinación)</option>
-                            <option value="no">No, no reacciona</option>
+                        <label class="form-label fw-semibold" for="factorRhSeleccion">Factor Rh</label>
+                        <select id="factorRhSeleccion" class="form-select" onchange="determinarTipoSangre()" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Positivo (+)">Positivo (+)</option>
+                            <option value="Negativo (-)">Negativo (-)</option>
                         </select>
-                        <small id="antiBEstado" class="reactivo-estado text-muted">Lectura pendiente</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold" for="antiD">Reactivo Anti-D (Rh):</label>
-                        <select id="antiD" class="form-select" onchange="determinarTipoSangre()">
-                            <option value="">Seleccione la lectura...</option>
-                            <option value="si">Sí, reacciona (aglutinación)</option>
-                            <option value="no">No, no reacciona</option>
-                        </select>
-                        <small id="antiDEstado" class="reactivo-estado text-muted">Lectura pendiente</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Resultado:</label>
-                        <div id="resultadoTexto" class="form-control bg-light">Complete las reacciones para determinar el grupo sanguíneo</div>
+                        <div id="resultadoTexto" class="form-control bg-light">Seleccione el grupo sanguíneo y el factor Rh</div>
                     </div>
                 </div>
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">

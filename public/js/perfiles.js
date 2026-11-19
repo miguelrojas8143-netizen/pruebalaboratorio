@@ -29,7 +29,7 @@ window.App.perfiles.perfil_preoperatorio = {
         { id: 'vdrl', nombre: 'V.D.R.L.', area: 'Inmunología', unidad: '', tipo: 'texto' },
         { id: 'uroanalisis', nombre: 'Uroanálisis', area: 'Uroanálisis', unidad: '', tipo: 'uroanalisis' },
       
-        { id: 'grupo_sanguineo', nombre: 'Grupo Sanguíneo', area: 'Hematología', unidad: '', tipo: 'texto' },
+        { id: 'tipo_sanguineo_completo', nombre: 'Grupo Sanguíneo y Factor Rh', area: 'Hematología', unidad: '', tipo: 'tipo_sanguineo_completo' },
         { id: 'creatinina', nombre: 'Creatinina', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 0.6, refMax: 1.2 },
         { id: 'urea', nombre: 'Urea', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 15, refMax: 40 },
         { id: 'hbsag', nombre: 'Antígeno de Superficie Hep. B (HBsAg)', area: 'Inmunología', unidad: '', tipo: 'texto' }
@@ -60,7 +60,7 @@ window.App.perfiles.perfil_prenatal = {
     area: 'Perfiles',
     examenes: [
         { id: 'hematologia_completa', nombre: 'Hematología Completa', area: 'Hematología', unidad: '', tipo: 'perfil' },
-        { id: 'grupo_sanguineo', nombre: 'Grupo Sanguíneo', area: 'Hematología', unidad: '', tipo: 'texto' },
+        { id: 'tipo_sanguineo_completo', nombre: 'Grupo Sanguíneo y Factor Rh', area: 'Hematología', unidad: '', tipo: 'tipo_sanguineo_completo' },
         { id: 'glicemia_basal', nombre: 'Glicemia', area: 'Química Sanguínea', unidad: 'mg/dL', refMin: 70, refMax: 100 },
         { id: 'vdrl', nombre: 'V.D.R.L.', area: 'Inmunología', unidad: '', tipo: 'texto' },
         { id: 'examen_orina', nombre: 'Examen de Orina', area: 'Uroanálisis', unidad: '', tipo: 'uroanalisis' },

@@ -365,6 +365,16 @@
         return nuevoExamen;
     }
 
+    function crearExamenesTipoSanguineo(catalogoMap) {
+        return ['grupo_sanguineo_abo', 'factor_rh'].map(function(id) {
+            var examen = crearExamenDesdeCatalogo(catalogoMap[id]);
+            examen.tipoFormulario = 'tipo_sanguineo';
+            examen.tipo = 'tipo_sanguineo';
+            examen.tipoSanguineoCompleto = true;
+            return examen;
+        });
+    }
+
     function esFormularioHeces(examen) {
         return !!examen && (
             examen.tipoFormulario === 'heces' ||
@@ -382,6 +392,15 @@
             examen.tipoFormulario === 'antigenos_febriles' ||
             nombre === 'antígenos febriles (widal)' ||
             nombre === 'antigenos febriles (widal)';
+    }
+
+    function esFormularioTipoSanguineo(examen) {
+        return !!examen && (
+            examen.id === 'grupo_sanguineo_abo' ||
+            examen.id === 'factor_rh' ||
+            examen.tipoFormulario === 'tipo_sanguineo' ||
+            examen.tipoFormulario === 'tipo_sanguineo_completo'
+        );
     }
 
     function tieneResultadosFormulario(examen) {
@@ -444,6 +463,10 @@
                 examen.tipo = 'antigenos_febriles';
             }
             var tieneResultados = tieneResultadosFormulario(examen);
+            if (esFormularioTipoSanguineo(examen) && tieneTipoSanguineoCompleto) {
+                var examenRh = window.examenesOrden.find(function(item) { return item.id === 'factor_rh'; });
+                tieneResultados = !!(examen.resultado && examenRh && examenRh.resultado);
+            }
             var btnClass = 'btn examen-action-btn btn-sm' + (tieneResultados ? ' has-results' : '');
             if (esFormularioHeces(examen)) {
                 var accionHeces = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
@@ -478,10 +501,14 @@
                 var btnClass = 'btn examen-action-btn btn-sm' + (tieneResultados ? ' has-results' : '');
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirEditorResultadoExamen(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'tipo_sanguineo' || examen.tipo === 'tipo_sanguineo_completo') {
-                var nombreTipoSanguineo = tieneTipoSanguineoCompleto ? 'Grupo Sanguíneo' : examen.nombre;
+                var nombreTipoSanguineo = tieneTipoSanguineoCompleto
+                    ? 'Grupo Sanguíneo y Factor Rh'
+                    : examen.nombre;
                 var eliminarTipoSanguineo = tieneTipoSanguineoCompleto ? 'window.eliminarTipoSanguineo(this)' : 'window.eliminarExamen(this)';
-                var btnClass = 'btn examen-action-btn btn-sm' + (tieneResultados ? ' has-results' : '');
-                fila.innerHTML = '<td class="fw-semibold align-top">' + nombreTipoSanguineo + '</td><td><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioTipoSanguineo()"><i class="bi bi-pencil-square me-1"></i>Cargar resultados</button></td><td class="text-muted small">-</td><td>-</td><td class="text-center align-top"><button class="btn btn-sm btn-outline-danger" onclick="' + eliminarTipoSanguineo + '" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+                var btnCarnet = tieneTipoSanguineoCompleto && tieneResultados
+                    ? '<button type="button" class="btn btn-outline-success btn-sm ms-1" onclick="window.imprimirCarnetTipoSanguineo()" title="Imprimir carnet de grupo sanguíneo"><i class="bi bi-person-vcard me-1"></i>Carnet</button>'
+                    : '';
+                fila.innerHTML = '<td class="fw-semibold align-top">' + nombreTipoSanguineo + '</td><td><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioTipoSanguineo()"><i class="bi bi-pencil-square me-1"></i>' + (tieneResultados ? 'Editar resultados' : 'Cargar resultados') + '</button>' + btnCarnet + '</td><td class="text-muted small">-</td><td>-</td><td class="text-center align-top"><button class="btn btn-sm btn-outline-danger" onclick="' + eliminarTipoSanguineo + '" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.tipo === 'seleccion_unica') {
                 var opcionesHtml2 = (examen.opciones || []).map(function(opt) { return '<option value="' + opt + '" ' + (examen.resultado === opt ? 'selected' : '') + '>' + opt + '</option>'; }).join('');
                 if (window.esSecrecionVaginal(examen) || examen.id === 'helicobacter_heces' ||
@@ -570,18 +597,14 @@
         var catalogoMap = {};
         catalogo.forEach(function(e) { catalogoMap[e.id] = e; });
         if (examenId === 'tipo_sanguineo_completo') {
-            var idsTipoSanguineo = ['grupo_sanguineo_abo', 'factor_rh'];
-            if (idsTipoSanguineo.some(function(id) {
+            if (['grupo_sanguineo_abo', 'factor_rh'].some(function(id) {
                 return window.examenesOrden.some(function(e) { return e.id === id; });
             })) {
                 window.Notifications.warning('Este examen ya está en la orden.');
                 return;
             }
-            idsTipoSanguineo.forEach(function(id) {
-                var examenTipo = crearExamenDesdeCatalogo(catalogoMap[id]);
-                examenTipo.tipoFormulario = 'tipo_sanguineo';
-                examenTipo.tipoSanguineoCompleto = true;
-                window.examenesOrden.push(examenTipo);
+            crearExamenesTipoSanguineo(catalogoMap).forEach(function(examen) {
+                window.examenesOrden.push(examen);
             });
             $('#selectorExamenes').val(null).trigger('change');
             renderizarTablaExamenes();
@@ -617,8 +640,13 @@
 
             var examenesPerfil = [];
             perfil.examenes.forEach(function(examenPerfil) {
-                if (examenPerfil.tipo === 'perfil' && window.App.perfiles[examenPerfil.id]) {
-                    var perfilHijo = window.App.perfiles[examenPerfil.id];
+                var examenPerfilId = examenPerfil.id === 'grupo_sanguineo'
+                    ? 'tipo_sanguineo_completo'
+                    : examenPerfil.id;
+                if (examenPerfilId === 'tipo_sanguineo_completo') {
+                    examenesPerfil = examenesPerfil.concat(crearExamenesTipoSanguineo(catalogoMap));
+                } else if (examenPerfil.tipo === 'perfil' && window.App.perfiles[examenPerfilId]) {
+                    var perfilHijo = window.App.perfiles[examenPerfilId];
                     if (examenId === 'perfil_veinte' && examenPerfil.id === 'hematologia_completa') {
                         var datosHematologiaPerfil = catalogoMap[examenPerfil.id] || perfilHijo;
                         var hematologiaPerfil = window.crearExamenDesdeCatalogo(datosHematologiaPerfil);
@@ -627,13 +655,18 @@
                         examenesPerfil.push(hematologiaPerfil);
                     } else {
                         perfilHijo.examenes.forEach(function(examenHijo) {
+                            if (examenHijo.id === 'grupo_sanguineo' ||
+                                examenHijo.id === 'tipo_sanguineo_completo') {
+                                examenesPerfil = examenesPerfil.concat(crearExamenesTipoSanguineo(catalogoMap));
+                                return;
+                            }
                             var override = catalogoMap[examenHijo.id];
                             var merged = override ? Object.assign({}, examenHijo, override) : examenHijo;
                             examenesPerfil.push(window.crearExamenDesdeCatalogo(merged));
                         });
                     }
                 } else {
-                    var override = catalogoMap[examenPerfil.id];
+                    var override = catalogoMap[examenPerfilId];
                     var merged = override ? Object.assign({}, examenPerfil, override) : examenPerfil;
                     examenesPerfil.push(window.crearExamenDesdeCatalogo(merged));
                 }
@@ -1130,6 +1163,35 @@
         window.location.href = 'reporte.html?' + parametros.toString();
     };
 
+    window.imprimirCarnetTipoSanguineo = async function() {
+        var grupo = (window.examenesOrden || []).find(function(examen) {
+            return examen.id === 'grupo_sanguineo_abo';
+        });
+        var rh = (window.examenesOrden || []).find(function(examen) {
+            return examen.id === 'factor_rh';
+        });
+        if (!grupo || !rh || !grupo.resultado || !rh.resultado) {
+            window.Notifications.warning('Primero cargue y guarde el grupo sanguíneo y el factor Rh.');
+            return;
+        }
+
+        var orden = window.pacienteActivo ? window.pacienteActivo.orden : window.getOrden();
+        try {
+            var guardado = await window.api.guardarPacienteExamenes(orden, window.examenesOrden);
+            if (!guardado || !guardado.success) {
+                throw new Error((guardado && guardado.error) || 'No se pudieron guardar los resultados.');
+            }
+            if (window.pacienteActivo) {
+                window.pacienteActivo.examenes = JSON.parse(JSON.stringify(window.examenesOrden));
+            }
+            var parametros = new URLSearchParams({ orden: orden, carnet: 'tipo-sanguineo' });
+            window.location.href = 'reporte.html?' + parametros.toString();
+        } catch (error) {
+            console.error('[imprimirCarnetTipoSanguineo] Error:', error);
+            window.Notifications.error('No se pudo preparar el carnet: ' + error.message);
+        }
+    };
+
     window.getOrden = function() {
         return String(new URLSearchParams(window.location.search).get('orden') || '').padStart(3, '0');
     };
@@ -1194,7 +1256,11 @@
         var catalogo = window.obtenerCatalogo();
         var porArea = {};
         catalogo.filter(function(examen) {
-            return examen.tipo !== 'perfil' || window.esExamenNormalCompuesto(examen.id);
+            var examenSanguineoIndividual = examen.id === 'grupo_sanguineo' ||
+                examen.id === 'grupo_sanguineo_abo' ||
+                examen.id === 'factor_rh';
+            return !examenSanguineoIndividual &&
+                (examen.tipo !== 'perfil' || window.esExamenNormalCompuesto(examen.id));
         }).forEach(function(examen) {
             var area = examen.area || "General";
             if (!porArea[area]) porArea[area] = [];

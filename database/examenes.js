@@ -798,6 +798,28 @@ function inicializarCatalogoExamenes(db, raizProyecto) {
     if (sembrado) {
         console.log('🌱 Catálogo de exámenes sembrado desde los archivos de configuración:', sembrado);
     }
+    db.prepare(`
+        UPDATE examenes
+        SET nombre = 'Grupo Sanguíneo y Factor Rh'
+        WHERE id = 'tipo_sanguineo_completo'
+    `).run();
+    const actualizarPerfilSanguineo = db.transaction(function() {
+        db.prepare(`
+            DELETE FROM perfiles_examenes
+            WHERE examen_id = 'grupo_sanguineo'
+              AND EXISTS (
+                  SELECT 1 FROM perfiles_examenes destino
+                  WHERE destino.perfil_id = perfiles_examenes.perfil_id
+                    AND destino.examen_id = 'tipo_sanguineo_completo'
+              )
+        `).run();
+        db.prepare(`
+            UPDATE perfiles_examenes
+            SET examen_id = 'tipo_sanguineo_completo'
+            WHERE examen_id = 'grupo_sanguineo'
+        `).run();
+    });
+    actualizarPerfilSanguineo();
     asegurarCatalogoProteinas(db, raizProyecto);
     asegurarCatalogoBilirrubinas(db, raizProyecto);
     asegurarCatalogoPSA(db, raizProyecto);

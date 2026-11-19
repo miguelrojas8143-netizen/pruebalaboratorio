@@ -14,11 +14,8 @@
         var form = document.getElementById('formularioTipoSanguineo');
         if (!form || !examenes.abo || !examenes.rh) return;
 
-        var grupo = examenes.abo.resultado || '';
-        var rh = examenes.rh.resultado || '';
-        document.getElementById('antiA').value = grupo === 'A' || grupo === 'AB' ? 'si' : grupo ? 'no' : '';
-        document.getElementById('antiB').value = grupo === 'B' || grupo === 'AB' ? 'si' : grupo ? 'no' : '';
-        document.getElementById('antiD').value = rh ? (rh === 'Positivo (+)' ? 'si' : 'no') : '';
+        document.getElementById('grupoSanguineoSeleccion').value = examenes.abo.resultado || '';
+        document.getElementById('factorRhSeleccion').value = examenes.rh.resultado || '';
         form.style.display = 'block';
         window.determinarTipoSangre();
     };
@@ -26,7 +23,7 @@
     window.guardarFormularioTipoSanguineo = function() {
         var resultado = window.determinarTipoSangre();
         if (!resultado) {
-            window.Notifications.error('Complete las reacciones Anti-A, Anti-B y Anti-D.');
+            window.Notifications.error('Seleccione el grupo sanguíneo y el factor Rh.');
             return;
         }
         window.cerrarFormularioTipoSanguineo();

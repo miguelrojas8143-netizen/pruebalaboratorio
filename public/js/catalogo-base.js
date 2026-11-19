@@ -37,7 +37,7 @@ window.App.catalogo.push(
     { id: 'grupo_sanguineo', nombre: 'Grupo Sanguíneo', area: 'Hematología', unidad: '', tipo: 'texto', valorDefecto: '' },
     { id: 'grupo_sanguineo_abo', nombre: 'Grupo Sanguíneo ABO', area: 'Hematología', unidad: '', tipo: 'tipo_sanguineo' },
     { id: 'factor_rh', nombre: 'Factor Rh', area: 'Hematología', unidad: '', tipo: 'tipo_sanguineo' },
-    { id: 'tipo_sanguineo_completo', nombre: 'Tipo Sanguíneo Completo', area: 'Hematología', unidad: '', tipo: 'tipo_sanguineo_completo' },
+    { id: 'tipo_sanguineo_completo', nombre: 'Grupo Sanguíneo y Factor Rh', area: 'Hematología', unidad: '', tipo: 'tipo_sanguineo_completo' },
     { id: 'tiempo_protrombina', nombre: 'Tiempo de Protrombina (TP)', area: 'Coagulación', unidad: 'seg', refMin: 11, refMax: 13.5 },
     { id: 'tiempo_tromboplastina', nombre: 'Tiempo de Tromboplastina Parcial (TTP)', area: 'Coagulación', unidad: 'seg', refMin: 25, refMax: 35 },
     { id: 'test_lee_white', nombre: 'Test Lee White', area: 'Coagulación', unidad: 'min', refMin: 5, refMax: 15 },

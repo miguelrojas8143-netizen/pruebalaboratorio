@@ -1003,7 +1003,98 @@
         }
     }
 
+    function generarPDFCarnet() {
+        var ventanaImpresion = window.open('', '_blank');
+        if (!ventanaImpresion) {
+            window.Notifications.error('El navegador bloqueó la ventana de vista previa. Permita las ventanas emergentes para este sitio.');
+            return;
+        }
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            ventanaImpresion.close();
+            window.Notifications.error('No se pudo cargar el generador PDF. Revise la librería jsPDF.');
+            return;
+        }
+
+        var doc = new window.jspdf.jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: [85.6, 54]
+        });
+        var nombre = textoPlano(document.getElementById('carnetNombrePaciente').textContent) || '-';
+        var cedula = textoPlano(document.getElementById('carnetCedulaPaciente').textContent) || '-';
+        var edad = textoPlano(document.getElementById('carnetEdadPaciente').textContent) || '-';
+        var sexo = textoPlano(document.getElementById('carnetSexoPaciente').textContent) || '-';
+        var grupo = textoPlano(document.getElementById('carnetResultadoABO').textContent) || '-';
+        var factorRh = textoPlano(document.getElementById('carnetResultadoRh').textContent) || '-';
+        var fecha = textoPlano(document.getElementById('carnetFecha').textContent) || new Date().toLocaleDateString('es-VE');
+
+        doc.setDrawColor(31, 78, 104);
+        doc.setTextColor(23, 33, 43);
+        doc.setLineWidth(0.35);
+        doc.roundedRect(1, 1, 83.6, 52, 1.2, 1.2);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(5.2);
+        doc.text('UNIDAD MÉDICO QUIRÚRGICA LUZ CORONADO C. A.', 3, 5.5, { maxWidth: 79 });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(3.8);
+        doc.text('Calle Principal Casa N° S/N, Barrio Páez. El Nula, Estado Apure, Venezuela', 3, 8, { maxWidth: 79 });
+        doc.text('Teléfono: 0416 4740671', 3, 10.2);
+        doc.setDrawColor(31, 78, 104);
+        doc.line(3, 12, 82.6, 12);
+
+        doc.setTextColor(31, 78, 104);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text('GRUPO SANGUÍNEO Y FACTOR Rh', 42.8, 16, { align: 'center' });
+
+        doc.setTextColor(23, 33, 43);
+        doc.setFontSize(4.5);
+        doc.text('PACIENTE', 3, 20);
+        doc.setFontSize(5.2);
+        doc.text(nombre, 3, 22.2, { maxWidth: 78 });
+        doc.setFontSize(4.5);
+        doc.text('CÉDULA: ' + cedula, 3, 26);
+        doc.text('EDAD: ' + edad, 48, 26);
+        doc.text('SEXO: ' + sexo, 66, 26);
+
+        doc.setDrawColor(31, 78, 104);
+        doc.roundedRect(3, 29, 38, 12, 1, 1);
+        doc.roundedRect(44.6, 29, 38, 12, 1, 1);
+        doc.setTextColor(23, 33, 43);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(4.5);
+        doc.text('GRUPO SANGUÍNEO (ABO)', 22, 32, { align: 'center' });
+        doc.text('FACTOR Rh', 63.6, 32, { align: 'center' });
+        doc.setTextColor(31, 78, 104);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text(grupo, 22, 38.5, { align: 'center' });
+        doc.text(factorRh, 63.6, 38.5, { align: 'center' });
+
+        doc.setTextColor(23, 33, 43);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(4);
+        doc.text('Fecha: ' + fecha, 82.6, 44, { align: 'right' });
+        doc.line(24, 48, 61.6, 48);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(4.3);
+        doc.text('Lcda. Andréina Rondón', 42.8, 50.2, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(3.7);
+        doc.text('Bioanalista Responsable', 42.8, 52, { align: 'center' });
+        doc.setProperties({ title: 'Carnet de grupo sanguíneo - ' + nombre, subject: 'Carnet de grupo sanguíneo y factor Rh' });
+
+        ventanaImpresion.document.write('<p style="font-family:Arial;padding:24px">Preparando vista previa del carnet...</p>');
+        ventanaImpresion.document.close();
+        ventanaImpresion.location.href = doc.output('bloburl');
+    }
+
     function vistaPrevia() {
+        if (new URLSearchParams(window.location.search).get('carnet') === 'tipo-sanguineo') {
+            generarPDFCarnet();
+            return;
+        }
         var areaReporte = document.getElementById('area-imprimir');
         if (!areaReporte || areaReporte.style.display === 'none') {
             window.Notifications.error('No hay resultados visibles para imprimir.');

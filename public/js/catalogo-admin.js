@@ -524,7 +524,11 @@
             throw new Error((respuesta && respuesta.error) || 'No se pudo cargar el catálogo.');
         }
         examenes = (respuesta.examenes || []).filter(function(examen) {
-            return examen.tipo !== 'perfil' || window.esExamenNormalCompuesto(examen.id);
+            var componenteTipoSanguineo = examen.id === 'grupo_sanguineo' ||
+                examen.id === 'grupo_sanguineo_abo' ||
+                examen.id === 'factor_rh';
+            return !componenteTipoSanguineo &&
+                (examen.tipo !== 'perfil' || window.esExamenNormalCompuesto(examen.id));
         });
         categorias = (respuesta.categorias || []).filter(function(categoria) {
             return examenes.some(function(examen) { return examen.categoria === categoria.nombre; });

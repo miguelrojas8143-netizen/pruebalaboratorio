@@ -227,54 +227,25 @@
     window.obtenerValor = obtenerValor;
 
     window.determinarTipoSangre = function() {
-        var antiA = document.getElementById('antiA');
-        var antiB = document.getElementById('antiB');
-        var antiD = document.getElementById('antiD');
-        if (!antiA || !antiB || !antiD) return null;
-
-        var reaccionaA = antiA.value === 'si';
-        var reaccionaB = antiB.value === 'si';
-        var reaccionaRh = antiD.value === 'si';
-        var entradasCompletas = antiA.value !== '' && antiB.value !== '' && antiD.value !== '';
-        var grupo = '';
-        var factorRh = '';
-
-        if (entradasCompletas) {
-            if (reaccionaA && reaccionaB) grupo = 'AB';
-            else if (reaccionaA) grupo = 'A';
-            else if (reaccionaB) grupo = 'B';
-            else grupo = 'O';
-            factorRh = reaccionaRh ? 'Positivo (+)' : 'Negativo (-)';
-        }
-
-        var resultadoABO = document.getElementById('grupoSanguineoResultado');
-        var resultadoRh = document.getElementById('factorRhResultado');
-        if (resultadoABO) resultadoABO.value = grupo;
-        if (resultadoRh) resultadoRh.value = factorRh;
-
-        var estadoA = document.getElementById('antiAEstado');
-        var estadoB = document.getElementById('antiBEstado');
-        var estadoD = document.getElementById('antiDEstado');
-        if (estadoA) estadoA.textContent = antiA.value === '' ? 'Pendiente' : (reaccionaA ? 'Hay reacción' : 'No hay reacción');
-        if (estadoB) estadoB.textContent = antiB.value === '' ? 'Pendiente' : (reaccionaB ? 'Hay reacción' : 'No hay reacción');
-        if (estadoD) estadoD.textContent = antiD.value === '' ? 'Pendiente' : (reaccionaRh ? 'Hay reacción' : 'No hay reacción');
+        var grupo = document.getElementById('grupoSanguineoSeleccion');
+        var factorRh = document.getElementById('factorRhSeleccion');
+        if (!grupo || !factorRh) return null;
+        var entradasCompletas = !!grupo.value && !!factorRh.value;
 
         var examenes = window.examenesOrden || [];
         var examenABO = examenes.find(function(examen) { return examen.id === 'grupo_sanguineo_abo'; });
         var examenRh = examenes.find(function(examen) { return examen.id === 'factor_rh'; });
-        if (examenABO) examenABO.resultado = grupo;
-        if (examenRh) examenRh.resultado = factorRh;
+        if (examenABO) examenABO.resultado = entradasCompletas ? grupo.value : '';
+        if (examenRh) examenRh.resultado = entradasCompletas ? factorRh.value : '';
 
         var resultadoTexto = document.getElementById('resultadoTexto');
-        var resultadoCaja = document.getElementById('resultadoCaja');
         if (resultadoTexto) {
             resultadoTexto.innerText = entradasCompletas
-                ? 'Grupo Sanguíneo: ' + grupo + ' ' + factorRh
-                : 'Complete las reacciones para determinar el grupo sanguíneo';
+                ? 'Grupo Sanguíneo: ' + grupo.value + ' ' + factorRh.value
+                : 'Seleccione el grupo sanguíneo y el factor Rh';
         }
-        if (resultadoCaja) resultadoCaja.style.display = entradasCompletas ? 'block' : 'none';
 
-        return entradasCompletas ? { grupo: grupo, factorRh: factorRh } : null;
+        return entradasCompletas ? { grupo: grupo.value, factorRh: factorRh.value } : null;
     };
 
     // LÍNEA ~227: Diálogo de confirmación personalizado con botones "No" / "Sí"

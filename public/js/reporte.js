@@ -46,6 +46,35 @@
         paciente.perfiles = paciente.perfiles || [];
         paciente.telefono = paciente.telefono || '';
 
+        if (new URLSearchParams(window.location.search).get('carnet') === 'tipo-sanguineo') {
+            var examenABO = paciente.examenes.find(function(examen) {
+                return examen.id === 'grupo_sanguineo_abo';
+            });
+            var examenRh = paciente.examenes.find(function(examen) {
+                return examen.id === 'factor_rh';
+            });
+            if (!examenABO || !examenRh || !examenABO.resultado || !examenRh.resultado) {
+                window.Notifications.error('No se puede imprimir el carnet: faltan el grupo sanguíneo o el factor Rh.');
+                return;
+            }
+
+            document.getElementById('carnetNombrePaciente').textContent = paciente.nombre || '-';
+            document.getElementById('carnetCedulaPaciente').textContent = paciente.cedula || '-';
+            document.getElementById('carnetEdadPaciente').textContent = paciente.edad || '-';
+            document.getElementById('carnetSexoPaciente').textContent = paciente.sexo || '-';
+            document.getElementById('carnetResultadoABO').textContent = examenABO.resultado;
+            document.getElementById('carnetResultadoRh').textContent = examenRh.resultado;
+            document.getElementById('carnetFecha').textContent = new Date().toLocaleDateString('es-VE');
+            document.getElementById('area-imprimir').style.display = 'none';
+            var botonVistaPrevia = document.getElementById('btnVistaPreviaReporte');
+            botonVistaPrevia.innerHTML = '<i class="bi bi-file-earmark-pdf me-1"></i> Vista previa / Guardar carnet PDF';
+            botonVistaPrevia.title = 'Vista previa y guardar carnet PDF';
+            botonVistaPrevia.setAttribute('aria-label', 'Vista previa y guardar carnet PDF');
+            document.getElementById('carnetTipoSanguineo').style.display = 'block';
+            document.body.classList.add('modo-carnet-tipo-sanguineo');
+            return;
+        }
+
         try {
             var seleccion = window.PdfReport.leerSeleccionExamenes();
             if (seleccion !== null) {
