@@ -778,6 +778,12 @@ td.grupo-header-clickable:hover {
     width: min(900px, calc(100vw - 2rem));
 }
 
+.formulario-flotante-urocultivo {
+    width: min(1000px, calc(100vw - 2rem));
+    max-height: calc(100vh - 1rem);
+    overflow-y: auto;
+}
+
 .formulario-flotante-uroanalisis .card-body {
     padding: 0.8rem !important;
 }

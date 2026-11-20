@@ -10,7 +10,10 @@ const {
 const {
     guardarExamenCatalogo,
     actualizarEstadoExamenCatalogo,
-    eliminarExamenCatalogo
+    eliminarExamenCatalogo,
+    listarAntibioticosCatalogo,
+    guardarAntibioticoCatalogo,
+    actualizarEstadoAntibioticoCatalogo
 } = require('./catalogo-admin');
 const { actualizarOrdenPaciente } = require('./ordenes');
 const { prepararConsultasCatalogo } = require('./schema');
@@ -81,6 +84,20 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
     `);
 
     inicializarCatalogoExamenes(db, appDirectory);
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS antibioticos_catalogo (
+            id TEXT PRIMARY KEY,
+            nombre TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            activo INTEGER NOT NULL DEFAULT 1,
+            orden INTEGER NOT NULL DEFAULT 0
+        )
+    `);
+    db.exec(`
+        INSERT OR IGNORE INTO antibioticos_catalogo (id, nombre, activo, orden)
+        SELECT codigo, nombre, 1, orden_render
+        FROM parametros_examen
+        WHERE examen_id = 'antibiograma'
+    `);
     const consultasCatalogo = prepararConsultasCatalogo(db);
 
     db.exec(`
@@ -696,6 +713,23 @@ function registrarHandlersCatalogo(ipcMain, db, consultasCatalogo) {
     ipcMain.handle('eliminar-examen-catalogo', envolver(function(data) {
         const resultado = eliminarExamenCatalogo(db, data && data.id);
         return { success: true, examen: resultado };
+    }));
+
+    ipcMain.handle('obtener-antibioticos-catalogo', envolver(function() {
+        return { success: true, antibioticos: listarAntibioticosCatalogo(db) };
+    }));
+
+    ipcMain.handle('guardar-antibiotico-catalogo', envolver(function(datos) {
+        return { success: true, antibiotico: guardarAntibioticoCatalogo(db, datos) };
+    }));
+
+    ipcMain.handle('actualizar-estado-antibiotico-catalogo', envolver(function(datos) {
+        const resultado = actualizarEstadoAntibioticoCatalogo(db, datos && datos.id, datos && datos.activo);
+        return { success: true, antibiotico: resultado };
+    }));
+
+    ipcMain.handle('obtener-antibioticos-activos', envolver(function() {
+        return { success: true, antibioticos: listarAntibioticosCatalogo(db, true) };
     }));
 
     ipcMain.handle('obtener-referencias', envolver(function() {

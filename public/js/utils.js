@@ -44,6 +44,39 @@
     function examenTieneResultados(examen) {
         if (!examen) return false;
         var resultado = examen.resultado;
+        var esUrocultivo = examen.id === 'urocultivo' ||
+            examen.examen_id === 'urocultivo' ||
+            examen.tipoFormulario === 'urocultivo';
+        if (esUrocultivo) {
+            if (typeof resultado === 'string') {
+                var texto = resultado.trim();
+                if (!texto) return false;
+                try {
+                    resultado = texto.charAt(0) === '{' ? JSON.parse(texto) : { resultadoCultivo: texto };
+                } catch (error) {
+                    resultado = { resultadoCultivo: texto };
+                }
+            }
+            if (!resultado || typeof resultado !== 'object') return false;
+            var hayMicroorganismo = Array.isArray(resultado.microorganismos) &&
+                resultado.microorganismos.some(function(microorganismo) {
+                    return microorganismo && String(microorganismo.nombre || '').trim() !== '';
+                });
+            var hayAntibiotico = Array.isArray(resultado.antibioticos) &&
+                resultado.antibioticos.some(function(antibiotico) {
+                    if (!antibiotico) return false;
+                    var resultados = antibiotico.resultados || {};
+                    return Object.keys(resultados).some(function(indice) {
+                        var valores = resultados[indice] || {};
+                        return String(valores.cmi == null ? '' : valores.cmi).trim() !== '' ||
+                            String(valores.difusion == null ? '' : valores.difusion).trim() !== '';
+                    });
+                });
+            return String(resultado.resultadoCultivo || '').trim() !== '' ||
+                String(resultado.observaciones || '').trim() !== '' ||
+                resultado.antibiogramaOmitido === true ||
+                hayMicroorganismo || hayAntibiotico;
+        }
         var esAntigenosFebriles = examen.id === 'antigenos_febriles' ||
             examen.examen_id === 'antigenos_febriles' ||
             examen.tipoFormulario === 'antigenos_febriles';

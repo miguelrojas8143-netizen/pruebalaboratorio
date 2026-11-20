@@ -1,6 +1,7 @@
 'use strict';
 
 const ID_EXAMEN = /^[a-z][a-z0-9_]{0,63}$/;
+const ID_ANTIBIOTICO = /^[a-z][a-z0-9_]{0,63}$/;
 const ID_ANTIGENOS_FEBRILES = 'antigenos_febriles';
 const TIPOS_EDITABLES = new Set(['numerico', 'texto']);
 
@@ -202,8 +203,58 @@ function eliminarExamenCatalogo(db, id) {
     return { id: id, activo: false };
 }
 
+function listarAntibioticosCatalogo(db, activosSolo = false) {
+    return db.prepare(`
+        SELECT id, nombre, activo, orden
+        FROM antibioticos_catalogo
+        ${activosSolo ? 'WHERE activo = 1' : ''}
+        ORDER BY orden, nombre COLLATE NOCASE
+    `).all();
+}
+
+function guardarAntibioticoCatalogo(db, datos) {
+    if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
+        throw new Error('Los datos del antibiótico no son válidos.');
+    }
+    const id = textoRequerido(datos.id, 'El código', 64);
+    if (!ID_ANTIBIOTICO.test(id)) {
+        throw new Error('El código debe comenzar con una letra minúscula y solo contener letras, números o guiones bajos.');
+    }
+    const nombre = textoRequerido(datos.nombre, 'El nombre del antibiótico', 120);
+    const existente = db.prepare('SELECT id FROM antibioticos_catalogo WHERE id = ?').get(id);
+    const nombreDuplicado = db.prepare(
+        'SELECT id FROM antibioticos_catalogo WHERE nombre = ? COLLATE NOCASE AND id != ?'
+    ).get(nombre, id);
+    if (nombreDuplicado) throw new Error('Ya existe un antibiótico con ese nombre.');
+
+    if (existente) {
+        db.prepare('UPDATE antibioticos_catalogo SET nombre = ? WHERE id = ?').run(nombre, id);
+    } else {
+        db.prepare(`
+            INSERT INTO antibioticos_catalogo (id, nombre, activo, orden)
+            VALUES (?, ?, 1, COALESCE((SELECT MAX(orden) + 1 FROM antibioticos_catalogo), 0))
+        `).run(id, nombre);
+    }
+    return db.prepare('SELECT id, nombre, activo, orden FROM antibioticos_catalogo WHERE id = ?').get(id);
+}
+
+function actualizarEstadoAntibioticoCatalogo(db, id, activo) {
+    if (typeof id !== 'string' || !ID_ANTIBIOTICO.test(id)) {
+        throw new Error('El código del antibiótico no es válido.');
+    }
+    if (typeof activo !== 'boolean') throw new Error('El estado solicitado no es válido.');
+    const resultado = db.prepare(
+        'UPDATE antibioticos_catalogo SET activo = ? WHERE id = ?'
+    ).run(activo ? 1 : 0, id);
+    if (resultado.changes === 0) throw new Error('No existe el antibiótico "' + id + '".');
+    return { id: id, activo: activo };
+}
+
 module.exports = {
     guardarExamenCatalogo,
     actualizarEstadoExamenCatalogo,
-    eliminarExamenCatalogo
+    eliminarExamenCatalogo,
+    listarAntibioticosCatalogo,
+    guardarAntibioticoCatalogo,
+    actualizarEstadoAntibioticoCatalogo
 };

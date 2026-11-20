@@ -382,6 +382,63 @@
         return resultado;
     }
 
+    function normalizarDatosUrocultivo(examen) {
+        if (!examen) return null;
+        var resultado = examen.resultado;
+        var datos;
+        if (resultado && typeof resultado === 'object') {
+            datos = resultado;
+        } else {
+            var texto = String(resultado || '');
+            try {
+                datos = texto.trim().charAt(0) === '{' ? JSON.parse(texto) : { resultadoCultivo: texto };
+            } catch (error) {
+                datos = { resultadoCultivo: texto };
+            }
+        }
+        if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
+            datos = { resultadoCultivo: String(resultado || '') };
+        }
+        var antibioticos = Array.isArray(datos.antibioticos) ? datos.antibioticos : [];
+        var microorganismos = Array.isArray(datos.microorganismos) ? datos.microorganismos : [];
+        if (!microorganismos.length && antibioticos.length) microorganismos = [{ nombre: '' }];
+        var metodos = datos.metodos && typeof datos.metodos === 'object' ? datos.metodos : null;
+        if (!metodos) {
+            metodos = {
+                cmi: antibioticos.some(function(abx) {
+                    return abx && (abx.cmi || (abx.resultados && Object.keys(abx.resultados).some(function(indice) {
+                        return abx.resultados[indice] && abx.resultados[indice].cmi;
+                    })));
+                }),
+                difusion: true
+            };
+        }
+        antibioticos = antibioticos.map(function(abx) {
+            var resultados = abx && abx.resultados && typeof abx.resultados === 'object'
+                ? abx.resultados
+                : {};
+            if (!Object.keys(resultados).length && abx) {
+                resultados['0'] = { cmi: abx.cmi || '', difusion: abx.difusion || abx.resultado || '' };
+            }
+            return {
+                id: abx && abx.id,
+                antibiotico: abx && (abx.antibiotico || abx.nombre || abx.id) || '-',
+                resultados: resultados
+            };
+        });
+        return {
+            datos: datos,
+            resultadoCultivo: String(datos.resultadoCultivo || datos.resultado || ''),
+            antibioticoOmitido: datos.antibiogramaOmitido === true || datos.omitido === true,
+            metodos: { cmi: metodos.cmi === true, difusion: metodos.difusion === true },
+            microorganismos: microorganismos.map(function(microorganismo) {
+                return { nombre: String(microorganismo && microorganismo.nombre || '') };
+            }),
+            antibioticos: antibioticos,
+            observaciones: String(datos.observaciones || '')
+        };
+    }
+
     /* ---------- Construcción del payload unificado ---------- */
     function buildPayload(paciente) {
         var examenes = JSON.parse(JSON.stringify(paciente.examenes || []));
@@ -410,16 +467,21 @@
         var examenesAb = examenes.find(function(e) {
             return e.tipoFormulario === 'antibiograma' || e.id === 'antibiograma' || e.examen_id === 'antibiograma';
         });
+        var examenUrocultivo = examenes.find(function(e) {
+            return e.id === 'urocultivo' || e.examen_id === 'urocultivo' ||
+                e.tipoFormulario === 'urocultivo';
+        });
         var examenAntigenosFebriles = examenes.find(esExamenAntigenosFebriles);
         var antigenosFebriles = filasAntigenosFebriles(examenAntigenosFebriles);
         var examenHematologia = examenes.find(function(e) {
             return e.id === 'hematologia_completa';
         });
         var examenesNormales = examenes.filter(function(e) {
-            return e !== examenesHeces && e !== examenesUro && e !== examenesAb &&
+            return e !== examenesHeces && e !== examenesUro && e !== examenesAb && e !== examenUrocultivo &&
                 e !== examenAntigenosFebriles &&
                 e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' &&
-                e.tipoFormulario !== 'antibiograma' && e.tipoFormulario !== 'antigenos_febriles';
+                e.tipoFormulario !== 'antibiograma' && e.tipoFormulario !== 'urocultivo' &&
+                e.tipoFormulario !== 'antigenos_febriles';
         });
 
         if (!examenesUro) {
@@ -569,10 +631,14 @@
         if (examenesAb && window.tieneDatosAntibiograma(examenesAb)) {
             antibiograma = { datos: JSON.parse(examenesAb.resultado || '{}') };
         }
+        var urocultivo = examenUrocultivo && window.examenTieneResultados(examenUrocultivo)
+            ? normalizarDatosUrocultivo(examenUrocultivo)
+            : null;
 
         var hayResultados = examenesNormales.length > 0 ||
             (examenesHeces && window.tieneDatosHeces(examenesHeces)) ||
             (examenesUro && window.tieneDatosUroanalisis(examenesUro)) ||
+            !!urocultivo ||
             (examenesAb && window.tieneDatosAntibiograma(examenesAb)) ||
             antigenosFebriles.length > 0;
 
@@ -587,6 +653,7 @@
             heces: heces,
             hematologiaObservaciones: hematologiaObservaciones,
             uro: uro,
+            urocultivo: urocultivo,
             antibiograma: antibiograma,
             antigenosFebriles: antigenosFebriles,
             refAdaptadas: refAdaptadas,
@@ -746,6 +813,75 @@
         return html + renderObservacionesBioanalista(uro.observaciones);
     }
 
+    function renderUrocultivoDom(urocultivo) {
+        if (!urocultivo) return '';
+        var html = '<div class="reporte-area-grupo"><h6 class="reporte-area-titulo">Urocultivo</h6>';
+        if (urocultivo.resultadoCultivo) {
+            html += '<div class="mb-2"><strong>Resultado del cultivo:</strong> ' +
+                escapeHtml(urocultivo.resultadoCultivo) + '</div>';
+        }
+        var microorganismos = urocultivo.microorganismos || [];
+        microorganismos.forEach(function(microorganismo, indice) {
+            if (microorganismo.nombre) {
+                html += '<div class="fw-semibold mt-2">Microorganismo #' + (indice + 1) + ': ' +
+                    escapeHtml(microorganismo.nombre) + '</div>';
+            }
+            if (urocultivo.antibioticoOmitido) return;
+
+            var metodos = [];
+            if (urocultivo.metodos.cmi) metodos.push({ id: 'cmi', nombre: 'CMI' });
+            if (urocultivo.metodos.difusion) metodos.push({ id: 'difusion', nombre: 'Difusión' });
+            var filas = (urocultivo.antibioticos || []).map(function(abx) {
+                var valores = abx.resultados[String(indice)] || {};
+                return { antibiotico: abx.antibiotico, valores: valores };
+            }).filter(function(fila) {
+                return metodos.some(function(metodo) {
+                    return String(fila.valores[metodo.id] == null ? '' : fila.valores[metodo.id]).trim() !== '';
+                });
+            });
+            if (!filas.length || !metodos.length) return;
+            html += '<h6 class="reporte-subarea-titulo mt-2">Antibiograma — Microorganismo #' +
+                (indice + 1) + '</h6><div class="table-responsive"><table class="table table-sm table-bordered">';
+            html += '<thead class="table-light"><tr><th>Antibiótico</th>' +
+                metodos.map(function(metodo) { return '<th>' + escapeHtml(metodo.nombre) + '</th>'; }).join('') +
+                '</tr></thead><tbody>';
+            filas.forEach(function(fila) {
+                html += '<tr><td class="fw-semibold">' + escapeHtml(fila.antibiotico || '-') + '</td>' +
+                    metodos.map(function(metodo) {
+                        return '<td>' + escapeHtml(fila.valores[metodo.id] || '-') + '</td>';
+                    }).join('') + '</tr>';
+            });
+            html += '</tbody></table></div>';
+        });
+        if (!urocultivo.antibioticoOmitido) {
+            var hayDifusion = (urocultivo.antibioticos || []).some(function(abx) {
+                return (urocultivo.microorganismos || []).some(function(_microorganismo, indice) {
+                    return urocultivo.metodos.difusion &&
+                        String((abx.resultados[String(indice)] || {}).difusion == null
+                            ? '' : (abx.resultados[String(indice)] || {}).difusion).trim() !== '';
+                });
+            });
+            var hayCmi = (urocultivo.antibioticos || []).some(function(abx) {
+                return (urocultivo.microorganismos || []).some(function(_microorganismo, indice) {
+                    return urocultivo.metodos.cmi &&
+                        String((abx.resultados[String(indice)] || {}).cmi == null
+                            ? '' : (abx.resultados[String(indice)] || {}).cmi).trim() !== '';
+                });
+            });
+            if (hayDifusion) {
+                html += '<p class="small mb-1"><strong>S:</strong> SENSIBLE &nbsp; ' +
+                    '<strong>I:</strong> INTERMEDIO &nbsp; <strong>R:</strong> RESISTENTE</p>';
+            }
+            if (hayCmi) html += '<p class="small mb-1">CMI = Concentración Mínima Inhibitoria</p>';
+        }
+        if (urocultivo.observaciones) {
+            html += '<h6 class="reporte-subarea-titulo mt-3">OBSERVACIONES</h6>' +
+                '<div class="alert alert-light border rounded mb-0" style="white-space: pre-wrap; line-height: 1.5; padding: 0.75rem 1rem;">' +
+                escapeHtml(urocultivo.observaciones) + '</div>';
+        }
+        return html + '</div>';
+    }
+
     function renderAntigenosFebrilesDom(filas) {
         if (!filas || !filas.length) return '';
         var html = '<div class="pdf-bloque"><h6 class="reporte-area-titulo">Antígenos Febriles (Widal)</h6>' +
@@ -833,6 +969,12 @@
             antigenos.className = 'reporte-area-grupo';
             antigenos.innerHTML = renderAntigenosFebrilesDom(payload.antigenosFebriles);
             contenedor.appendChild(antigenos);
+        }
+
+        if (contenedor && payload.urocultivo) {
+            var urocultivo = document.createElement('div');
+            urocultivo.innerHTML = renderUrocultivoDom(payload.urocultivo);
+            contenedor.appendChild(urocultivo);
         }
 
         // El antibiograma es un examen individual y comparte la hoja con las demás áreas.
@@ -1455,7 +1597,7 @@ function escribirFila(resultado) {
         // Función para escribir observaciones del bioanalista en el PDF
         function escribirObservacionesBioanalista(texto) {
             if (!texto || String(texto).trim() === '') return;
-            var lineas = doc.splitTextToSize(textoPlano(texto), pageWidth - 28);
+            var lineas = doc.splitTextToSize(String(texto), pageWidth - 28);
             if (y + 12 > pageHeight - 30) {
                 doc.addPage();
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
@@ -1479,6 +1621,152 @@ function escribirFila(resultado) {
                 y += 3.6;
             });
             y += 2;
+        }
+
+        function escribirAntibiogramaUrocultivo(urocultivo) {
+            if (y + 12 > pageHeight - 30) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(31, 78, 104);
+            doc.text('UROCULTIVO', 14, y);
+            y += 6;
+
+            function escribirDato(etiqueta, valor) {
+                if (valor == null || String(valor).trim() === '') return;
+                var lineas = doc.splitTextToSize(String(valor), pageWidth - 72);
+                var alto = Math.max(1, lineas.length) * 3.6 + 1.5;
+                if (y + alto > pageHeight - 30) {
+                    doc.addPage();
+                    encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                    y = yDespuesEncabezado;
+                }
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(7.5);
+                doc.setTextColor(25, 25, 25);
+                doc.text(etiqueta, 14, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(lineas, 62, y, { lineHeightFactor: 0.9 });
+                y += alto;
+            }
+
+            if (urocultivo.resultadoCultivo) {
+                escribirDato('Resultado del cultivo', urocultivo.resultadoCultivo);
+            }
+            (urocultivo.microorganismos || []).forEach(function(microorganismo, indice) {
+                if (microorganismo.nombre) {
+                    escribirDato('Microorganismo #' + (indice + 1), microorganismo.nombre);
+                }
+            });
+            if (urocultivo.antibioticoOmitido) {
+                escribirDato('Antibiograma', 'Omitido');
+            }
+            y += 2;
+
+            var metodosActivos = [];
+            if (urocultivo.metodos.cmi) metodosActivos.push({ id: 'cmi', nombre: 'CMI' });
+            if (urocultivo.metodos.difusion) metodosActivos.push({ id: 'difusion', nombre: 'Difusión' });
+            var metodosImpresos = Object.create(null);
+            if (!urocultivo.antibioticoOmitido) {
+                (urocultivo.microorganismos || []).forEach(function(microorganismo, indice) {
+                    var registros = (urocultivo.antibioticos || []).map(function(abx) {
+                        var valores = abx.resultados[String(indice)] || {};
+                        return { abx: abx, valores: valores };
+                    });
+                    var metodos = metodosActivos.filter(function(metodo) {
+                        return registros.some(function(registro) {
+                            return String(registro.valores[metodo.id] == null
+                                ? '' : registro.valores[metodo.id]).trim() !== '';
+                        });
+                    });
+                    var filas = registros.filter(function(registro) {
+                        return metodos.some(function(metodo) {
+                            return String(registro.valores[metodo.id] == null
+                                ? '' : registro.valores[metodo.id]).trim() !== '';
+                        });
+                    });
+                    if (!metodos.length || !filas.length) return;
+
+                    if (y + 10 > pageHeight - 30) {
+                        doc.addPage();
+                        encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                        y = yDespuesEncabezado;
+                    }
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(31, 78, 104);
+                    doc.text('ANTIBIOGRAMA - MICROORGANISMO #' + (indice + 1), 14, y + 3);
+                    y += 6;
+
+                    var encabezados = ['Antibiótico'].concat(metodos.map(function(metodo) {
+                        metodosImpresos[metodo.id] = true;
+                        return metodo.nombre;
+                    }));
+                    var cuerpo = filas.map(function(registro) {
+                        return [registro.abx.antibiotico].concat(metodos.map(function(metodo) {
+                            var valor = registro.valores[metodo.id];
+                            return valor == null || String(valor).trim() === '' ? '-' : valor;
+                        }));
+                    });
+                    var anchoTabla = pageWidth - 28;
+                    var anchoAntibiotico = metodos.length === 1 ? anchoTabla * 0.62 : anchoTabla * 0.5;
+                    var anchoMetodo = (anchoTabla - anchoAntibiotico) / metodos.length;
+                    var columnas = { 0: { cellWidth: anchoAntibiotico } };
+                    metodos.forEach(function(_metodo, indiceMetodo) {
+                        columnas[indiceMetodo + 1] = { cellWidth: anchoMetodo };
+                    });
+                    var paginaInicial = doc.getNumberOfPages();
+                    doc.autoTable({
+                        startY: y,
+                        head: [encabezados],
+                        body: cuerpo,
+                        theme: 'striped',
+                        margin: { top: yDespuesEncabezado, right: 14, bottom: 30, left: 14 },
+                        styles: {
+                            font: 'helvetica',
+                            fontSize: 8,
+                            cellPadding: 2,
+                            overflow: 'linebreak',
+                            textColor: [25, 25, 25],
+                            lineWidth: 0.1
+                        },
+                        headStyles: {
+                            fillColor: [31, 78, 104],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold'
+                        },
+                        alternateRowStyles: { fillColor: [248, 251, 253] },
+                        columnStyles: columnas,
+                        tableWidth: anchoTabla,
+                        showHead: 'everyPage',
+                        rowPageBreak: 'avoid',
+                        didDrawPage: function() {
+                            if (doc.getNumberOfPages() > paginaInicial) {
+                                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                            }
+                        }
+                    });
+                    y = doc.lastAutoTable.finalY + 5;
+                });
+            }
+            if (metodosImpresos.difusion) {
+                y = agregarResultadosTexto(doc, '', [{
+                    nombre: 'Leyenda',
+                    resultado: 'S: SENSIBLE | I: INTERMEDIO | R: RESISTENTE',
+                    referencia: '-'
+                }], { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
+            }
+            if (metodosImpresos.cmi) {
+                y = agregarResultadosTexto(doc, '', [{
+                    nombre: 'Leyenda',
+                    resultado: 'CMI = Concentración Mínima Inhibitoria',
+                    referencia: '-'
+                }], { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
+            }
+            escribirObservacionesBioanalista(urocultivo.observaciones);
         }
 
         // Escribir resultados de cada sección y subárea
@@ -1551,6 +1839,10 @@ function escribirFila(resultado) {
             y = doc.lastAutoTable.finalY + 7;
         }
 
+        if (payload.urocultivo) {
+            escribirAntibiogramaUrocultivo(payload.urocultivo);
+        }
+
         if (payload.antibiograma) {
             var abx = payload.antibiograma.datos.antibioticos || [];
             y = agregarResultadosTexto(doc, 'ANTIBIOGRAMA', abx.map(function(a) {
@@ -1588,7 +1880,7 @@ function escribirFila(resultado) {
         }
 
         if (payload.heces) {
-            if (payload.secciones.length > 0 || payload.antibiograma) {
+            if (payload.secciones.length > 0 || payload.antibiograma || payload.urocultivo) {
                 doc.addPage();
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
@@ -1604,7 +1896,7 @@ function escribirFila(resultado) {
             escribirObservacionesBioanalista(payload.heces.observaciones);
         }
         if (payload.uro) {
-            if (payload.secciones.length > 0 || payload.antibiograma || payload.heces) {
+            if (payload.secciones.length > 0 || payload.antibiograma || payload.urocultivo || payload.heces) {
                 doc.addPage();
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;

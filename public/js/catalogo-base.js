@@ -151,7 +151,7 @@ window.App.catalogo.push(
     { id: 'exudado_faringeo', nombre: 'Exudado Faríngeo', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Negativo' },
     { id: 'frotis_vaginal', nombre: 'Frotis Vaginal', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Sin hallazgos patológicos' },
     { id: 'koh', nombre: 'KOH', area: 'Micología', unidad: 'N/A', tipo: 'texto', valorDefecto: 'Según criterio del bioquímico', refTexto: 'Según criterio del bioquímico' },
-    { id: 'antibiograma', nombre: 'Antibiograma', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'antibiograma', refTexto: 'Sensible / Resistente según el antibiótico' },
+   // { id: 'antibiograma', nombre: 'Antibiograma', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'antibiograma', refTexto: 'Sensible / Resistente según el antibiótico' },
     { id: 'trofozoitos_trichomonas', nombre: 'Trofozoitos de Trichomonas vaginalis', area: 'Secreción Vaginal', tipo: 'seleccion_unica', grupo: 'Examen Directo', opciones: ['Presentes', 'No se observaron'] },
     { id: 'elementos_micoticos_directo', nombre: 'Elementos Micóticos', area: 'Secreción Vaginal', tipo: 'seleccion_unica', grupo: 'Examen Directo', opciones: ['Blastoconidias gemantes', 'Blastoconidias sin gemación', 'Pseudohifas', 'No se observaron'] },
     { id: 'pmn_directo', nombre: 'Polimorfonucleares (PMN)', area: 'Secreción Vaginal', tipo: 'seleccion_unica', grupo: 'Examen Directo', opciones: ['Escasos', 'Moderados', 'Abundantes', 'No se observaron'] },

@@ -451,6 +451,60 @@
         </div>
     </div>
 
+    <div id="formularioUrocultivo" style="display:none;" class="formulario-flotante formulario-flotante-urocultivo">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-bug-fill me-2"></i> UROCULTIVO Y ANTIBIOGRAMA</span>
+                <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioUrocultivo()" title="Cerrar formulario" aria-label="Cerrar formulario"></button>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label for="urocultivoResultado" class="form-label fw-semibold">Resultado del cultivo</label>
+                    <textarea id="urocultivoResultado" class="form-control" rows="2" placeholder="Describa el resultado del cultivo"></textarea>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="urocultivoOmitirAntibiograma">
+                    <label class="form-check-label fw-semibold" for="urocultivoOmitirAntibiograma">Omitir antibiograma</label>
+                </div>
+                <div id="urocultivoAntibiogramaConfig">
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-4">
+                            <label for="urocultivoCantidadMicroorganismos" class="form-label fw-semibold">Microorganismos aislados</label>
+                            <input id="urocultivoCantidadMicroorganismos" type="number" min="1" step="1" value="1" class="form-control">
+                        </div>
+                        <div class="col-sm-8">
+                            <span class="form-label fw-semibold d-block">Métodos/columnas</span>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="urocultivoMetodoCmi">
+                                    <label class="form-check-label" for="urocultivoMetodoCmi">CMI</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="urocultivoMetodoDifusion">
+                                    <label class="form-check-label" for="urocultivoMetodoDifusion">Difusión</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <span class="form-label fw-semibold d-block">Antibióticos del catálogo para esta orden</span>
+                        <div id="urocultivoAntibioticosSeleccion" class="row row-cols-1 row-cols-md-2 g-2"></div>
+                    </div>
+                    <div id="urocultivoMicroorganismos"></div>
+                    <div id="urocultivoAntibiogramaTablas"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="urocultivoObservaciones" class="form-label fw-semibold">Observaciones</label>
+                    <textarea id="urocultivoObservaciones" class="form-control observaciones-textarea" rows="3" placeholder="Observaciones de la sección microbiológica"></textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarFormularioUrocultivo()"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarFormularioUrocultivo()"><i class="bi bi-save me-1"></i>Guardar resultados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="formularioAntigenosFebriles" style="display:none;" class="formulario-flotante formulario-flotante-antigenos-febriles">
         <div class="card border-primary">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">

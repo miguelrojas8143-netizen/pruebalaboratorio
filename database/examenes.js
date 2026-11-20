@@ -443,7 +443,7 @@ function guardarExamenesPaciente(db, orden, examenes) {
             }
             if (!nombre) nombre = examenId;
 
-            if (examenId === 'antigenos_febriles') {
+            if (examenId === 'antigenos_febriles' || examenId === 'urocultivo') {
                 const resultado = examen.resultado == null
                     ? ''
                     : (typeof examen.resultado === 'string'

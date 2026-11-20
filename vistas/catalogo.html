@@ -78,6 +78,50 @@
             </div>
         </section>
 
+        <section class="catalogo-panel mt-4" aria-labelledby="antibioticosTitulo">
+            <header class="catalogo-subheader d-flex justify-content-between align-items-center gap-2">
+                <div>
+                    <h2 id="antibioticosTitulo"><i class="bi bi-capsule me-2"></i>Catálogo de antibióticos</h2>
+                    <p class="form-text mb-0">Los antibióticos activos estarán disponibles para seleccionar en el antibiograma del Urocultivo.</p>
+                </div>
+            </header>
+            <form id="formAntibioticoCatalogo" class="p-3 border-bottom">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label for="antibioticoCatalogoId" class="form-label">Código</label>
+                        <input id="antibioticoCatalogoId" class="form-control" maxlength="64"
+                               pattern="[a-z][a-z0-9_]*" placeholder="ej. cefalexina" required>
+                    </div>
+                    <div class="col-md-7">
+                        <label for="antibioticoCatalogoNombre" class="form-label">Nombre del antibiótico</label>
+                        <input id="antibioticoCatalogoNombre" class="form-control" maxlength="120"
+                               placeholder="Ej. Cefalexina" required>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary" id="btnGuardarAntibioticoCatalogo">
+                            <i class="bi bi-plus-lg me-1"></i>Agregar
+                        </button>
+                    </div>
+                </div>
+                <div id="antibioticoCatalogoError" class="alert alert-danger mt-2 mb-0 d-none" role="alert"></div>
+            </form>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Nombre del antibiótico</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaAntibioticosCatalogo">
+                        <tr><td colspan="4" class="text-center text-muted py-3">Cargando antibióticos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section class="catalogo-panel catalogo-perfiles mt-4" aria-labelledby="perfilesTitulo">
             <header class="catalogo-subheader">
                 <h2 id="perfilesTitulo"><i class="bi bi-collection-play me-2"></i>Perfiles / Paneles</h2>

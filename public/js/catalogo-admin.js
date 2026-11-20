@@ -6,6 +6,7 @@
 
     var examenes = [];
     var categorias = [];
+    var antibioticos = [];
     var categoriaActiva = '';
     var examenEditando = null;
     var modal = null;
@@ -356,7 +357,57 @@
     function renderizar() {
         renderizarCategorias();
         renderizarAcordeon();
+        renderizarAntibioticos();
         renderizarPerfiles();
+    }
+
+    function renderizarAntibioticos() {
+        var tbody = elemento('tablaAntibioticosCatalogo');
+        tbody.replaceChildren();
+        if (!antibioticos.length) {
+            var filaVacia = document.createElement('tr');
+            var mensaje = crearCelda('No hay antibióticos en el catálogo.', 'text-center text-muted py-3');
+            mensaje.colSpan = 4;
+            filaVacia.appendChild(mensaje);
+            tbody.appendChild(filaVacia);
+            return;
+        }
+
+        antibioticos.forEach(function(antibiotico) {
+            var fila = document.createElement('tr');
+            fila.setAttribute('data-antibiotico-id', antibiotico.id);
+            fila.appendChild(crearCelda(antibiotico.id, 'font-monospace'));
+
+            var nombreCell = document.createElement('td');
+            var nombreInput = document.createElement('input');
+            nombreInput.type = 'text';
+            nombreInput.className = 'form-control form-control-sm';
+            nombreInput.maxLength = 120;
+            nombreInput.value = antibiotico.nombre;
+            nombreInput.setAttribute('aria-label', 'Nombre de ' + antibiotico.nombre);
+            nombreCell.appendChild(nombreInput);
+            fila.appendChild(nombreCell);
+
+            fila.appendChild(crearCelda(antibiotico.activo ? 'Activo' : 'Inactivo',
+                antibiotico.activo ? 'text-success fw-semibold' : 'text-muted'));
+            var acciones = document.createElement('td');
+            acciones.className = 'text-end text-nowrap';
+            var guardar = crearBoton('bi bi-save', 'Guardar nombre', 'btn-primary', 'guardar', antibiotico.id);
+            guardar.disabled = nombreInput.value.trim() === '';
+            nombreInput.addEventListener('input', function() {
+                guardar.disabled = nombreInput.value.trim() === antibiotico.nombre || nombreInput.value.trim() === '';
+            });
+            acciones.appendChild(guardar);
+            acciones.appendChild(crearBoton(
+                antibiotico.activo ? 'bi bi-toggle-on' : 'bi bi-toggle-off',
+                antibiotico.activo ? 'Desactivar antibiótico' : 'Activar antibiótico',
+                antibiotico.activo ? 'btn-success' : 'btn-secondary',
+                'estado',
+                antibiotico.id
+            ));
+            fila.appendChild(acciones);
+            tbody.appendChild(fila);
+        });
     }
 
     function informarError(mensaje) {
@@ -519,10 +570,17 @@
     }
 
     async function cargarCatalogo() {
-        var respuesta = await window.api.obtenerCatalogoAdmin();
-        if (!respuesta || !respuesta.success) {
-            throw new Error((respuesta && respuesta.error) || 'No se pudo cargar el catálogo.');
+        var respuestas = await Promise.all([
+            window.api.obtenerCatalogoAdmin(),
+            window.api.obtenerAntibioticosCatalogo()
+        ]);
+        var respuesta = respuestas[0];
+        var respuestaAntibioticos = respuestas[1];
+        if (!respuesta || !respuesta.success) throw new Error((respuesta && respuesta.error) || 'No se pudo cargar el catálogo.');
+        if (!respuestaAntibioticos || !respuestaAntibioticos.success) {
+            throw new Error((respuestaAntibioticos && respuestaAntibioticos.error) || 'No se pudo cargar el catálogo de antibióticos.');
         }
+        antibioticos = respuestaAntibioticos.antibioticos || [];
         examenes = (respuesta.examenes || []).filter(function(examen) {
             var componenteTipoSanguineo = examen.id === 'grupo_sanguineo' ||
                 examen.id === 'grupo_sanguineo_abo' ||
@@ -534,6 +592,65 @@
             return examenes.some(function(examen) { return examen.categoria === categoria.nombre; });
         });
         renderizar();
+    }
+
+    function generarCodigoAntibiotico(nombre) {
+        return String(nombre || '').normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .replace(/^[^a-z]+/, '');
+    }
+
+    async function guardarAntibiotico(datos) {
+        var respuesta = await window.api.guardarAntibioticoCatalogo(datos);
+        if (!respuesta || !respuesta.success) {
+            throw new Error((respuesta && respuesta.error) || 'No se pudo guardar el antibiótico.');
+        }
+        await cargarCatalogo();
+        if (window.refrescarCatalogoDesdeSQLite) await window.refrescarCatalogoDesdeSQLite();
+        return respuesta.antibiotico;
+    }
+
+    async function cambiarEstadoAntibiotico(id, activo) {
+        try {
+            var respuesta = await window.api.actualizarEstadoAntibioticoCatalogo({ id: id, activo: activo });
+            if (!respuesta || !respuesta.success) {
+                throw new Error((respuesta && respuesta.error) || 'No se pudo actualizar el antibiótico.');
+            }
+            await cargarCatalogo();
+            if (window.refrescarCatalogoDesdeSQLite) await window.refrescarCatalogoDesdeSQLite();
+            mostrarToast(activo ? 'Antibiótico activado para nuevas órdenes.' :
+                'Antibiótico desactivado; los resultados guardados se conservaron.', 'success');
+        } catch (error) {
+            mostrarToast(error.message || 'No se pudo actualizar el antibiótico.', 'danger');
+        }
+    }
+
+    async function guardarAntibioticoDesdeFormulario(event) {
+        event.preventDefault();
+        var idInput = elemento('antibioticoCatalogoId');
+        var nombreInput = elemento('antibioticoCatalogoNombre');
+        var error = elemento('antibioticoCatalogoError');
+        var boton = elemento('btnGuardarAntibioticoCatalogo');
+        error.textContent = '';
+        error.classList.add('d-none');
+        boton.disabled = true;
+        try {
+            var antibiotico = await guardarAntibiotico({
+                id: idInput.value.trim(),
+                nombre: nombreInput.value.trim()
+            });
+            elemento('formAntibioticoCatalogo').reset();
+            idInput.dataset.manuallyEdited = 'false';
+            mostrarToast('Antibiótico "' + antibiotico.nombre + '" agregado al catálogo.', 'success');
+        } catch (saveError) {
+            error.textContent = saveError.message || 'No se pudo guardar el antibiótico.';
+            error.classList.remove('d-none');
+        } finally {
+            boton.disabled = false;
+        }
     }
 
     async function guardarFormulario(event) {
@@ -651,6 +768,39 @@
             if (accion === 'editar' && examen) abrirFormulario(examen);
             if (accion === 'estado' && examen) actualizarEstado(id, !examen.activo);
             if (accion === 'eliminar') eliminarExamen(id);
+        });
+        elemento('formAntibioticoCatalogo').addEventListener('submit', guardarAntibioticoDesdeFormulario);
+        elemento('antibioticoCatalogoNombre').addEventListener('input', function() {
+            var idInput = elemento('antibioticoCatalogoId');
+            if (idInput.dataset.manuallyEdited === 'true') return;
+            idInput.value = generarCodigoAntibiotico(this.value);
+        });
+        elemento('antibioticoCatalogoId').addEventListener('input', function() {
+            this.dataset.manuallyEdited = 'true';
+        });
+        elemento('tablaAntibioticosCatalogo').addEventListener('click', function(event) {
+            var boton = event.target.closest('[data-action]');
+            if (!boton) return;
+            var id = boton.getAttribute('data-id');
+            var antibiotico = antibioticos.find(function(item) { return item.id === id; });
+            if (!antibiotico) return;
+            if (boton.getAttribute('data-action') === 'estado') {
+                cambiarEstadoAntibiotico(id, !antibiotico.activo);
+                return;
+            }
+            if (boton.getAttribute('data-action') === 'guardar') {
+                var fila = boton.closest('tr');
+                var nombre = fila.querySelector('input').value.trim();
+                boton.disabled = true;
+                guardarAntibiotico({ id: id, nombre: nombre })
+                    .then(function(actualizado) {
+                        mostrarToast('El antibiótico "' + actualizado.nombre + '" se actualizó.', 'success');
+                    })
+                    .catch(function(error) {
+                        mostrarToast(error.message || 'No se pudo guardar el antibiótico.', 'danger');
+                        renderizarAntibioticos();
+                    });
+            }
         });
 
         var btnExpandir = elemento('btnExpandirTodo');
