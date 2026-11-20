@@ -39,6 +39,9 @@
             <button id="btnVistaPreviaReporte" class="btn btn-outline-primary" onclick="window.PdfReport.vistaPrevia()" title="Vista previa y guardar PDF" aria-label="Vista previa y guardar PDF">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Vista previa / Guardar PDF
             </button>
+            <button id="btnImprimirCarnetTipoSanguineo" class="btn btn-outline-success" onclick="window.abrirCarnetTipoSanguineoReporte()" title="Imprimir carnet de grupo sanguíneo" aria-label="Imprimir carnet de grupo sanguíneo" style="display:none;">
+                <i class="bi bi-person-vcard me-1"></i> Imprimir carnet
+            </button>
     
         </div>
 
@@ -140,22 +143,26 @@
                 <p><strong>Edad:</strong> <span id="carnetEdadPaciente"></span></p>
                 <p><strong>Sexo:</strong> <span id="carnetSexoPaciente"></span></p>
             </div>
-            <div class="carnet-resultados">
+            <div class="carnet-detalle">
                 <div>
-                    <span>Grupo Sanguíneo (ABO)</span>
-                    <strong id="carnetResultadoABO"></strong>
+                    <div class="carnet-resultados">
+                        <div>
+                            <span>Grupo Sanguíneo (ABO)</span>
+                            <strong id="carnetResultadoABO"></strong>
+                        </div>
+                        <div>
+                            <span>Factor Rh</span>
+                            <strong id="carnetResultadoRh"></strong>
+                        </div>
+                    </div>
+                    <p class="carnet-fecha">Fecha: <span id="carnetFecha"></span></p>
                 </div>
-                <div>
-                    <span>Factor Rh</span>
-                    <strong id="carnetResultadoRh"></strong>
-                </div>
+                <footer class="carnet-firma">
+                    <div></div>
+                    <strong>Lcda. Andréina Rondón</strong>
+                    <span>Bioanalista Responsable</span>
+                </footer>
             </div>
-            <p class="carnet-fecha">Fecha: <span id="carnetFecha"></span></p>
-            <footer class="carnet-firma">
-                <div></div>
-                <strong>Lcda. Andréina Rondón</strong>
-                <span>Bioanalista Responsable</span>
-            </footer>
         </section>
 
 <script src="../public/lib/jspdf.umd.min.js"></script>

@@ -1,6 +1,14 @@
 (function() {
     'use strict';
 
+    window.abrirCarnetTipoSanguineoReporte = function() {
+        var parametros = new URLSearchParams(window.location.search);
+        parametros.delete('seleccion');
+        parametros.delete('vacio');
+        parametros.set('carnet', 'tipo-sanguineo');
+        window.location.href = 'reporte.html?' + parametros.toString();
+    };
+
     /* El lookup de pacientes, las guardas (sin resultados → #sinResultados) y
        la delegación al renderer viven aquí. Toda la construcción del markup
        de resultados y la clasificación quedan centralizadas en PdfReport
@@ -47,6 +55,7 @@
         paciente.telefono = paciente.telefono || '';
 
         if (new URLSearchParams(window.location.search).get('carnet') === 'tipo-sanguineo') {
+            document.getElementById('btnImprimirCarnetTipoSanguineo').style.display = 'none';
             var examenABO = paciente.examenes.find(function(examen) {
                 return examen.id === 'grupo_sanguineo_abo';
             });
@@ -73,6 +82,16 @@
             document.getElementById('carnetTipoSanguineo').style.display = 'block';
             document.body.classList.add('modo-carnet-tipo-sanguineo');
             return;
+        }
+
+        var examenABO = paciente.examenes.find(function(examen) {
+            return examen.id === 'grupo_sanguineo_abo';
+        });
+        var examenRh = paciente.examenes.find(function(examen) {
+            return examen.id === 'factor_rh';
+        });
+        if (examenABO && examenABO.resultado && examenRh && examenRh.resultado) {
+            document.getElementById('btnImprimirCarnetTipoSanguineo').style.display = '';
         }
 
         try {

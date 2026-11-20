@@ -1059,30 +1059,30 @@
         doc.text('SEXO: ' + sexo, 66, 26);
 
         doc.setDrawColor(31, 78, 104);
-        doc.roundedRect(3, 29, 38, 12, 1, 1);
-        doc.roundedRect(44.6, 29, 38, 12, 1, 1);
+        doc.roundedRect(3, 29, 38, 7, 1, 1);
+        doc.roundedRect(3, 37, 38, 7, 1, 1);
         doc.setTextColor(23, 33, 43);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(4.5);
-        doc.text('GRUPO SANGUÍNEO (ABO)', 22, 32, { align: 'center' });
-        doc.text('FACTOR Rh', 63.6, 32, { align: 'center' });
+        doc.setFontSize(4.2);
+        doc.text('GRUPO SANGUÍNEO (ABO)', 4.5, 33.3);
+        doc.text('FACTOR Rh', 4.5, 41.3);
         doc.setTextColor(31, 78, 104);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text(grupo, 22, 38.5, { align: 'center' });
-        doc.text(factorRh, 63.6, 38.5, { align: 'center' });
+        doc.setFontSize(8);
+        doc.text(grupo, 39.5, 33.5, { align: 'right', maxWidth: 18 });
+        doc.text(factorRh, 39.5, 41.5, { align: 'right', maxWidth: 18 });
 
         doc.setTextColor(23, 33, 43);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(4);
-        doc.text('Fecha: ' + fecha, 82.6, 44, { align: 'right' });
-        doc.line(24, 48, 61.6, 48);
+        doc.text('Fecha: ' + fecha, 3, 48);
+        doc.line(48, 42, 80.6, 42);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(4.3);
-        doc.text('Lcda. Andréina Rondón', 42.8, 50.2, { align: 'center' });
+        doc.text('Lcda. Andréina Rondón', 64.3, 44.5, { align: 'center' });
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(3.7);
-        doc.text('Bioanalista Responsable', 42.8, 52, { align: 'center' });
+        doc.text('Bioanalista Responsable', 64.3, 46.5, { align: 'center' });
         doc.setProperties({ title: 'Carnet de grupo sanguíneo - ' + nombre, subject: 'Carnet de grupo sanguíneo y factor Rh' });
 
         ventanaImpresion.document.write('<p style="font-family:Arial;padding:24px">Preparando vista previa del carnet...</p>');
