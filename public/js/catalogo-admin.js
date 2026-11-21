@@ -7,7 +7,7 @@
     var examenes = [];
     var categorias = [];
     var antibioticos = [];
-    var categoriaActiva = '';
+    var categoriaActiva = null;
     var examenEditando = null;
     var modal = null;
     var antigenosCatalogoModificados = false;
@@ -126,14 +126,14 @@
             conteos[examen.categoria] = (conteos[examen.categoria] || 0) + 1;
         });
 
-        function agregarFiltro(nombre, cantidad) {
+        function agregarFiltro(nombre, etiqueta, cantidad) {
             var boton = document.createElement('button');
             boton.type = 'button';
             boton.className = 'catalogo-filtro' + (categoriaActiva === nombre ? ' active' : '');
             boton.setAttribute('aria-pressed', categoriaActiva === nombre ? 'true' : 'false');
             boton.setAttribute('data-categoria', nombre);
             var titulo = document.createElement('span');
-            titulo.textContent = nombre || 'Todas';
+            titulo.textContent = etiqueta;
             var count = document.createElement('span');
             count.className = 'badge-count';
             count.textContent = String(cantidad);
@@ -142,10 +142,24 @@
             nav.appendChild(boton);
         }
 
-        agregarFiltro('', examenes.length);
-        categorias.forEach(function(categoria) {
-            var cantidad = conteos[categoria.nombre] || 0;
-            agregarFiltro(categoria.nombre, cantidad);
+        var filtros = categorias.map(function(categoria) {
+            return {
+                nombre: categoria.nombre,
+                etiqueta: categoria.nombre,
+                cantidad: conteos[categoria.nombre] || 0
+            };
+        });
+        filtros.push({ nombre: '', etiqueta: 'Todas', cantidad: examenes.length });
+        filtros.sort(function(a, b) {
+            return a.etiqueta.localeCompare(b.etiqueta, 'es', { sensitivity: 'base' });
+        });
+        filtros.forEach(function(filtro) {
+            agregarFiltro(filtro.nombre, filtro.etiqueta, filtro.cantidad);
+        });
+
+        categorias.slice().sort(function(a, b) {
+            return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+        }).forEach(function(categoria) {
             var opcion = document.createElement('option');
             opcion.value = categoria.nombre;
             lista.appendChild(opcion);
@@ -234,6 +248,21 @@
     function renderizarAcordeon() {
         var contenedor = elemento('catalogoAcordeones');
         contenedor.textContent = '';
+        var panelVisible = categoriaActiva !== null;
+        var busqueda = elemento('buscarExamenCatalogo');
+        var acciones = document.querySelector('.catalogo-toolbar-acciones');
+        contenedor.classList.toggle('d-none', !panelVisible);
+        busqueda.disabled = !panelVisible;
+        busqueda.placeholder = panelVisible
+            ? 'Buscar por código, nombre o categoría...'
+            : 'Selecciona una categoría para buscar...';
+        if (acciones) acciones.classList.toggle('d-none', !panelVisible);
+
+        if (!panelVisible) {
+            elemento('contadorExamenesCatalogo').textContent = '';
+            return;
+        }
+
         var filtrados = filtrarExamenes().sort(function(a, b) {
             return a.nombre.localeCompare(b.nombre, 'es');
         });
@@ -403,6 +432,13 @@
                 antibiotico.activo ? 'Desactivar antibiótico' : 'Activar antibiótico',
                 antibiotico.activo ? 'btn-success' : 'btn-secondary',
                 'estado',
+                antibiotico.id
+            ));
+            acciones.appendChild(crearBoton(
+                'bi bi-trash',
+                'Eliminar antibiótico',
+                'btn-danger',
+                'eliminar',
                 antibiotico.id
             ));
             fila.appendChild(acciones);
@@ -591,6 +627,11 @@
         categorias = (respuesta.categorias || []).filter(function(categoria) {
             return examenes.some(function(examen) { return examen.categoria === categoria.nombre; });
         });
+        if (categoriaActiva && !categorias.some(function(categoria) {
+            return categoria.nombre === categoriaActiva;
+        })) {
+            categoriaActiva = null;
+        }
         renderizar();
     }
 
@@ -625,6 +666,31 @@
                 'Antibiótico desactivado; los resultados guardados se conservaron.', 'success');
         } catch (error) {
             mostrarToast(error.message || 'No se pudo actualizar el antibiótico.', 'danger');
+        }
+    }
+
+    async function eliminarAntibiotico(id) {
+        var antibiotico = antibioticos.find(function(item) { return item.id === id; });
+        if (!antibiotico) return;
+        var confirmado = await window.Notifications.confirm({
+            title: 'Eliminar antibiótico',
+            message: '¿Eliminar permanentemente "' + antibiotico.nombre +
+                '" del catálogo? No aparecerá en nuevos antibiogramas. Los resultados guardados no se modificarán.',
+            type: 'warning',
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
+        try {
+            var respuesta = await window.api.eliminarAntibioticoCatalogo({ id: id });
+            if (!respuesta || !respuesta.success) {
+                throw new Error((respuesta && respuesta.error) || 'No se pudo eliminar el antibiótico.');
+            }
+            await cargarCatalogo();
+            if (window.refrescarCatalogoDesdeSQLite) await window.refrescarCatalogoDesdeSQLite();
+            mostrarToast('El antibiótico "' + antibiotico.nombre + '" fue eliminado del catálogo.', 'success');
+        } catch (error) {
+            mostrarToast(error.message || 'No se pudo eliminar el antibiótico.', 'danger');
         }
     }
 
@@ -786,6 +852,10 @@
             if (!antibiotico) return;
             if (boton.getAttribute('data-action') === 'estado') {
                 cambiarEstadoAntibiotico(id, !antibiotico.activo);
+                return;
+            }
+            if (boton.getAttribute('data-action') === 'eliminar') {
+                eliminarAntibiotico(id);
                 return;
             }
             if (boton.getAttribute('data-action') === 'guardar') {

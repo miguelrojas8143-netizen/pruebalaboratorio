@@ -13,7 +13,8 @@ const {
     eliminarExamenCatalogo,
     listarAntibioticosCatalogo,
     guardarAntibioticoCatalogo,
-    actualizarEstadoAntibioticoCatalogo
+    actualizarEstadoAntibioticoCatalogo,
+    eliminarAntibioticoCatalogo
 } = require('./catalogo-admin');
 const { actualizarOrdenPaciente } = require('./ordenes');
 const { prepararConsultasCatalogo } = require('./schema');
@@ -725,6 +726,11 @@ function registrarHandlersCatalogo(ipcMain, db, consultasCatalogo) {
 
     ipcMain.handle('actualizar-estado-antibiotico-catalogo', envolver(function(datos) {
         const resultado = actualizarEstadoAntibioticoCatalogo(db, datos && datos.id, datos && datos.activo);
+        return { success: true, antibiotico: resultado };
+    }));
+
+    ipcMain.handle('eliminar-antibiotico-catalogo', envolver(function(datos) {
+        const resultado = eliminarAntibioticoCatalogo(db, datos && datos.id);
         return { success: true, antibiotico: resultado };
     }));
 

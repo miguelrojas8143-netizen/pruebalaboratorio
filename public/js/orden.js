@@ -1267,7 +1267,9 @@
             var examenSanguineoIndividual = examen.id === 'grupo_sanguineo' ||
                 examen.id === 'grupo_sanguineo_abo' ||
                 examen.id === 'factor_rh';
-            return !examenSanguineoIndividual &&
+            // Antibiograma se configura dentro del Urocultivo; el registro
+            // independiente de SQLite se conserva para órdenes históricas.
+            return examen.id !== 'antibiograma' && !examenSanguineoIndividual &&
                 (examen.tipo !== 'perfil' || window.esExamenNormalCompuesto(examen.id));
         }).forEach(function(examen) {
             var area = examen.area || "General";

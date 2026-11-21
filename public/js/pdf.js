@@ -399,9 +399,22 @@
         if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
             datos = { resultadoCultivo: String(resultado || '') };
         }
-        var antibioticos = Array.isArray(datos.antibioticos) ? datos.antibioticos : [];
+        var tieneResultadosCultivo = Array.isArray(datos.resultadosCultivo);
         var microorganismos = Array.isArray(datos.microorganismos) ? datos.microorganismos : [];
-        if (!microorganismos.length && antibioticos.length) microorganismos = [{ nombre: '' }];
+        var resultadosCultivo = tieneResultadosCultivo
+            ? datos.resultadosCultivo.map(function(item) { return String(item == null ? '' : item); })
+            : microorganismos.map(function(item) { return String(item && item.resultadoCultivo || ''); });
+        if (!tieneResultadosCultivo && !resultadosCultivo.some(Boolean)) {
+            resultadosCultivo = [String(datos.resultadoCultivo || datos.resultado || '')];
+        }
+        var antibioticos = Array.isArray(datos.antibioticos) ? datos.antibioticos : [];
+        var cantidadResultados = Math.max(resultadosCultivo.length, microorganismos.length, antibioticos.length ? 1 : 0);
+        microorganismos = Array.from({ length: cantidadResultados }, function(_item, indice) {
+            return microorganismos[indice] || { nombre: '' };
+        });
+        resultadosCultivo = Array.from({ length: cantidadResultados }, function(_item, indice) {
+            return resultadosCultivo[indice] || '';
+        });
         var metodos = datos.metodos && typeof datos.metodos === 'object' ? datos.metodos : null;
         if (!metodos) {
             metodos = {
@@ -429,6 +442,10 @@
         return {
             datos: datos,
             resultadoCultivo: String(datos.resultadoCultivo || datos.resultado || ''),
+            resultadosCultivo: resultadosCultivo,
+            sedimentoUrinario: String(datos.sedimentoUrinario || ''),
+            coloracionGram: String(datos.coloracionGram || ''),
+            recuentoColonias: String(datos.recuentoColonias || ''),
             antibioticoOmitido: datos.antibiogramaOmitido === true || datos.omitido === true,
             metodos: { cmi: metodos.cmi === true, difusion: metodos.difusion === true },
             microorganismos: microorganismos.map(function(microorganismo) {
@@ -815,43 +832,72 @@
 
     function renderUrocultivoDom(urocultivo) {
         if (!urocultivo) return '';
-        var html = '<div class="reporte-area-grupo"><h6 class="reporte-area-titulo">Urocultivo</h6>';
-        if (urocultivo.resultadoCultivo) {
-            html += '<div class="mb-2"><strong>Resultado del cultivo:</strong> ' +
-                escapeHtml(urocultivo.resultadoCultivo) + '</div>';
+        var html = '<section class="pdf-urocultivo">' +
+            '<div class="pdf-urocultivo-header"><span>ANÁLISIS MICROBIOLÓGICO</span></div>' +
+            '<div class="pdf-urocultivo-examen"><strong>Examen solicitado</strong><span>Urocultivo</span></div>';
+        [
+            { titulo: 'Sedimento urinario (40x)', valor: urocultivo.sedimentoUrinario },
+            { titulo: 'Coloración Gram (100x)', valor: urocultivo.coloracionGram },
+            { titulo: 'Recuento de colonias', valor: urocultivo.recuentoColonias }
+        ].forEach(function(campo) {
+            if (!campo.valor) return;
+            html += '<section class="pdf-urocultivo-seccion">' +
+                '<h6>' + campo.titulo + '</h6>' +
+                '<p class="pdf-urocultivo-resultado">' +
+                escapeHtml(campo.valor) + '</p></section>';
+        });
+        (urocultivo.resultadosCultivo || []).forEach(function(resultado, indice) {
+            if (!resultado) return;
+            html += '<section class="pdf-urocultivo-seccion">' +
+                '<h6>Resultado de cultivo #' + (indice + 1) + '</h6>' +
+                '<p class="pdf-urocultivo-resultado">' +
+                escapeHtml(resultado) + '</p></section>';
+        });
+        if (!(urocultivo.resultadosCultivo || []).length && urocultivo.resultadoCultivo) {
+            html += '<section class="pdf-urocultivo-seccion">' +
+                '<h6>Resultado de cultivo #1</h6>' +
+                '<p class="pdf-urocultivo-resultado">' +
+                escapeHtml(urocultivo.resultadoCultivo) + '</p></section>';
         }
         var microorganismos = urocultivo.microorganismos || [];
         microorganismos.forEach(function(microorganismo, indice) {
+            var seccionMicroorganismo = '';
             if (microorganismo.nombre) {
-                html += '<div class="fw-semibold mt-2">Microorganismo #' + (indice + 1) + ': ' +
-                    escapeHtml(microorganismo.nombre) + '</div>';
+                seccionMicroorganismo += '<h6>Microorganismo aislado #' + (indice + 1) + '</h6>' +
+                    '<p class="pdf-urocultivo-microorganismo">' +
+                    escapeHtml(microorganismo.nombre) + '</p>';
             }
-            if (urocultivo.antibioticoOmitido) return;
-
-            var metodos = [];
-            if (urocultivo.metodos.cmi) metodos.push({ id: 'cmi', nombre: 'CMI' });
-            if (urocultivo.metodos.difusion) metodos.push({ id: 'difusion', nombre: 'Difusión' });
-            var filas = (urocultivo.antibioticos || []).map(function(abx) {
-                var valores = abx.resultados[String(indice)] || {};
-                return { antibiotico: abx.antibiotico, valores: valores };
-            }).filter(function(fila) {
-                return metodos.some(function(metodo) {
-                    return String(fila.valores[metodo.id] == null ? '' : fila.valores[metodo.id]).trim() !== '';
+            if (!urocultivo.antibioticoOmitido) {
+                var metodos = [];
+                if (urocultivo.metodos.difusion) metodos.push({ id: 'difusion', nombre: 'Difusión' });
+                if (urocultivo.metodos.cmi) metodos.push({ id: 'cmi', nombre: 'CMI' });
+                var filas = (urocultivo.antibioticos || []).map(function(abx) {
+                    var valores = abx.resultados[String(indice)] || {};
+                    return { antibiotico: abx.antibiotico, valores: valores };
+                }).filter(function(fila) {
+                    return metodos.some(function(metodo) {
+                        return String(fila.valores[metodo.id] == null ? '' : fila.valores[metodo.id]).trim() !== '';
+                    });
                 });
-            });
-            if (!filas.length || !metodos.length) return;
-            html += '<h6 class="reporte-subarea-titulo mt-2">Antibiograma — Microorganismo #' +
-                (indice + 1) + '</h6><div class="table-responsive"><table class="table table-sm table-bordered">';
-            html += '<thead class="table-light"><tr><th>Antibiótico</th>' +
-                metodos.map(function(metodo) { return '<th>' + escapeHtml(metodo.nombre) + '</th>'; }).join('') +
-                '</tr></thead><tbody>';
-            filas.forEach(function(fila) {
-                html += '<tr><td class="fw-semibold">' + escapeHtml(fila.antibiotico || '-') + '</td>' +
-                    metodos.map(function(metodo) {
-                        return '<td>' + escapeHtml(fila.valores[metodo.id] || '-') + '</td>';
-                    }).join('') + '</tr>';
-            });
-            html += '</tbody></table></div>';
+                if (filas.length && metodos.length) {
+                    seccionMicroorganismo += '<h6 class="pdf-urocultivo-metodo">Antibiograma · Método: ' +
+                        metodos.map(function(metodo) { return escapeHtml(metodo.nombre); }).join(' y ') +
+                        '</h6><div class="table-responsive"><table class="table table-sm pdf-urocultivo-tabla">';
+                    seccionMicroorganismo += '<thead><tr><th>Antibiótico</th>' +
+                        metodos.map(function(metodo) { return '<th>' + escapeHtml(metodo.nombre) + '</th>'; }).join('') +
+                        '</tr></thead><tbody>';
+                    filas.forEach(function(fila) {
+                        seccionMicroorganismo += '<tr><td>' + escapeHtml(fila.antibiotico || '-') + '</td>' +
+                            metodos.map(function(metodo) {
+                                return '<td>' + escapeHtml(fila.valores[metodo.id] || '-') + '</td>';
+                            }).join('') + '</tr>';
+                    });
+                    seccionMicroorganismo += '</tbody></table></div>';
+                }
+            }
+            if (seccionMicroorganismo) {
+                html += '<section class="pdf-urocultivo-seccion">' + seccionMicroorganismo + '</section>';
+            }
         });
         if (!urocultivo.antibioticoOmitido) {
             var hayDifusion = (urocultivo.antibioticos || []).some(function(abx) {
@@ -869,17 +915,20 @@
                 });
             });
             if (hayDifusion) {
-                html += '<p class="small mb-1"><strong>S:</strong> SENSIBLE &nbsp; ' +
-                    '<strong>I:</strong> INTERMEDIO &nbsp; <strong>R:</strong> RESISTENTE</p>';
+                html += '<p class="pdf-urocultivo-leyenda"><strong>S</strong> Sensible' +
+                    '<span><strong>I</strong> Intermedio</span>' +
+                    '<span><strong>R</strong> Resistente</span></p>';
             }
-            if (hayCmi) html += '<p class="small mb-1">CMI = Concentración Mínima Inhibitoria</p>';
+            if (hayCmi) {
+                html += '<p class="pdf-urocultivo-leyenda">CMI: Concentración Mínima Inhibitoria</p>';
+            }
         }
         if (urocultivo.observaciones) {
-            html += '<h6 class="reporte-subarea-titulo mt-3">OBSERVACIONES</h6>' +
-                '<div class="alert alert-light border rounded mb-0" style="white-space: pre-wrap; line-height: 1.5; padding: 0.75rem 1rem;">' +
-                escapeHtml(urocultivo.observaciones) + '</div>';
+            html += '<section class="pdf-urocultivo-seccion pdf-urocultivo-observaciones">' +
+                '<h6>Observaciones</h6><p>' +
+                escapeHtml(urocultivo.observaciones) + '</p></section>';
         }
-        return html + '</div>';
+        return html + '</section>';
     }
 
     function renderAntigenosFebrilesDom(filas) {
@@ -1629,46 +1678,96 @@ function escribirFila(resultado) {
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
             }
+            var anchoContenido = pageWidth - 28;
+            doc.setFillColor(232, 241, 250);
+            doc.setDrawColor(190, 210, 230);
+            doc.roundedRect(14, y - 4, anchoContenido, 9, 1.5, 1.5, 'FD');
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
+            doc.setFontSize(10);
             doc.setTextColor(31, 78, 104);
-            doc.text('UROCULTIVO', 14, y);
-            y += 6;
+            doc.text('ANÁLISIS MICROBIOLÓGICO', pageWidth / 2, y + 1.5, { align: 'center' });
+            y += 10;
 
-            function escribirDato(etiqueta, valor) {
-                if (valor == null || String(valor).trim() === '') return;
-                var lineas = doc.splitTextToSize(String(valor), pageWidth - 72);
-                var alto = Math.max(1, lineas.length) * 3.6 + 1.5;
-                if (y + alto > pageHeight - 30) {
+            function escribirTituloSeccion(titulo) {
+                if (y + 8 > pageHeight - 30) {
                     doc.addPage();
                     encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                     y = yDespuesEncabezado;
                 }
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(7.5);
-                doc.setTextColor(25, 25, 25);
-                doc.text(etiqueta, 14, y);
-                doc.setFont('helvetica', 'normal');
-                doc.text(lineas, 62, y, { lineHeightFactor: 0.9 });
-                y += alto;
+                doc.setFontSize(8);
+                doc.setTextColor(31, 78, 104);
+                doc.text(titulo.toLocaleUpperCase('es'), 14, y + 3);
+                doc.setDrawColor(215, 224, 233);
+                doc.setLineWidth(0.2);
+                doc.line(14, y + 4.5, pageWidth - 14, y + 4.5);
+                y += 8;
             }
 
-            if (urocultivo.resultadoCultivo) {
-                escribirDato('Resultado del cultivo', urocultivo.resultadoCultivo);
+            function escribirDato(etiqueta, valor) {
+                if (valor == null || String(valor).trim() === '') return;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                var anchoValor = anchoContenido - 48;
+                var lineas = doc.splitTextToSize(String(valor), anchoValor);
+                lineas.forEach(function(linea, indice) {
+                    if (y + 4 > pageHeight - 30) {
+                        doc.addPage();
+                        encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                        y = yDespuesEncabezado;
+                    }
+                    if (indice === 0) {
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(8);
+                        doc.setTextColor(75, 90, 106);
+                        doc.text(etiqueta + ':', 14, y);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(25, 25, 25);
+                    }
+                    doc.text(linea, 58, y);
+                    y += 4;
+                });
+                y += 2;
             }
+
+            escribirDato('Examen solicitado', 'Urocultivo');
+            [
+                { titulo: 'Sedimento urinario (40x)', valor: urocultivo.sedimentoUrinario },
+                { titulo: 'Coloración Gram (100x)', valor: urocultivo.coloracionGram },
+                { titulo: 'Recuento de colonias', valor: urocultivo.recuentoColonias }
+            ].forEach(function(campo) {
+                if (!campo.valor) return;
+                escribirTituloSeccion(campo.titulo);
+                escribirDato(campo.titulo, campo.valor);
+            });
+            (urocultivo.resultadosCultivo || []).forEach(function(resultado, indice) {
+                if (!resultado) return;
+                if (indice === 0 || !urocultivo.resultadosCultivo[indice - 1]) {
+                    escribirTituloSeccion('Resultado del cultivo');
+                }
+                escribirDato('Resultado #' + (indice + 1), resultado);
+            });
+            if (!(urocultivo.resultadosCultivo || []).length && urocultivo.resultadoCultivo) {
+                escribirTituloSeccion('Resultado del cultivo');
+                escribirDato('Resultado #1', urocultivo.resultadoCultivo);
+            }
+            var tieneMicroorganismos = (urocultivo.microorganismos || []).some(function(microorganismo) {
+                return String(microorganismo.nombre || '').trim() !== '';
+            });
+            if (tieneMicroorganismos) escribirTituloSeccion('Microorganismos aislados');
             (urocultivo.microorganismos || []).forEach(function(microorganismo, indice) {
                 if (microorganismo.nombre) {
-                    escribirDato('Microorganismo #' + (indice + 1), microorganismo.nombre);
+                    escribirDato('#' + (indice + 1), microorganismo.nombre);
                 }
             });
             if (urocultivo.antibioticoOmitido) {
+                escribirTituloSeccion('Antibiograma');
                 escribirDato('Antibiograma', 'Omitido');
             }
-            y += 2;
 
             var metodosActivos = [];
-            if (urocultivo.metodos.cmi) metodosActivos.push({ id: 'cmi', nombre: 'CMI' });
             if (urocultivo.metodos.difusion) metodosActivos.push({ id: 'difusion', nombre: 'Difusión' });
+            if (urocultivo.metodos.cmi) metodosActivos.push({ id: 'cmi', nombre: 'CMI' });
             var metodosImpresos = Object.create(null);
             if (!urocultivo.antibioticoOmitido) {
                 (urocultivo.microorganismos || []).forEach(function(microorganismo, indice) {
@@ -1695,10 +1794,15 @@ function escribirFila(resultado) {
                         encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                         y = yDespuesEncabezado;
                     }
+                    if (!metodosImpresos.titulo) {
+                        escribirTituloSeccion('Antibiograma');
+                        metodosImpresos.titulo = true;
+                    }
                     doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(8.5);
+                    doc.setFontSize(7.5);
                     doc.setTextColor(31, 78, 104);
-                    doc.text('ANTIBIOGRAMA - MICROORGANISMO #' + (indice + 1), 14, y + 3);
+                    doc.text('Método: ' + metodos.map(function(metodo) { return metodo.nombre; }).join(' y ') +
+                        ' · Microorganismo #' + (indice + 1), 14, y + 3);
                     y += 6;
 
                     var encabezados = ['Antibiótico'].concat(metodos.map(function(metodo) {
@@ -1753,20 +1857,15 @@ function escribirFila(resultado) {
                 });
             }
             if (metodosImpresos.difusion) {
-                y = agregarResultadosTexto(doc, '', [{
-                    nombre: 'Leyenda',
-                    resultado: 'S: SENSIBLE | I: INTERMEDIO | R: RESISTENTE',
-                    referencia: '-'
-                }], { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
+                escribirDato('Interpretación', 'S: Sensible  |  I: Intermedio  |  R: Resistente');
             }
             if (metodosImpresos.cmi) {
-                y = agregarResultadosTexto(doc, '', [{
-                    nombre: 'Leyenda',
-                    resultado: 'CMI = Concentración Mínima Inhibitoria',
-                    referencia: '-'
-                }], { y: y, didDrawPage: encabezadoPagina, startY: yDespuesEncabezado });
+                escribirDato('CMI', 'Concentración Mínima Inhibitoria');
             }
-            escribirObservacionesBioanalista(urocultivo.observaciones);
+            if (urocultivo.observaciones) {
+                escribirTituloSeccion('Observaciones');
+                escribirDato('Observaciones', urocultivo.observaciones);
+            }
         }
 
         // Escribir resultados de cada sección y subárea

@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('api', {
     obtenerAntibioticosCatalogo: () => ipcRenderer.invoke('obtener-antibioticos-catalogo'),
     guardarAntibioticoCatalogo: (antibiotico) => ipcRenderer.invoke('guardar-antibiotico-catalogo', antibiotico),
     actualizarEstadoAntibioticoCatalogo: (data) => ipcRenderer.invoke('actualizar-estado-antibiotico-catalogo', data),
+    eliminarAntibioticoCatalogo: (data) => ipcRenderer.invoke('eliminar-antibiotico-catalogo', data),
     obtenerAntibioticosActivos: () => ipcRenderer.invoke('obtener-antibioticos-activos'),
     obtenerParametrosExamen: (examenId) => ipcRenderer.invoke('obtener-parametros-examen', examenId),
     obtenerReferencias: () => ipcRenderer.invoke('obtener-referencias'),

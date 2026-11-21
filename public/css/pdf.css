@@ -131,6 +131,123 @@
     margin-bottom: 10px;
 }
 
+.pdf-urocultivo {
+    margin: 18px 0 14px;
+    color: #17212b;
+    font-family: Arial, sans-serif;
+}
+
+.pdf-urocultivo-header {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid #c9dced;
+    border-left: 4px solid #1f4e68;
+    border-radius: 6px;
+    background: #eef5fb;
+    color: #1f4e68;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.pdf-urocultivo-examen {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #dce5ed;
+}
+
+.pdf-urocultivo-examen strong,
+.pdf-urocultivo-seccion h6 {
+    color: #526579;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+}
+
+.pdf-urocultivo-seccion {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #e1e8ef;
+    border-radius: 6px;
+    background: #fff;
+    page-break-inside: auto;
+    break-inside: auto;
+}
+
+.pdf-urocultivo-seccion h6 {
+    margin: 0 0 7px;
+    color: #1f4e68;
+}
+
+.pdf-urocultivo-resultado,
+.pdf-urocultivo-microorganismo,
+.pdf-urocultivo-observaciones p {
+    margin: 0;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.pdf-urocultivo-microorganismo {
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.pdf-urocultivo-metodo {
+    margin: 9px 0 6px;
+    color: #34495e;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.pdf-urocultivo-tabla {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+
+.pdf-urocultivo-tabla thead th {
+    padding: 6px 8px;
+    border-bottom: 1px solid #c9dced;
+    background: #eef5fb;
+    color: #1f4e68;
+    font-weight: 700;
+    text-align: left;
+}
+
+.pdf-urocultivo-tabla tbody td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #edf1f5;
+    vertical-align: top;
+}
+
+.pdf-urocultivo-tabla tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.pdf-urocultivo-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 0 7px;
+    color: #526579;
+    font-size: 0.74rem;
+}
+
+.pdf-urocultivo-leyenda strong {
+    color: #1f4e68;
+}
+
+.pdf-urocultivo-observaciones {
+    background: #f8fafc;
+}
+
 .reporte-tabla table {
     font-size: 0.75rem;
     line-height: 1;

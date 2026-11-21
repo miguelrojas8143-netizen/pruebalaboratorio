@@ -458,31 +458,47 @@
                 <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioUrocultivo()" title="Cerrar formulario" aria-label="Cerrar formulario"></button>
             </div>
             <div class="card-body p-4">
-                <div class="mb-3">
-                    <label for="urocultivoResultado" class="form-label fw-semibold">Resultado del cultivo</label>
-                    <textarea id="urocultivoResultado" class="form-control" rows="2" placeholder="Describa el resultado del cultivo"></textarea>
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label for="urocultivoSedimento" class="form-label fw-semibold">Sedimento urinario (40x)</label>
+                        <textarea id="urocultivoSedimento" class="form-control" rows="2" placeholder="Escriba la descripción del sedimento urinario"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="urocultivoColoracionGram" class="form-label fw-semibold">Coloración Gram (100x)</label>
+                        <textarea id="urocultivoColoracionGram" class="form-control" rows="2" placeholder="Escriba la descripción de la coloración Gram"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="urocultivoRecuentoColonias" class="form-label fw-semibold">Recuento de colonias</label>
+                        <textarea id="urocultivoRecuentoColonias" class="form-control" rows="2" placeholder="Escriba el recuento de colonias"></textarea>
+                    </div>
                 </div>
-                <div class="form-check form-switch mb-3">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <label for="urocultivoCantidadMicroorganismos" class="form-label fw-semibold">Resultados de cultivo / microorganismos</label>
+                        <input id="urocultivoCantidadMicroorganismos" type="number" min="1" step="1" value="1" class="form-control urocultivo-cantidad">
+                    </div>
+                    <div class="col-sm-8">
+                        <span class="form-label fw-semibold d-block">Cantidad de resultados enumerados</span>
+                        <p class="form-text mb-0">Se habilita un resultado libre y un microorganismo opcional para cada número.</p>
+                    </div>
+                </div>
+                <div id="urocultivoResultadosCultivo" class="mb-3"></div>
+                <div id="urocultivoMicroorganismos" class="mb-3"></div>
+                <div class="form-check form-switch urocultivo-omitir mb-3">
                     <input class="form-check-input" type="checkbox" id="urocultivoOmitirAntibiograma">
                     <label class="form-check-label fw-semibold" for="urocultivoOmitirAntibiograma">Omitir antibiograma</label>
                 </div>
                 <div id="urocultivoAntibiogramaConfig">
-                    <div class="row g-3 mb-3">
-                        <div class="col-sm-4">
-                            <label for="urocultivoCantidadMicroorganismos" class="form-label fw-semibold">Microorganismos aislados</label>
-                            <input id="urocultivoCantidadMicroorganismos" type="number" min="1" step="1" value="1" class="form-control">
-                        </div>
-                        <div class="col-sm-8">
-                            <span class="form-label fw-semibold d-block">Métodos/columnas</span>
-                            <div class="d-flex flex-wrap gap-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="urocultivoMetodoCmi">
-                                    <label class="form-check-label" for="urocultivoMetodoCmi">CMI</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="urocultivoMetodoDifusion">
-                                    <label class="form-check-label" for="urocultivoMetodoDifusion">Difusión</label>
-                                </div>
+                    <div class="mb-3">
+                        <span class="form-label fw-semibold d-block">Métodos del antibiograma</span>
+                        <div class="d-flex flex-wrap gap-2 urocultivo-metodos">
+                            <div class="form-check urocultivo-metodo">
+                                <input class="form-check-input" type="checkbox" id="urocultivoMetodoDifusion">
+                                <label class="form-check-label" for="urocultivoMetodoDifusion">Difusión</label>
+                            </div>
+                            <div class="form-check urocultivo-metodo">
+                                <input class="form-check-input" type="checkbox" id="urocultivoMetodoCmi">
+                                <label class="form-check-label" for="urocultivoMetodoCmi">CMI</label>
                             </div>
                         </div>
                     </div>
@@ -490,7 +506,6 @@
                         <span class="form-label fw-semibold d-block">Antibióticos del catálogo para esta orden</span>
                         <div id="urocultivoAntibioticosSeleccion" class="row row-cols-1 row-cols-md-2 g-2"></div>
                     </div>
-                    <div id="urocultivoMicroorganismos"></div>
                     <div id="urocultivoAntibiogramaTablas"></div>
                 </div>
                 <div class="mb-3">

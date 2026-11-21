@@ -41,10 +41,33 @@
         var antibioticosGuardados = Array.isArray(datos.antibioticos) ? datos.antibioticos : [];
         var microorganismos = Array.isArray(datos.microorganismos)
             ? datos.microorganismos.map(function(microorganismo) {
-                return { nombre: String(microorganismo && microorganismo.nombre || '') };
+                return {
+                    nombre: String(microorganismo && microorganismo.nombre || ''),
+                    resultadoCultivo: String(microorganismo && microorganismo.resultadoCultivo || '')
+                };
             })
             : [];
         if (!microorganismos.length) microorganismos.push({ nombre: '' });
+        var tieneResultadosCultivo = Array.isArray(datos.resultadosCultivo);
+        var resultadosCultivo = tieneResultadosCultivo
+            ? datos.resultadosCultivo.map(function(resultado) {
+                return String(resultado == null ? '' : resultado);
+            })
+            : microorganismos.map(function(microorganismo) {
+                return String(microorganismo.resultadoCultivo || '');
+            });
+        if (!tieneResultadosCultivo && !resultadosCultivo.some(Boolean)) {
+            resultadosCultivo = [String(datos.resultadoCultivo || datos.resultado || '')];
+        }
+        var cantidadResultados = Math.max(microorganismos.length, resultadosCultivo.length, 1);
+        microorganismos = Array.from({ length: cantidadResultados }, function(_item, indice) {
+            return microorganismos[indice] || { nombre: '', resultadoCultivo: '' };
+        });
+        resultadosCultivo = Array.from({ length: cantidadResultados }, function(_item, indice) {
+            return resultadosCultivo[indice] !== undefined
+                ? resultadosCultivo[indice]
+                : microorganismos[indice].resultadoCultivo;
+        });
 
         var metodosGuardados = datos.metodos && typeof datos.metodos === 'object' ? datos.metodos : null;
         var tieneCmi = antibioticosGuardados.some(function(abx) {
@@ -104,6 +127,10 @@
 
         return {
             resultadoCultivo: String(datos.resultadoCultivo || datos.resultado || ''),
+            resultadosCultivo: resultadosCultivo,
+            sedimentoUrinario: String(datos.sedimentoUrinario || ''),
+            coloracionGram: String(datos.coloracionGram || ''),
+            recuentoColonias: String(datos.recuentoColonias || ''),
             antibioticoOmitido: datos.antibiogramaOmitido === true || datos.omitido === true,
             metodos: metodos,
             microorganismos: microorganismos,
@@ -120,12 +147,16 @@
     }
 
     function actualizarDatosUrocultivoDesdeFormulario(draft) {
-        var resultado = document.getElementById('urocultivoResultado');
+        var sedimento = document.getElementById('urocultivoSedimento');
+        var coloracionGram = document.getElementById('urocultivoColoracionGram');
+        var recuentoColonias = document.getElementById('urocultivoRecuentoColonias');
         var observaciones = document.getElementById('urocultivoObservaciones');
         var omitir = document.getElementById('urocultivoOmitirAntibiograma');
         var cmi = document.getElementById('urocultivoMetodoCmi');
         var difusion = document.getElementById('urocultivoMetodoDifusion');
-        if (resultado) draft.resultadoCultivo = resultado.value.trim();
+        if (sedimento) draft.sedimentoUrinario = sedimento.value.trim();
+        if (coloracionGram) draft.coloracionGram = coloracionGram.value.trim();
+        if (recuentoColonias) draft.recuentoColonias = recuentoColonias.value.trim();
         if (observaciones) draft.observaciones = observaciones.value.trim();
         if (omitir) draft.antibioticoOmitido = omitir.checked;
         if (cmi && difusion) {
@@ -134,13 +165,26 @@
 
         var cantidad = document.getElementById('urocultivoCantidadMicroorganismos');
         var nombres = document.querySelectorAll('#urocultivoMicroorganismos [data-urocultivo-nombre]');
+        var resultados = document.querySelectorAll('#urocultivoResultadosCultivo [data-urocultivo-cultivo]');
         if (cantidad) {
             var cuenta = Math.max(1, Math.floor(Number(cantidad.value) || 1));
             var actuales = Array.prototype.map.call(nombres, function(input) {
                 return { nombre: input.value.trim() };
             });
+            var resultadosActuales = Array.prototype.map.call(resultados, function(input) {
+                return input.value.trim();
+            });
             draft.microorganismos = Array.from({ length: cuenta }, function(_item, indice) {
-                return actuales[indice] || draft.microorganismos[indice] || { nombre: '' };
+                return Object.assign(
+                    {},
+                    draft.microorganismos[indice] || { nombre: '', resultadoCultivo: '' },
+                    actuales[indice] || {}
+                );
+            });
+            draft.resultadosCultivo = Array.from({ length: cuenta }, function(_item, indice) {
+                return resultadosActuales[indice] !== undefined
+                    ? resultadosActuales[indice]
+                    : draft.resultadosCultivo[indice] || '';
             });
         }
 
@@ -171,13 +215,33 @@
         var metodoCmi = document.getElementById('urocultivoMetodoCmi');
         var metodoDifusion = document.getElementById('urocultivoMetodoDifusion');
         var cantidad = document.getElementById('urocultivoCantidadMicroorganismos');
-        document.getElementById('urocultivoResultado').value = draft.resultadoCultivo;
+        document.getElementById('urocultivoSedimento').value = draft.sedimentoUrinario;
+        document.getElementById('urocultivoColoracionGram').value = draft.coloracionGram;
+        document.getElementById('urocultivoRecuentoColonias').value = draft.recuentoColonias;
         document.getElementById('urocultivoObservaciones').value = draft.observaciones;
         if (omitido) omitido.checked = draft.antibioticoOmitido;
         if (metodoCmi) metodoCmi.checked = draft.metodos.cmi;
         if (metodoDifusion) metodoDifusion.checked = draft.metodos.difusion;
         if (cantidad) cantidad.value = String(draft.microorganismos.length);
         config.hidden = draft.antibioticoOmitido;
+
+        var resultadosCultivo = document.getElementById('urocultivoResultadosCultivo');
+        resultadosCultivo.replaceChildren();
+        draft.resultadosCultivo.forEach(function(resultado, indice) {
+            var grupo = elemento('div', undefined, 'urocultivo-item mb-2');
+            var label = elemento('label', 'Resultado de cultivo #' + (indice + 1), 'form-label fw-semibold');
+            var textarea = document.createElement('textarea');
+            textarea.className = 'form-control';
+            textarea.rows = 2;
+            textarea.value = resultado;
+            textarea.placeholder = 'Escriba el resultado del cultivo #' + (indice + 1);
+            textarea.setAttribute('data-urocultivo-cultivo', '');
+            label.htmlFor = 'urocultivoResultadoCultivo' + indice;
+            textarea.id = label.htmlFor;
+            grupo.appendChild(label);
+            grupo.appendChild(textarea);
+            resultadosCultivo.appendChild(grupo);
+        });
 
         seleccion.replaceChildren();
         if (!draft.antibioticos.length) {
@@ -195,10 +259,10 @@
         }
         draft.antibioticos.forEach(function(abx, indice) {
             var contenedor = elemento('div', undefined, 'col');
-            var label = elemento('label', undefined, 'form-check border rounded p-2 h-100');
+            var label = elemento('label', undefined, 'form-check urocultivo-antibiotico-opcion h-100');
             var checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.className = 'form-check-input me-2';
+            checkbox.className = 'form-check-input urocultivo-antibiotico-check';
             checkbox.checked = abx.seleccionado;
             checkbox.setAttribute('data-urocultivo-abx', String(indice));
             label.appendChild(checkbox);
@@ -209,8 +273,8 @@
 
         microorganismos.replaceChildren();
         draft.microorganismos.forEach(function(microorganismo, indice) {
-            var grupo = elemento('div', undefined, 'mb-2');
-            var label = elemento('label', 'Microorganismo #' + (indice + 1), 'form-label fw-semibold');
+            var grupo = elemento('div', undefined, 'urocultivo-item mb-2');
+            var label = elemento('label', 'Microorganismo aislado #' + (indice + 1) + ' (opcional)', 'form-label fw-semibold');
             var input = document.createElement('input');
             input.type = 'text';
             input.className = 'form-control';
@@ -226,8 +290,8 @@
 
         tablas.replaceChildren();
         var metodos = [];
-        if (draft.metodos.cmi) metodos.push({ id: 'cmi', nombre: 'CMI' });
         if (draft.metodos.difusion) metodos.push({ id: 'difusion', nombre: 'Difusión' });
+        if (draft.metodos.cmi) metodos.push({ id: 'cmi', nombre: 'CMI' });
         var antibioticosSeleccionados = draft.antibioticos
             .map(function(abx, indice) { return { antibiotico: abx, indice: indice }; })
             .filter(function(item) { return item.antibiotico.seleccionado; });
@@ -262,7 +326,7 @@
                     } else {
                         control = document.createElement('select');
                         control.appendChild(new Option('Seleccionar...', ''));
-                        ['Sensible', 'Intermedio', 'Resistente', 'S', 'I', 'R'].forEach(function(opcion) {
+                        ['Sensible', 'Intermedio', 'Resistente'].forEach(function(opcion) {
                             control.appendChild(new Option(opcion, opcion));
                         });
                         control.value = valores.difusion || '';
@@ -314,6 +378,14 @@
             actualizarDatosUrocultivoDesdeFormulario(draft);
             renderizarFormularioUrocultivo(draft);
         });
+        ['urocultivoSedimento', 'urocultivoColoracionGram', 'urocultivoRecuentoColonias',
+            'urocultivoResultadosCultivo', 'urocultivoMicroorganismos', 'urocultivoObservaciones']
+            .forEach(function(id) {
+                document.getElementById(id).addEventListener('input', function() {
+                    var draft = window._urocultivoDraft;
+                    if (draft) actualizarDatosUrocultivoDesdeFormulario(draft);
+                });
+            });
         document.getElementById('urocultivoAntibioticosSeleccion').addEventListener('change', function() {
             var draft = window._urocultivoDraft;
             if (!draft) return;
@@ -373,8 +445,12 @@
         actualizarDatosUrocultivoDesdeFormulario(draft);
 
         var datos = {
-            version: 2,
-            resultadoCultivo: draft.resultadoCultivo,
+            version: 3,
+            resultadoCultivo: draft.resultadosCultivo[0] || '',
+            resultadosCultivo: draft.resultadosCultivo,
+            sedimentoUrinario: draft.sedimentoUrinario,
+            coloracionGram: draft.coloracionGram,
+            recuentoColonias: draft.recuentoColonias,
             antibiogramaOmitido: draft.antibioticoOmitido,
             metodos: draft.metodos,
             microorganismos: draft.microorganismos,

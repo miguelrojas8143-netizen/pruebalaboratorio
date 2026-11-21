@@ -250,11 +250,21 @@ function actualizarEstadoAntibioticoCatalogo(db, id, activo) {
     return { id: id, activo: activo };
 }
 
+function eliminarAntibioticoCatalogo(db, id) {
+    if (typeof id !== 'string' || !ID_ANTIBIOTICO.test(id)) {
+        throw new Error('El código del antibiótico no es válido.');
+    }
+    const resultado = db.prepare('DELETE FROM antibioticos_catalogo WHERE id = ?').run(id);
+    if (resultado.changes === 0) throw new Error('No existe el antibiótico "' + id + '".');
+    return { id: id };
+}
+
 module.exports = {
     guardarExamenCatalogo,
     actualizarEstadoExamenCatalogo,
     eliminarExamenCatalogo,
     listarAntibioticosCatalogo,
     guardarAntibioticoCatalogo,
-    actualizarEstadoAntibioticoCatalogo
+    actualizarEstadoAntibioticoCatalogo,
+    eliminarAntibioticoCatalogo
 };

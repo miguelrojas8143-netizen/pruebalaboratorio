@@ -62,6 +62,10 @@
                 resultado.microorganismos.some(function(microorganismo) {
                     return microorganismo && String(microorganismo.nombre || '').trim() !== '';
                 });
+            var hayResultadoCultivo = Array.isArray(resultado.resultadosCultivo) &&
+                resultado.resultadosCultivo.some(function(item) {
+                    return String(item == null ? '' : item).trim() !== '';
+                });
             var hayAntibiotico = Array.isArray(resultado.antibioticos) &&
                 resultado.antibioticos.some(function(antibiotico) {
                     if (!antibiotico) return false;
@@ -72,7 +76,11 @@
                             String(valores.difusion == null ? '' : valores.difusion).trim() !== '';
                     });
                 });
-            return String(resultado.resultadoCultivo || '').trim() !== '' ||
+            return String(resultado.sedimentoUrinario || '').trim() !== '' ||
+                String(resultado.coloracionGram || '').trim() !== '' ||
+                String(resultado.recuentoColonias || '').trim() !== '' ||
+                String(resultado.resultadoCultivo || '').trim() !== '' ||
+                hayResultadoCultivo ||
                 String(resultado.observaciones || '').trim() !== '' ||
                 resultado.antibiogramaOmitido === true ||
                 hayMicroorganismo || hayAntibiotico;
