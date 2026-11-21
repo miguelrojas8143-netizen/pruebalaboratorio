@@ -779,9 +779,17 @@ td.grupo-header-clickable:hover {
 }
 
 .formulario-flotante-urocultivo {
-    width: min(920px, calc(100vw - 2rem));
-    max-height: calc(100vh - 1.5rem);
+   width: min(900px, calc(100vw - 2rem));
+    max-height: calc(100vh - 1rem);
     overflow-y: auto;
+    opacity: 1;
+    filter: none;
+    backdrop-filter: none;
+}
+
+.formulario-flotante-urocultivo::before {
+    content: none;
+    display: none;
 }
 
 .formulario-flotante-urocultivo .card {
@@ -867,21 +875,90 @@ td.grupo-header-clickable:hover {
     cursor: pointer;
 }
 
+.formulario-flotante-urocultivo,
+.formulario-flotante-urocultivo * {
+    opacity: 1;
+    filter: none;
+    backdrop-filter: none;
+}
+
+.formulario-flotante-urocultivo .urocultivo-antibioticos-opciones {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 0.25rem;
+    background: #ffffff;
+    border: 1px solid #cfd7e3;
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 24px rgba(38, 52, 69, 0.16);
+    isolation: isolate;
+    opacity: 1;
+    backdrop-filter: none;
+}
+
+.formulario-flotante-urocultivo #urocultivoAntibioticoBuscar {
+    min-height: 44px;
+    background: #ffffff;
+    border: 1px solid #cfd7e3;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(38, 52, 69, 0.04);
+}
+
+.formulario-flotante-urocultivo #urocultivoAntibioticoBuscar:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.12);
+}
+
+.formulario-flotante-urocultivo .urocultivo-antibioticos-seleccionados {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.formulario-flotante-urocultivo .urocultivo-antibiotico-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 0.55rem 0.75rem;
+    color: #263445;
+    background: #f8fafc;
+    border: 1px solid #dfe5ec;
+    border-radius: 0.5rem;
+    box-shadow: none;
+}
+
+.formulario-flotante-urocultivo .urocultivo-antibiotico-chip .btn-close {
+    flex: 0 0 auto;
+}
+
+.formulario-flotante-urocultivo .urocultivo-antibiotico-sin-resultados {
+    padding: 0.65rem 0.75rem;
+    color: #6c757d;
+    font-size: 0.84rem;
+}
+
 .formulario-flotante-urocultivo .urocultivo-antibiotico-opcion {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    min-height: 42px;
-    margin: 0;
-    padding: 0.55rem 0.75rem;
+    min-height: 38px;
+    margin: 0.08rem 0;
+    padding: 0.48rem 0.75rem;
     color: #263445;
-    background: #fff;
-    border: 1px solid #d5dee8;
-    border-radius: 0.45rem;
+    background: #ffffff;
+    border: 0;
+    border-radius: 0.35rem;
     font-size: 0.84rem;
     line-height: 1.3;
     cursor: pointer;
     transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    width: 100%;
+    text-align: left;
 }
 
 .formulario-flotante-urocultivo .urocultivo-antibiotico-opcion:hover {

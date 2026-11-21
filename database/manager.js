@@ -141,7 +141,13 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
                 paciente.sexo,
                 paciente.fechaNac || '',
                 paciente.telefono || '',
-                paciente.fechaRegistro || new Date().toLocaleDateString('es-ES')
+                paciente.fechaRegistro || (() => {
+                    var hoy = new Date();
+                    var anio = hoy.getFullYear();
+                    var mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                    var dia = String(hoy.getDate()).padStart(2, '0');
+                    return anio + '-' + mes + '-' + dia;
+                })()
             );
             return { success: true, id: insertPacienteStmt.lastInsertRowid || null };
         } catch (err) {
@@ -567,7 +573,13 @@ function initializeDatabase(userDataPath, appDirectory, ipcMain) {
                     db,
                     paciente.id,
                     nuevaOrden,
-                    new Date().toLocaleDateString('es-ES')
+                    (() => {
+                        var hoy = new Date();
+                        var anio = hoy.getFullYear();
+                        var mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                        var dia = String(hoy.getDate()).padStart(2, '0');
+                        return anio + '-' + mes + '-' + dia;
+                    })()
                 );
                 db.prepare('DELETE FROM paciente_examenes WHERE orden_paciente = ?').run(nuevaOrden);
                 db.prepare('DELETE FROM historial_examenes WHERE orden_paciente = ?').run(nuevaOrden);

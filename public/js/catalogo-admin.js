@@ -402,7 +402,9 @@
             return;
         }
 
-        antibioticos.forEach(function(antibiotico) {
+        antibioticos.slice().sort(function(a, b) {
+            return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+        }).forEach(function(antibiotico) {
             var fila = document.createElement('tr');
             fila.setAttribute('data-antibiotico-id', antibiotico.id);
             fila.appendChild(crearCelda(antibiotico.id, 'font-monospace'));
@@ -754,6 +756,7 @@
         } finally {
             boton.disabled = false;
         }
+        
     }
 
     async function actualizarEstado(id, activo) {

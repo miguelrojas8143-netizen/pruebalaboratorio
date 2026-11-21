@@ -2,6 +2,30 @@
 (function() {
     'use strict';
 
+    function obtenerFechaLocalISO(fecha) {
+        var valor = fecha instanceof Date ? fecha : new Date(fecha || Date.now());
+        if (isNaN(valor.getTime())) valor = new Date();
+        var anio = valor.getFullYear();
+        var mes = String(valor.getMonth() + 1).padStart(2, '0');
+        var dia = String(valor.getDate()).padStart(2, '0');
+        return anio + '-' + mes + '-' + dia;
+    }
+
+    function normalizarFechaRegistro(fecha) {
+        var valor = String(fecha || '').trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+        var partes = valor.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/);
+        if (partes) {
+            var dia = partes[1].padStart(2, '0');
+            var mes = partes[2].padStart(2, '0');
+            var anio = partes[3].length === 2 ? '20' + partes[3] : partes[3];
+            return anio + '-' + mes + '-' + dia;
+        }
+        var iso = valor.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
+        return obtenerFechaLocalISO(valor);
+    }
+
     function escapeHtml(text) {
         return String(text == null ? '' : text)
             .replace(/&/g, '&amp;')
@@ -59,13 +83,23 @@
         });
     }
 
+    function obtenerPacientesHoy(todos) {
+        var hoy = obtenerFechaLocalISO(new Date());
+        return (todos || []).filter(function(paciente) {
+            return normalizarFechaRegistro(paciente.fechaRegistro) === hoy;
+        }).sort(function(a, b) {
+            return parseInt(a.orden, 10) - parseInt(b.orden, 10);
+        });
+    }
+
     function paginaSiguiente() {
         cargarPacientes().then(function(todos) {
+            var pacientesHoy = obtenerPacientesHoy(todos);
             _paginacion.cursorStack.push({ cursorActual: _paginacion.cursorActual, pagina: _paginacion.pagina });
             _paginacion.cursorActual = _paginacion.cursorActual + _paginacion.limit;
-            _paginacion.hayMas = todos.length > _paginacion.cursorActual;
+            _paginacion.hayMas = pacientesHoy.length > _paginacion.cursorActual;
             _paginacion.pagina = _paginacion.cursorStack.length;
-            var page = todos.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
+            var page = pacientesHoy.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
             actualizarEstadoPaginacion(page);
         }).catch(function(e) {
             console.error('[paginaSiguiente] Error:', e);
@@ -84,8 +118,9 @@
             _paginacion.cursorActual = estado.cursorActual;
             _paginacion.pagina = estado.pagina;
             cargarPacientes().then(function(todos) {
-                _paginacion.hayMas = todos.length > _paginacion.cursorActual;
-                var page = todos.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
+                var pacientesHoy = obtenerPacientesHoy(todos);
+                _paginacion.hayMas = pacientesHoy.length > _paginacion.cursorActual + _paginacion.limit;
+                var page = pacientesHoy.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
                 actualizarEstadoPaginacion(page);
             }).catch(function(e) {
                 console.error('[paginaAnterior] Error:', e);
@@ -96,8 +131,9 @@
 
     function cargarPaginaActual() {
         cargarPacientes().then(function(todos) {
-            _paginacion.hayMas = todos.length > _paginacion.cursorActual + _paginacion.limit;
-            var page = todos.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
+            var pacientesHoy = obtenerPacientesHoy(todos);
+            _paginacion.hayMas = pacientesHoy.length > _paginacion.cursorActual + _paginacion.limit;
+            var page = pacientesHoy.slice(_paginacion.cursorActual, _paginacion.cursorActual + _paginacion.limit);
             actualizarEstadoPaginacion(page);
         }).catch(function(e) {
             console.error('[cargarPaginaActual] Error:', e);
@@ -120,7 +156,16 @@
         _paginacion.cursorActual = 0;
         _paginacion.cursorStack = [{ cursorActual: 0, pagina: 1 }];
         _paginacion.pagina = 1;
-        cargarPaginaActual();
+        cargarPacientes().then(function(todos) {
+            var recientes = obtenerPacientesHoy(todos);
+            _paginacion.pacientes = recientes;
+            _paginacion.hayMas = recientes.length > _paginacion.limit;
+            var page = recientes.slice(0, _paginacion.limit);
+            actualizarEstadoPaginacion(page);
+        }).catch(function(error) {
+            console.error('[refrescarPaginaActual] Error:', error);
+            actualizarEstadoPaginacion([]);
+        });
     }
 
     function mostrarNotificacion(mensaje, tipo) {
@@ -204,7 +249,7 @@
                 sexo: sexo,
                 fechaNac: fechaNac || '',
                 telefono: telefono || '',
-                fechaRegistro: new Date().toLocaleDateString('es-ES')
+                fechaRegistro: obtenerFechaLocalISO(new Date())
             };
 
             try {
@@ -279,10 +324,10 @@
 
     function renderizarCola(filtro) {
         var pacientes = _paginacion.pacientes;
-        var hoy = new Date().toLocaleDateString('es-ES');
+        var hoy = obtenerFechaLocalISO(new Date());
         var mostrarCompletados = kiloColaMostrarCompletados();
         var pacientesHoy = pacientes.filter(function(p) {
-            if (p.fechaRegistro !== hoy) return false;
+            if (normalizarFechaRegistro(p.fechaRegistro) !== hoy) return false;
             if (!mostrarCompletados && window.calcularEstadoPaciente(p) === 'completo') return false;
             return true;
         });
@@ -323,9 +368,9 @@
 
     function renderizarMetricas() {
         cargarPacientes().then(function(pacientes) {
-            var hoy = new Date().toLocaleDateString('es-ES');
+            var hoy = obtenerFechaLocalISO(new Date());
             var hoyPacientes = pacientes.filter(function(p) {
-            return p.fechaRegistro === hoy && window.calcularEstadoPaciente(p) !== 'completo';
+            return normalizarFechaRegistro(p.fechaRegistro) === hoy && window.calcularEstadoPaciente(p) !== 'completo';
             });
             var pendientes = hoyPacientes.filter(function(p) {
                 var e = window.calcularEstadoPaciente(p);

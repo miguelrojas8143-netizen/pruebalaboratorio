@@ -477,10 +477,6 @@
                         <label for="urocultivoCantidadMicroorganismos" class="form-label fw-semibold">Resultados de cultivo / microorganismos</label>
                         <input id="urocultivoCantidadMicroorganismos" type="number" min="1" step="1" value="1" class="form-control urocultivo-cantidad">
                     </div>
-                    <div class="col-sm-8">
-                        <span class="form-label fw-semibold d-block">Cantidad de resultados enumerados</span>
-                        <p class="form-text mb-0">Se habilita un resultado libre y un microorganismo opcional para cada número.</p>
-                    </div>
                 </div>
                 <div id="urocultivoResultadosCultivo" class="mb-3"></div>
                 <div id="urocultivoMicroorganismos" class="mb-3"></div>
@@ -503,8 +499,14 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <span class="form-label fw-semibold d-block">Antibióticos del catálogo para esta orden</span>
-                        <div id="urocultivoAntibioticosSeleccion" class="row row-cols-1 row-cols-md-2 g-2"></div>
+                        <label for="urocultivoAntibioticoBuscar" class="form-label fw-semibold">Antibióticos del catálogo para esta orden</label>
+                        <div class="position-relative">
+                            <input type="search" id="urocultivoAntibioticoBuscar" class="form-control"
+                                   placeholder="Buscar antibiótico por nombre..." autocomplete="off"
+                                   aria-controls="urocultivoAntibioticosOpciones">
+                            <div id="urocultivoAntibioticosOpciones" class="urocultivo-antibioticos-opciones d-none"></div>
+                        </div>
+                        <div id="urocultivoAntibioticosSeleccion" class="urocultivo-antibioticos-seleccionados mt-2"></div>
                     </div>
                     <div id="urocultivoAntibiogramaTablas"></div>
                 </div>
