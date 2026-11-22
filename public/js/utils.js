@@ -46,7 +46,10 @@
         var resultado = examen.resultado;
         var esUrocultivo = examen.id === 'urocultivo' ||
             examen.examen_id === 'urocultivo' ||
-            examen.tipoFormulario === 'urocultivo';
+            examen.tipoFormulario === 'urocultivo' ||
+            examen.id === 'coprocultivo' ||
+            examen.examen_id === 'coprocultivo' ||
+            examen.tipoFormulario === 'coprocultivo';
         if (esUrocultivo) {
             if (typeof resultado === 'string') {
                 var texto = resultado.trim();
@@ -76,7 +79,7 @@
                             String(valores.difusion == null ? '' : valores.difusion).trim() !== '';
                     });
                 });
-            return String(resultado.sedimentoUrinario || '').trim() !== '' ||
+            return String(resultado.sedimentoUrinario || resultado.examenDirecto || '').trim() !== '' ||
                 String(resultado.coloracionGram || '').trim() !== '' ||
                 String(resultado.recuentoColonias || '').trim() !== '' ||
                 String(resultado.resultadoCultivo || '').trim() !== '' ||

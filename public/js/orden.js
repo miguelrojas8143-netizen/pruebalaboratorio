@@ -476,6 +476,9 @@
             if (esFormularioHeces(examen)) {
                 var accionHeces = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioHeces(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionHeces + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+            } else if (examen.id === 'coprocultivo' || examen.tipoFormulario === 'coprocultivo') {
+                var accionCoprocultivo = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioCoprocultivo(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionCoprocultivo + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (examen.id === 'urocultivo' || examen.tipoFormulario === 'urocultivo') {
                 var accionUrocultivo = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioUrocultivo(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionUrocultivo + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';

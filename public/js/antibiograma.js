@@ -386,17 +386,37 @@
                 renderizarFormularioUrocultivo(draft);
             });
         });
-        document.getElementById('urocultivoCantidadMicroorganismos').addEventListener('change', function() {
+        var cantidadUrocultivo = document.getElementById('urocultivoCantidadMicroorganismos');
+        function actualizarCantidadUrocultivo() {
             var draft = window._urocultivoDraft;
             if (!draft) return;
-            var valor = Number(this.value);
-            if (!Number.isInteger(valor) || valor < 1) {
-                this.value = String(draft.microorganismos.length);
-                return;
-            }
-            actualizarDatosUrocultivoDesdeFormulario(draft);
+
+            var resultadosActuales = Array.prototype.map.call(
+                document.querySelectorAll('#urocultivoResultadosCultivo [data-urocultivo-cultivo]'),
+                function(input) { return input.value.trim(); }
+            );
+            var microorganismosActuales = Array.prototype.map.call(
+                document.querySelectorAll('#urocultivoMicroorganismos [data-urocultivo-nombre]'),
+                function(input) { return input.value.trim(); }
+            );
+
+            var valor = Math.max(1, Math.floor(Number(cantidadUrocultivo.value) || 1));
+            cantidadUrocultivo.value = String(valor);
+
+            draft.resultadosCultivo = Array.from({ length: valor }, function(_item, indice) {
+                return resultadosActuales[indice] !== undefined ? resultadosActuales[indice] : '';
+            });
+            draft.microorganismos = Array.from({ length: valor }, function(_item, indice) {
+                return {
+                    nombre: microorganismosActuales[indice] !== undefined ? microorganismosActuales[indice] : '',
+                    resultadoCultivo: draft.microorganismos[indice] ? draft.microorganismos[indice].resultadoCultivo || '' : ''
+                };
+            });
+
             renderizarFormularioUrocultivo(draft);
-        });
+        }
+        cantidadUrocultivo.addEventListener('input', actualizarCantidadUrocultivo);
+        cantidadUrocultivo.addEventListener('change', actualizarCantidadUrocultivo);
         ['urocultivoSedimento', 'urocultivoColoracionGram', 'urocultivoRecuentoColonias',
             'urocultivoResultadosCultivo', 'urocultivoMicroorganismos', 'urocultivoObservaciones']
             .forEach(function(id) {
@@ -416,72 +436,51 @@
             var antibiotico = draft.antibioticos[indice];
             if (antibiotico) antibiotico.seleccionado = false;
             actualizarVistaAntibioticosUrocultivo(draft);
+            actualizarOpcionesUro(draft);
             var buscar = document.getElementById('urocultivoAntibioticoBuscar');
             if (buscar) buscar.focus();
         });
 
-        var buscar = document.getElementById('urocultivoAntibioticoBuscar');
-        var opciones = document.getElementById('urocultivoAntibioticosOpciones');
-        function cerrarOpciones() {
-            if (opciones) opciones.classList.add('d-none');
-        }
-        function mostrarOpciones() {
-            var draft = window._urocultivoDraft;
-            if (!draft || !opciones) return;
-            var termino = buscar.value.trim().toLocaleLowerCase('es');
-            var coincidencias = draft.antibioticos
+        var buscarUro = document.getElementById('urocultivoAntibioticoBuscar');
+        function actualizarOpcionesUro(draft) {
+            if (!buscarUro || !window.jQuery) return;
+            var $buscar = window.jQuery(buscarUro);
+            if ($buscar.hasClass('select2-hidden-accessible')) $buscar.select2('destroy');
+            buscarUro.innerHTML = '<option value=""></option>';
+            draft.antibioticos
                 .map(function(abx, indice) { return { antibiotico: abx, indice: indice }; })
                 .filter(function(item) { return !item.antibiotico.seleccionado; })
-                .filter(function(item) {
-                    return !termino || item.antibiotico.nombre.toLocaleLowerCase('es').indexOf(termino) !== -1;
-                })
                 .sort(function(a, b) {
                     return a.antibiotico.nombre.localeCompare(b.antibiotico.nombre, 'es', { sensitivity: 'base' });
+                })
+                .forEach(function(item) {
+                    buscarUro.appendChild(new Option(item.antibiotico.nombre, String(item.indice)));
                 });
-            opciones.replaceChildren();
-            if (!coincidencias.length) {
-                opciones.appendChild(elemento('div', termino ? 'Sin coincidencias.' : 'Todos los antibióticos ya están seleccionados.', 'urocultivo-antibiotico-sin-resultados'));
-            } else {
-                coincidencias.forEach(function(item) {
-                    var boton = elemento('button', item.antibiotico.nombre, 'urocultivo-antibiotico-opcion');
-                    boton.type = 'button';
-                    boton.setAttribute('data-urocultivo-agregar', String(item.indice));
-                    opciones.appendChild(boton);
-                });
-            }
-            opciones.classList.remove('d-none');
+            $buscar.select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Escriba para buscar antibiótico...',
+                allowClear: true,
+                width: '100%',
+                maximumResultsToShow: 20
+            });
+            $buscar.off('select2:select').on('select2:select', function(event) {
+                var indice = Number(event.params.data.id);
+                if (!Number.isInteger(indice)) return;
+                actualizarDatosUrocultivoDesdeFormulario(draft);
+                draft.antibioticos[indice].seleccionado = true;
+                actualizarVistaAntibioticosUrocultivo(draft);
+                renderizarFormularioUrocultivo(draft);
+                actualizarOpcionesUro(draft);
+                $buscar.val('').trigger('change');
+            });
+            $buscar.off('select2:open').on('select2:open', function() {
+                setTimeout(function() {
+                    var campo = document.querySelector('.formulario-flotante-urocultivo .select2-search__field');
+                    if (campo) campo.focus();
+                }, 0);
+            });
         }
-        buscar.addEventListener('focus', mostrarOpciones);
-        buscar.addEventListener('input', mostrarOpciones);
-        opciones.addEventListener('mousedown', function(event) {
-            var boton = event.target.closest('[data-urocultivo-agregar]');
-            if (!boton) return;
-            event.preventDefault();
-            var draft = window._urocultivoDraft;
-            if (!draft) return;
-            actualizarDatosUrocultivoDesdeFormulario(draft);
-            var indice = Number(boton.getAttribute('data-urocultivo-agregar'));
-            draft.antibioticos[indice].seleccionado = true;
-            buscar.value = '';
-            actualizarVistaAntibioticosUrocultivo(draft);
-            buscar.focus();
-            mostrarOpciones();
-        });
-        buscar.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') cerrarOpciones();
-            if (event.key === 'Enter') {
-                var primer = opciones.querySelector('[data-urocultivo-agregar]');
-                if (primer) {
-                    event.preventDefault();
-                    primer.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-                }
-            }
-        });
-        document.addEventListener('pointerdown', function(event) {
-            if (!event.target.closest('#urocultivoAntibioticoBuscar') && !event.target.closest('#urocultivoAntibioticosOpciones')) {
-                cerrarOpciones();
-            }
-        });
+        actualizarOpcionesUro(window._urocultivoDraft);
         document.getElementById('urocultivoOmitirAntibiograma').addEventListener('change', function() {
             var draft = window._urocultivoDraft;
             if (!draft) return;
@@ -493,6 +492,8 @@
     window.abrirFormularioUrocultivo = async function(examenId) {
         var examen = (window.examenesOrden || []).find(function(item) { return item.id === examenId; });
         var form = document.getElementById('formularioUrocultivo');
+        var coprocultivo = document.getElementById('formularioCoprocultivo');
+        if (coprocultivo) coprocultivo.style.display = 'none';
         if (!examen || !form) {
             window.Notifications.error('No se encontró el examen de Urocultivo para editar.');
             return;

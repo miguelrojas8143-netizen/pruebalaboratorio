@@ -500,12 +500,9 @@
                     </div>
                     <div class="mb-3">
                         <label for="urocultivoAntibioticoBuscar" class="form-label fw-semibold">Antibióticos del catálogo para esta orden</label>
-                        <div class="position-relative">
-                            <input type="search" id="urocultivoAntibioticoBuscar" class="form-control"
-                                   placeholder="Buscar antibiótico por nombre..." autocomplete="off"
-                                   aria-controls="urocultivoAntibioticosOpciones">
-                            <div id="urocultivoAntibioticosOpciones" class="urocultivo-antibioticos-opciones d-none"></div>
-                        </div>
+                        <select id="urocultivoAntibioticoBuscar" class="form-select" aria-label="Buscar antibiótico">
+                            <option value=""></option>
+                        </select>
                         <div id="urocultivoAntibioticosSeleccion" class="urocultivo-antibioticos-seleccionados mt-2"></div>
                     </div>
                     <div id="urocultivoAntibiogramaTablas"></div>
@@ -517,6 +514,74 @@
                 <div class="d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-secondary" onclick="cerrarFormularioUrocultivo()"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
                     <button type="button" class="btn btn-primary" onclick="guardarFormularioUrocultivo()"><i class="bi bi-save me-1"></i>Guardar resultados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="formularioCoprocultivo" style="display:none;" class="formulario-flotante formulario-flotante-coprocultivo">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-bug-fill me-2"></i> COPROCULTIVO Y ANTIBIOGRAMA</span>
+                <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioCoprocultivo()" title="Cerrar formulario" aria-label="Cerrar formulario"></button>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label for="coprocultivoExamenDirecto" class="form-label fw-semibold">Examen directo</label>
+                        <textarea id="coprocultivoExamenDirecto" class="form-control" rows="3" placeholder="Escriba el examen directo"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="coprocultivoColoracionGram" class="form-label fw-semibold">Coloración Gram (100x)</label>
+                        <textarea id="coprocultivoColoracionGram" class="form-control" rows="2" placeholder="Escriba la descripción de la coloración Gram"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="coprocultivoRecuentoColonias" class="form-label fw-semibold">Recuento de colonias</label>
+                        <textarea id="coprocultivoRecuentoColonias" class="form-control" rows="2" placeholder="Escriba el recuento de colonias"></textarea>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <label for="coprocultivoCantidadMicroorganismos" class="form-label fw-semibold">Resultados de cultivo / microorganismos</label>
+                        <input id="coprocultivoCantidadMicroorganismos" type="number" min="1" step="1" value="1" class="form-control coprocultivo-cantidad">
+                    </div>
+                </div>
+                <div id="coprocultivoResultadosCultivo" class="mb-3"></div>
+                <div id="coprocultivoMicroorganismos" class="mb-3"></div>
+                <div class="form-check form-switch coprocultivo-omitir mb-3">
+                    <input class="form-check-input" type="checkbox" id="coprocultivoOmitirAntibiograma">
+                    <label class="form-check-label fw-semibold" for="coprocultivoOmitirAntibiograma">Omitir antibiograma</label>
+                </div>
+                <div id="coprocultivoAntibiogramaConfig">
+                    <div class="mb-3">
+                        <span class="form-label fw-semibold d-block">Métodos del antibiograma</span>
+                        <div class="d-flex flex-wrap gap-2 coprocultivo-metodos">
+                            <div class="form-check coprocultivo-metodo">
+                                <input class="form-check-input" type="checkbox" id="coprocultivoMetodoDifusion">
+                                <label class="form-check-label" for="coprocultivoMetodoDifusion">Difusión</label>
+                            </div>
+                            <div class="form-check coprocultivo-metodo">
+                                <input class="form-check-input" type="checkbox" id="coprocultivoMetodoCmi">
+                                <label class="form-check-label" for="coprocultivoMetodoCmi">CMI</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="coprocultivoAntibioticoBuscar" class="form-label fw-semibold">Antibióticos del catálogo para esta orden</label>
+                        <select id="coprocultivoAntibioticoBuscar" class="form-select" aria-label="Buscar antibiótico">
+                            <option value=""></option>
+                        </select>
+                        <div id="coprocultivoAntibioticosSeleccion" class="coprocultivo-antibioticos-seleccionados mt-2"></div>
+                    </div>
+                    <div id="coprocultivoAntibiogramaTablas"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="coprocultivoObservaciones" class="form-label fw-semibold">Observaciones</label>
+                    <textarea id="coprocultivoObservaciones" class="form-control observaciones-textarea" rows="3" placeholder="Observaciones de la sección microbiológica"></textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarFormularioCoprocultivo()"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarFormularioCoprocultivo()"><i class="bi bi-save me-1"></i>Guardar resultados</button>
                 </div>
             </div>
         </div>
@@ -719,6 +784,7 @@
     <script src="../public/js/heces.js"></script>
     <script src="../public/js/frotis.js"></script>
     <script src="../public/js/antibiograma.js"></script>
+    <script src="../public/js/coprocultivo-form.js"></script>
     <script src="../public/js/antigenos-febriles.js"></script>
     <script src="../public/js/notifications.js"></script>
     <script src="../public/js/app.js"></script>
