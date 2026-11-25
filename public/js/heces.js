@@ -92,7 +92,7 @@
         try {
             var examenesParaGuardar = examenesActualizados.map(function(item) {
                 if (item.id !== examenId) return item;
-                return Object.assign({}, item, { resultado: datos });
+                return Object.assign({}, item, { resultado: resultado });
             });
             guardado = await window.api.guardarPacienteExamenes(orden, examenesParaGuardar);
             if (!guardado || !guardado.success) {

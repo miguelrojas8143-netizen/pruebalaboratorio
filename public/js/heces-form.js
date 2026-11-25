@@ -135,6 +135,7 @@
     }
 
     function validar() {
+        var campos = getCamposParaTipo(tipoExamenActual);
         var entradas = campos.filter(function(campo) { return campo.tipo === 'numerico'; });
         for (var i = 0; i < entradas.length; i += 1) {
             var control = controles[entradas[i].id].control;

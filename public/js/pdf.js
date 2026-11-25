@@ -1978,8 +1978,10 @@ function escribirFila(resultado) {
             }
         }
 
+        var hecesRendered = false;
         if (payload.heces) {
-            if (payload.secciones.length > 0 || payload.antibiograma || payload.urocultivo) {
+            var needsNewPageForHeces = payload.secciones.length > 0 || payload.antibiograma || payload.urocultivo;
+            if (needsNewPageForHeces) {
                 doc.addPage();
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
@@ -1993,9 +1995,11 @@ function escribirFila(resultado) {
                 omitirUnidad: true
             });
             escribirObservacionesBioanalista(payload.heces.observaciones);
+            hecesRendered = true;
         }
         if (payload.uro) {
-            if (payload.secciones.length > 0 || payload.antibiograma || payload.urocultivo || payload.heces) {
+            var needsNewPageForUro = payload.secciones.length > 0 || payload.antibiograma || payload.urocultivo;
+            if (needsNewPageForUro && !hecesRendered) {
                 doc.addPage();
                 encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
                 y = yDespuesEncabezado;
