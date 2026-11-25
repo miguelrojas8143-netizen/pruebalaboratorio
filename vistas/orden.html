@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Security-Policy" 
  content="default-src 'self'; img-src 'self' data:; style-src 'self'
   'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-  
+
     <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self' ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orden de Trabajo</title>
@@ -587,6 +587,131 @@
         </div>
     </div>
 
+    <div id="formularioHemocultivo" style="display:none;" class="formulario-flotante formulario-flotante-hemocultivo">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-droplet-fill me-2"></i>HEMOCULTIVO</span>
+                <button type="button" class="btn-close btn-close-white" onclick="cerrarFormularioHemocultivo()" title="Cerrar formulario" aria-label="Cerrar formulario"></button>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="hemo-examen-solicitado" class="form-label fw-semibold">Examen solicitado</label>
+                        <input type="text" class="form-control" id="hemo-examen-solicitado" value="Hemocultivo.">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="hemo-sitio-anatomico" class="form-label fw-semibold">Sitio anatómico de la toma de muestra</label>
+                        <input type="text" class="form-control" id="hemo-sitio-anatomico"
+                               placeholder="Ej.: Miembro superior derecho (01:03 p.m.)" list="hemo-sitios-list">
+                        <datalist id="hemo-sitios-list">
+                            <option value="Miembro superior derecho ">
+                            <option value="Miembro superior izquierdo ">
+                            <option value="Vía central / Catéter ">
+                            <option value="Punción venosa periférica ">
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="hemo-volumen-muestra" class="form-label fw-semibold">Volumen de muestra recolectado</label>
+                        <input type="text" class="form-control" id="hemo-volumen-muestra"
+                               placeholder="Ej: 2,59 mL (botella pediátrica aerobia #1)." list="hemo-volumenes-list">
+                        <datalist id="hemo-volumenes-list">
+                            <option value="2,5 mL (botella pediátrica aerobia #1).">
+                            <option value="5,0 mL (botella adulto aerobia #1).">
+                            <option value="10,0 mL (botella adulto aerobia #1).">
+                        </datalist>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="hemo-estado-cultivo" class="form-label fw-semibold">Resultado del cultivo</label>
+                        <select class="form-select" id="hemo-estado-cultivo">
+                            <option value="positivo" selected>Positivo (Crecimiento de microorganismo)</option>
+                            <option value="negativo">Negativo (Sin crecimiento bacteriano)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="hemo-seccion-microorganismos" class="p-3 bg-light border rounded mb-3">
+                    <div class="hemo-micro-header">
+                        <label class="form-label fw-semibold mb-0">Microorganismo(s) aislado(s)</label>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="hemo-btn-agregar-micro">
+                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar microorganismo
+                        </button>
+                    </div>
+                    <div id="hemo-lista-microorganismos"></div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <label for="hemo-observaciones" class="form-label fw-semibold mb-0">Observaciones</label>
+                        <div class="hemo-plantilla-botones" role="group" aria-label="Plantillas de observaciones">
+                            <button type="button" class="btn btn-outline-secondary" data-plantilla="estandar_vitek">
+                                <i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i>Plantilla VITEK 2
+                            </button>
+                            <button type="button" class="btn btn-outline-info" data-plantilla="b_cepacia_clsi">
+                                <i class="bi bi-shield-check me-1" aria-hidden="true"></i>Plantilla B. cepacia (CLSI 2025)
+                            </button>
+                            <button type="button" class="btn btn-outline-dark" data-plantilla="negativo_5_dias">
+                                <i class="bi bi-clipboard-x me-1" aria-hidden="true"></i>Plantilla Negativo
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="form-control font-monospace" id="hemo-observaciones" rows="7"
+                              placeholder="Ingrese las observaciones del análisis microbiológico..."></textarea>
+                    <div class="form-text">Use asteriscos (*) al inicio de cada párrafo para mantener el formato estándar de reporte.</div>
+                </div>
+
+                <div class="card border-secondary mt-4 hemo-antibiograma-card">
+                    <div class="card-header bg-light hemo-antibiograma-header">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="hemo-check-antibiograma">
+                            <label class="form-check-label fw-bold" for="hemo-check-antibiograma">
+                                <i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i>Incluir antibiograma
+                            </label>
+                        </div>
+                        <span class="text-muted small">Opcional según criterio CLSI · Se imprime al final del reporte</span>
+                    </div>
+                    <div class="card-body d-none" id="hemo-contenedor-antibiograma">
+                        <div class="hemo-antibiograma-toolbar mb-3">
+                            <div class="hemo-antibiograma-metodo">
+                                <label for="hemo-metodo-antibiograma" class="form-label fw-semibold">Método</label>
+                                <select class="form-select" id="hemo-metodo-antibiograma">
+                                    <option value="DIFUSIÓN" selected>DIFUSIÓN</option>
+                                    <option value="CMI (VITEK 2)">CMI (VITEK 2)</option>
+                                    <option value="E-TEST">E-TEST</option>
+                                </select>
+                            </div>
+                            <div class="hemo-antibiograma-agregar">
+                                <button type="button" class="btn btn-sm btn-success" id="hemo-btn-agregar-atb">
+                                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar antibiótico
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle" id="hemo-tabla-antibiograma">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th style="width: 55%;">Antibiótico</th>
+                                        <th style="width: 35%;">Interpretación</th>
+                                        <th style="width: 10%;" class="text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hemo-tbody-antibiograma"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarFormularioHemocultivo()"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarFormularioHemocultivo()"><i class="bi bi-save me-1"></i>Guardar resultados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="formularioAntigenosFebriles" style="display:none;" class="formulario-flotante formulario-flotante-antigenos-febriles">
         <div class="card border-primary">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -785,6 +910,7 @@
     <script src="../public/js/frotis.js"></script>
     <script src="../public/js/antibiograma.js"></script>
     <script src="../public/js/coprocultivo-form.js"></script>
+    <script src="../public/js/hemocultivo-form.js"></script>
     <script src="../public/js/antigenos-febriles.js"></script>
     <script src="../public/js/notifications.js"></script>
     <script src="../public/js/app.js"></script>

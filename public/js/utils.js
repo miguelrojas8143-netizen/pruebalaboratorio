@@ -50,7 +50,10 @@
             examen.id === 'coprocultivo' ||
             examen.examen_id === 'coprocultivo' ||
             examen.tipoFormulario === 'coprocultivo';
-        if (esUrocultivo) {
+        var esHemocultivo = examen.id === 'hemocultivo' ||
+            examen.examen_id === 'hemocultivo' ||
+            examen.tipoFormulario === 'hemocultivo';
+        if (esUrocultivo || esHemocultivo) {
             if (typeof resultado === 'string') {
                 var texto = resultado.trim();
                 if (!texto) return false;
@@ -79,6 +82,12 @@
                             String(valores.difusion == null ? '' : valores.difusion).trim() !== '';
                     });
                 });
+            var hayDatosHemocultivo = esHemocultivo && (
+                String(resultado.examenSolicitado || '').trim() !== '' ||
+                String(resultado.sitioAnatomico || '').trim() !== '' ||
+                String(resultado.volumenMuestra || '').trim() !== '' ||
+                String(resultado.estadoCultivo || '').trim() !== ''
+            );
             return String(resultado.sedimentoUrinario || resultado.examenDirecto || '').trim() !== '' ||
                 String(resultado.coloracionGram || '').trim() !== '' ||
                 String(resultado.recuentoColonias || '').trim() !== '' ||
@@ -86,7 +95,7 @@
                 hayResultadoCultivo ||
                 String(resultado.observaciones || '').trim() !== '' ||
                 resultado.antibiogramaOmitido === true ||
-                hayMicroorganismo || hayAntibiotico;
+                hayMicroorganismo || hayAntibiotico || hayDatosHemocultivo;
         }
         var esAntigenosFebriles = examen.id === 'antigenos_febriles' ||
             examen.examen_id === 'antigenos_febriles' ||

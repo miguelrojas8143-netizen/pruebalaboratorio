@@ -456,6 +456,43 @@
         };
     }
 
+    function normalizarDatosHemocultivo(examen) {
+        if (!examen) return null;
+        var resultado = examen.resultado;
+        var datos;
+        if (resultado && typeof resultado === 'object') {
+            datos = resultado;
+        } else {
+            var texto = String(resultado || '');
+            try {
+                datos = texto.trim().charAt(0) === '{' ? JSON.parse(texto) : {};
+            } catch (error) {
+                datos = {};
+            }
+        }
+        if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
+            datos = {};
+        }
+        var microorganismos = Array.isArray(datos.microorganismos)
+            ? datos.microorganismos.map(function(m) { return { nombre: String(m && m.nombre || '') }; })
+                .filter(function(m) { return m.nombre.trim() !== ''; })
+            : [];
+        var antibiograma = Array.isArray(datos.antibiograma)
+            ? datos.antibiograma.map(function(a) { return { antibiotico: String(a && a.antibiotico || ''), interpretacion: String(a && a.interpretacion || '') }; })
+            : [];
+        return {
+            examenSolicitado: String(datos.examenSolicitado || 'Hemocultivo.'),
+            sitioAnatomico: String(datos.sitioAnatomico || ''),
+            volumenMuestra: String(datos.volumenMuestra || ''),
+            estadoCultivo: String(datos.estadoCultivo || 'positivo'),
+            microorganismos: microorganismos,
+            observaciones: String(datos.observaciones || ''),
+            incluirAntibiograma: datos.incluirAntibiograma === true && antibiograma.length > 0,
+            metodoAntibiograma: String(datos.metodoAntibiograma || 'DIFUSIÓN'),
+            antibiograma: antibiograma
+        };
+    }
+
     /* ---------- Construcción del payload unificado ---------- */
     function buildPayload(paciente) {
         var examenes = JSON.parse(JSON.stringify(paciente.examenes || []));
@@ -488,6 +525,10 @@
             return e.id === 'urocultivo' || e.examen_id === 'urocultivo' ||
                 e.tipoFormulario === 'urocultivo';
         });
+        var examenHemocultivo = examenes.find(function(e) {
+            return e.id === 'hemocultivo' || e.examen_id === 'hemocultivo' ||
+                e.tipoFormulario === 'hemocultivo';
+        });
         var examenAntigenosFebriles = examenes.find(esExamenAntigenosFebriles);
         var antigenosFebriles = filasAntigenosFebriles(examenAntigenosFebriles);
         var examenHematologia = examenes.find(function(e) {
@@ -495,10 +536,10 @@
         });
         var examenesNormales = examenes.filter(function(e) {
             return e !== examenesHeces && e !== examenesUro && e !== examenesAb && e !== examenUrocultivo &&
-                e !== examenAntigenosFebriles &&
+                e !== examenHemocultivo && e !== examenAntigenosFebriles &&
                 e.tipoFormulario !== 'heces' && e.tipoFormulario !== 'uroanalisis' &&
                 e.tipoFormulario !== 'antibiograma' && e.tipoFormulario !== 'urocultivo' &&
-                e.tipoFormulario !== 'antigenos_febriles';
+                e.tipoFormulario !== 'hemocultivo' && e.tipoFormulario !== 'antigenos_febriles';
         });
 
         if (!examenesUro) {
@@ -652,10 +693,15 @@
             ? normalizarDatosUrocultivo(examenUrocultivo)
             : null;
 
+        var hemocultivo = examenHemocultivo && window.examenTieneResultados(examenHemocultivo)
+            ? normalizarDatosHemocultivo(examenHemocultivo)
+            : null;
+
         var hayResultados = examenesNormales.length > 0 ||
             (examenesHeces && window.tieneDatosHeces(examenesHeces)) ||
             (examenesUro && window.tieneDatosUroanalisis(examenesUro)) ||
             !!urocultivo ||
+            !!hemocultivo ||
             (examenesAb && window.tieneDatosAntibiograma(examenesAb)) ||
             antigenosFebriles.length > 0;
 
@@ -671,6 +717,7 @@
             hematologiaObservaciones: hematologiaObservaciones,
             uro: uro,
             urocultivo: urocultivo,
+            hemocultivo: hemocultivo,
             antibiograma: antibiograma,
             antigenosFebriles: antigenosFebriles,
             refAdaptadas: refAdaptadas,
@@ -931,6 +978,58 @@
         return html + '</section>';
     }
 
+    function renderHemocultivoDom(hemocultivo) {
+        if (!hemocultivo) return '';
+        var html = '<section class="pdf-urocultivo pdf-hemocultivo">' +
+            '<div class="pdf-urocultivo-header"><span>ANÁLISIS MICROBIOLÓGICO</span></div>';
+
+        [
+            { titulo: 'Examen solicitado', valor: hemocultivo.examenSolicitado },
+            { titulo: 'Sitio anatómico de la toma de muestra', valor: hemocultivo.sitioAnatomico },
+            { titulo: 'Volumen de muestra recolectado', valor: hemocultivo.volumenMuestra }
+        ].forEach(function(campo) {
+            if (!campo.valor || !String(campo.valor).trim()) return;
+            html += '<div class="pdf-urocultivo-examen">' +
+                '<strong>' + escapeHtml(campo.titulo) + '</strong>' +
+                '<span>' + escapeHtml(campo.valor) + '</span></div>';
+        });
+
+        html += '<section class="pdf-urocultivo-seccion">' +
+            '<h6>Resultado del cultivo</h6>';
+        if (hemocultivo.estadoCultivo === 'negativo') {
+            html += '<p class="pdf-urocultivo-resultado">Sin crecimiento bacteriano a los 5 días de incubación.</p>';
+        } else {
+            html += '<p class="pdf-urocultivo-resultado">Crecimiento de:</p>';
+            if (hemocultivo.microorganismos.length) {
+                html += '<ol class="pdf-hemocultivo-microorganismos">';
+                hemocultivo.microorganismos.forEach(function(microorganismo) {
+                    html += '<li>' + escapeHtml(microorganismo.nombre) + '</li>';
+                });
+                html += '</ol>';
+            }
+        }
+        html += '</section>';
+
+        if (hemocultivo.observaciones && String(hemocultivo.observaciones).trim()) {
+            html += '<section class="pdf-urocultivo-seccion pdf-urocultivo-observaciones">' +
+                '<h6>Observaciones</h6><p class="pdf-urocultivo-resultado">' +
+                escapeHtml(hemocultivo.observaciones) + '</p></section>';
+        }
+
+        if (hemocultivo.incluirAntibiograma && hemocultivo.antibiograma.length) {
+            html += '<section class="pdf-urocultivo-seccion">' +
+                '<h6>Antibiograma · Método: ' + escapeHtml(hemocultivo.metodoAntibiograma) + '</h6>' +
+                '<div class="table-responsive"><table class="table table-sm pdf-urocultivo-tabla">' +
+                '<thead><tr><th>Antibiótico</th><th>Interpretación</th></tr></thead><tbody>';
+            hemocultivo.antibiograma.forEach(function(item) {
+                html += '<tr><td>' + escapeHtml(item.antibiotico || '-') + '</td>' +
+                    '<td>' + escapeHtml(item.interpretacion || '-') + '</td></tr>';
+            });
+            html += '</tbody></table></div></section>';
+        }
+        return html + '</section>';
+    }
+
     function renderAntigenosFebrilesDom(filas) {
         if (!filas || !filas.length) return '';
         var html = '<div class="pdf-bloque"><h6 class="reporte-area-titulo">Antígenos Febriles (Widal)</h6>' +
@@ -1024,6 +1123,12 @@
             var urocultivo = document.createElement('div');
             urocultivo.innerHTML = renderUrocultivoDom(payload.urocultivo);
             contenedor.appendChild(urocultivo);
+        }
+
+        if (contenedor && payload.hemocultivo) {
+            var hemocultivo = document.createElement('div');
+            hemocultivo.innerHTML = renderHemocultivoDom(payload.hemocultivo);
+            contenedor.appendChild(hemocultivo);
         }
 
         // El antibiograma es un examen individual y comparte la hoja con las demás áreas.
@@ -1868,6 +1973,181 @@ function escribirFila(resultado) {
             }
         }
 
+        function escribirHemocultivo(datos) {
+            if (y + 12 > pageHeight - 30) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            var anchoContenido = pageWidth - 28;
+
+            doc.setFillColor(232, 241, 250);
+            doc.setDrawColor(190, 210, 230);
+            doc.roundedRect(14, y - 4, anchoContenido, 9, 1.5, 1.5, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(31, 78, 104);
+            doc.text('ANÁLISIS MICROBIOLÓGICO', pageWidth / 2, y + 1.5, { align: 'center' });
+            y += 10;
+
+            function escribirDatoHemo(etiqueta, valor) {
+                if (valor == null || String(valor).trim() === '') return;
+                if (y + 8 > pageHeight - 30) {
+                    doc.addPage();
+                    encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                    y = yDespuesEncabezado;
+                }
+                var textoEtiqueta = etiqueta + ':';
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8);
+                var xValor = 14 + doc.getTextWidth(textoEtiqueta) + 3;
+                var enLinea = pageWidth - 14 - xValor >= 35;
+                var anchoValor = enLinea ? pageWidth - 14 - xValor : anchoContenido;
+                var lineas = doc.splitTextToSize(String(valor).trim(), anchoValor);
+                if (!enLinea) {
+                    doc.setTextColor(75, 90, 106);
+                    doc.text(textoEtiqueta, 14, y);
+                    y += 4;
+                }
+                lineas.forEach(function(linea, indice) {
+                    if (y + 4 > pageHeight - 30) {
+                        doc.addPage();
+                        encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                        y = yDespuesEncabezado;
+                    }
+                    if (enLinea && indice === 0) {
+                        doc.setTextColor(75, 90, 106);
+                        doc.text(textoEtiqueta, 14, y);
+                    }
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(25, 25, 25);
+                    doc.text(linea, enLinea ? xValor : 14, y);
+                    doc.setFont('helvetica', 'bold');
+                    y += 4;
+                });
+                y += 2;
+            }
+
+            // 1. Datos de la Muestra
+            escribirDatoHemo('EXAMEN SOLICITADO', datos.examenSolicitado);
+            escribirDatoHemo('SITIO ANATÓMICO DE LA TOMA DE MUESTRA', datos.sitioAnatomico);
+            escribirDatoHemo('VOLUMEN DE MUESTRA RECOLECTADO', datos.volumenMuestra);
+
+            // 2. Resultado del Cultivo
+            if (y + 8 > pageHeight - 30) {
+                doc.addPage();
+                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                y = yDespuesEncabezado;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(75, 90, 106);
+            var labelResultado = 'RESULTADO DEL CULTIVO:';
+            doc.text(labelResultado, 14, y);
+            var anchoRes = doc.getTextWidth(labelResultado);
+
+            doc.setFont('helvetica', 'normal');
+            if (datos.estadoCultivo === 'negativo') {
+                doc.text(' Negativo (Sin crecimiento bacteriano a los 5 días de incubación).', 14 + anchoRes, y);
+                y += 8;
+            } else {
+                doc.text(' Crecimiento de:', 14 + anchoRes, y);
+                y += 5;
+                (datos.microorganismos || []).forEach(function(micro, idx) {
+                    if (y + 6 > pageHeight - 30) {
+                        doc.addPage();
+                        encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                        y = yDespuesEncabezado;
+                    }
+                    doc.setFont('courier', 'bold');
+                    doc.setFontSize(9);
+                    var prefijo = '#' + (idx + 1) + ':';
+                    doc.text(prefijo, 14, y);
+                    var anchoPrefijo = doc.getTextWidth(prefijo);
+                    doc.setFont('courier', 'bolditalic');
+                    var textoMicroorganismo = doc.splitTextToSize(
+                        micro.nombre,
+                        anchoContenido - anchoPrefijo - 1
+                    );
+                    textoMicroorganismo.forEach(function(linea, indice) {
+                        if (indice > 0) {
+                            if (y + 6 > pageHeight - 30) {
+                                doc.addPage();
+                                encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                                y = yDespuesEncabezado;
+                            }
+                            doc.text(linea, 14 + anchoPrefijo + 1, y);
+                        } else {
+                            doc.text(linea, 14 + anchoPrefijo + 1, y);
+                        }
+                        y += 6;
+                    });
+                });
+                y += 3;
+            }
+
+            // 3. Observaciones
+            if (datos.observaciones) {
+                if (y + 12 > pageHeight - 30) {
+                    doc.addPage();
+                    encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                    y = yDespuesEncabezado;
+                }
+                doc.setFont('courier', 'normal');
+                doc.setFontSize(8);
+                doc.text('OBSERVACIONES:', 14, y);
+                y += 6;
+                var parrafos = datos.observaciones.split('\n');
+                parrafos.forEach(function(parrafo) {
+                    if (parrafo.trim() === '') {
+                        y += 3;
+                        return;
+                    }
+                    var lineas = doc.splitTextToSize(parrafo, anchoContenido);
+                    lineas.forEach(function(linea) {
+                        if (y + 5 > pageHeight - 30) {
+                            doc.addPage();
+                            encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                            y = yDespuesEncabezado;
+                        }
+                        doc.text(linea, 14, y);
+                        y += 4.2;
+                    });
+                });
+                y += 4;
+            }
+
+            // 4. Antibiograma (AL FINAL, solo si está activo)
+            if (datos.incluirAntibiograma && (datos.antibiograma || []).length > 0) {
+                if (y + 20 > pageHeight - 30) {
+                    doc.addPage();
+                    encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                    y = yDespuesEncabezado;
+                }
+                y += 2;
+                doc.setFont('courier', 'normal');
+                doc.setFontSize(9);
+                doc.text('ANTIBIOGRAMA - Método : ' + (datos.metodoAntibiograma || 'DIFUSIÓN'), 14, y);
+                y += 7;
+
+                var colDosPuntosX = 14 + 68;
+                var colResultadoX = 14 + 73;
+
+                (datos.antibiograma || []).forEach(function(item) {
+                    if (y + 5 > pageHeight - 30) {
+                        doc.addPage();
+                        encabezadoPagina({ pageNumber: doc.getNumberOfPages() });
+                        y = yDespuesEncabezado;
+                    }
+                    doc.text(item.antibiotico, 14, y);
+                    doc.text(':', colDosPuntosX, y);
+                    doc.text(item.interpretacion, colResultadoX, y);
+                    y += 4.5;
+                });
+                y += 4;
+            }
+        }
+
         // Escribir resultados de cada sección y subárea
         payload.secciones.forEach(function(seccion) {
             seccion.subareas.forEach(function(sub) {
@@ -1940,6 +2220,10 @@ function escribirFila(resultado) {
 
         if (payload.urocultivo) {
             escribirAntibiogramaUrocultivo(payload.urocultivo);
+        }
+
+        if (payload.hemocultivo) {
+            escribirHemocultivo(payload.hemocultivo);
         }
 
         if (payload.antibiograma) {

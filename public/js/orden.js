@@ -355,6 +355,11 @@
             nuevoExamen.tipo = 'urocultivo';
             nuevoExamen.resultado = '{}';
         }
+        if (datos.id === 'hemocultivo') {
+            nuevoExamen.tipoFormulario = 'hemocultivo';
+            nuevoExamen.tipo = 'hemocultivo';
+            nuevoExamen.resultado = '{}';
+        }
         if (datos.id === 'examen_heces' || datos.id === 'feces') {
             nuevoExamen.tipoFormulario = 'heces';
             nuevoExamen.tipo = 'heces';
@@ -405,6 +410,14 @@
             examen.id === 'factor_rh' ||
             examen.tipoFormulario === 'tipo_sanguineo' ||
             examen.tipoFormulario === 'tipo_sanguineo_completo'
+        );
+    }
+
+    function esFormularioHemocultivo(examen) {
+        return !!examen && (
+            examen.tipoFormulario === 'hemocultivo' ||
+            examen.tipo === 'hemocultivo' ||
+            examen.id === 'hemocultivo'
         );
     }
 
@@ -482,6 +495,9 @@
             } else if (examen.id === 'urocultivo' || examen.tipoFormulario === 'urocultivo') {
                 var accionUrocultivo = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioUrocultivo(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionUrocultivo + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
+            } else if (esFormularioHemocultivo(examen)) {
+                var accionHemocultivo = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
+                fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioHemocultivo(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionHemocultivo + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';
             } else if (esFormularioAntigenosFebriles(examen)) {
                 var accionAntigenos = tieneResultados ? 'Editar resultados' : 'Cargar resultados';
                 fila.innerHTML = '<td class="fw-semibold">' + examen.nombre + '</td><td colspan="3"><button type="button" class="' + btnClass + '" onclick="window.abrirFormularioAntigenosFebriles(\'' + examen.id + '\')"><i class="bi bi-pencil-square me-1"></i>' + accionAntigenos + '</button></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="window.eliminarExamen(this)" title="Eliminar examen"><i class="bi bi-trash"></i></button></td>';

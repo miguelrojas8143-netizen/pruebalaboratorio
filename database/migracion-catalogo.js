@@ -57,6 +57,7 @@ const TIPOS_DATO = {
     perfil: 'numerico',
     uroanalisis: 'numerico',
     heces: 'texto',
+    hemocultivo: 'texto',
     antibiograma: 'texto',
     secrecion_vaginal: 'seleccion_unica',
     tipo_sanguineo: 'texto',
@@ -66,6 +67,7 @@ const TIPOS_DATO = {
 const FORMULARIOS_POR_TIPO = {
     uroanalisis: 'uroanalisis',
     heces: 'heces',
+    hemocultivo: 'hemocultivo',
     antibiograma: 'antibiograma'
 };
 

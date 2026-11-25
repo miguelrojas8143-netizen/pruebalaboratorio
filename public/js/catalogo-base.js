@@ -146,6 +146,7 @@ window.App.catalogo.push(
     { id: 'cea', nombre: 'CEA', area: 'Hormonas', unidad: 'ng/mL', refMin: 0, refMax: 5 },
     { id: 'urocultivo', nombre: 'Urocultivo', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Negativo' },
     { id: 'coprocultivo', nombre: 'Coprocultivo', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Negativo' },
+    { id: 'hemocultivo', nombre: 'Hemocultivo', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Negativo' },
     { id: 'coloracion_gram', nombre: 'Coloración GRAM', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Sin microorganismos observados' },
     { id: 'baciloscopia', nombre: 'Baciloscopía (BK)', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Negativo' },
     { id: 'exudado_faringeo', nombre: 'Exudado Faríngeo', area: 'Bacteriología', unidad: 'Cualitativo', tipo: 'texto', valorDefecto: '', refTexto: 'Negativo' },
