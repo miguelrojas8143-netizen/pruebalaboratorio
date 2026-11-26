@@ -301,10 +301,20 @@
             if (e.target.value === 'negativo') {
                 seccionMicro.classList.add('d-none');
                 checkAtb.checked = false;
+                checkAtb.disabled = true;
                 contAtb.classList.add('d-none');
+                if (window.jQuery && window.jQuery.fn.select2) {
+                    tbodyAtb.querySelectorAll('.select2-hidden-accessible').forEach(function(select) {
+                        window.jQuery(select).select2('destroy');
+                    });
+                }
+                tbodyAtb.replaceChildren();
                 observaciones.value = PLANTILLAS_OBSERVACIONES.negativo_5_dias;
             } else {
                 seccionMicro.classList.remove('d-none');
+                checkAtb.checked = false;
+                checkAtb.disabled = false;
+                contAtb.classList.add('d-none');
                 if (observaciones.value === PLANTILLAS_OBSERVACIONES.negativo_5_dias) {
                     observaciones.value = PLANTILLAS_OBSERVACIONES.estandar_vitek;
                 }
@@ -329,6 +339,10 @@
         });
 
         checkAtb.addEventListener('change', function(e) {
+            if (selectEstado.value === 'negativo') {
+                checkAtb.checked = false;
+                return;
+            }
             if (e.target.checked) {
                 contAtb.classList.remove('d-none');
                 if (tbodyAtb.children.length === 0) {
@@ -372,9 +386,11 @@
         if (draft.estadoCultivo === 'negativo') {
             seccionMicro.classList.add('d-none');
             checkAtb.checked = false;
+            checkAtb.disabled = true;
             contAtb.classList.add('d-none');
         } else {
             seccionMicro.classList.remove('d-none');
+            checkAtb.disabled = false;
             if (Array.isArray(draft.microorganismos) && draft.microorganismos.length > 0) {
                 draft.microorganismos.forEach(function(m) { agregarFilaMicroorganismo(draft, m.nombre); });
             } else {
